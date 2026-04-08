@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 3.0.0)   # Selects the minimum version of CMake required to run this file
+cmake_minimum_required(VERSION 3.5)   # Selects the minimum version of CMake required to run this file
 project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and version
-
-# Linux compatibility
-if(UNIX AND NOT APPLE)
-        find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
-endif()
 
 # Here we select C++17 with all the standards required and all compiler-specific extensions disabled
 set(CMAKE_CXX_STANDARD 17)
@@ -123,10 +117,7 @@ set(STATES_SOURCES
 # For each example, we add an executable target
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
+file(COPY ${PROJECT_SOURCE_DIR}/config DESTINATION ${PROJECT_SOURCE_DIR}/bin)
+file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
 target_link_libraries(GAME_APPLICATION glfw)
-
-if(UNIX AND NOT APPLE)
-        target_link_libraries(GAME_APPLICATION OpenGL::GL)
-        target_link_libraries(GAME_APPLICATION GLEW::GLEW)
-endif()
