@@ -8,6 +8,10 @@ namespace our {
     // This function should setup the pipeline state and set the shader to be used
     void Material::setup() const {
         //TODO: (Req 7) Write this function
+        // 1. Apply all OpenGL pipeline settings (depth test, blending, culling, masks)
+        pipelineState.setup();
+        // 2. Tell OpenGL to use this material's shader program for upcoming draw calls
+        shader->use();
     }
 
     // This function read the material data from a json object
@@ -25,6 +29,10 @@ namespace our {
     // set the "tint" uniform to the value in the member variable tint 
     void TintedMaterial::setup() const {
         //TODO: (Req 7) Write this function
+        // Call the parent setup first (applies pipeline state + uses shader)
+        Material::setup();
+        // Send the tint color to the shader
+        shader->set("tint", tint);
     }
 
     // This function read the material data from a json object
@@ -39,6 +47,14 @@ namespace our {
     // Then it should bind the texture and sampler to a texture unit and send the unit number to the uniform variable "tex" 
     void TexturedMaterial::setup() const {
         //TODO: (Req 7) Write this function
+        TintedMaterial::setup();
+        // pixels with alpha below this will be discarded
+        shader->set("alphaThreshold", alphaThreshold);
+        // Texture part: we use unit 0 --> bind the texture and sampler to unit 0 --> set the uniform "tex" to 0
+        glActiveTexture(GL_TEXTURE0);
+        if(texture) texture->bind();
+        if(sampler) sampler->bind(0);
+        shader->set("tex", 0);
     }
 
     // This function read the material data from a json object
