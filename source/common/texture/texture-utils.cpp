@@ -9,7 +9,20 @@ our::Texture2D* our::texture_utils::empty(GLenum format, glm::ivec2 size){
     our::Texture2D* texture = new our::Texture2D();
     //TODO: (Req 11) Finish this function to create an empty texture with the given size and format
     texture->bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, nullptr);
+
+    GLenum internalFormat = format;
+    GLenum dataFormat = format;
+    GLenum dataType = GL_UNSIGNED_BYTE;
+
+    if (format == GL_RGBA8) {
+        dataFormat = GL_RGBA;
+    } else if (format == GL_DEPTH_COMPONENT24) {
+        dataFormat = GL_DEPTH_COMPONENT;
+        dataType = GL_UNSIGNED_INT;
+    }
+
+    // Allocate the empty texture memory on the GPU
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, dataFormat, dataType, nullptr);
     texture->unbind();
 
     return texture;
