@@ -48,6 +48,9 @@ void glfw_error_callback(int error, const char* description){
 // This function will be used to log OpenGL debug messages
 void GLAPIENTRY opengl_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
+    if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
+    if(id == 131218 || id == 131154 || id == 131185) return;
+
     std::string _source;
     std::string _type;
     std::string _severity;
@@ -192,6 +195,7 @@ int our::Application::run(int run_for_frames) {
     std::cout << "GLSL VERSION    : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
 #if defined(ENABLE_OPENGL_DEBUG_MESSAGES)
+    bool debugSynchronousEnabled = false;
     // if we have OpenGL debug messages enabled, set the message callback
     glDebugMessageCallback(opengl_callback, nullptr);
     // Then enable debug output
@@ -199,7 +203,17 @@ int our::Application::run(int run_for_frames) {
     // Then make the output synchronized to the OpenGL commands.
     // This will make sure that OpenGL and the main thread are synchronized such that message callback is called as soon
     // as the command causing it is called. This is useful for debugging but slows down the code execution.
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    GLint contextFlags = 0;
+    glGetIntegerv(GL_CONTEXT_FLAGS, &contextFlags);
+    if((contextFlags & GL_CONTEXT_FLAG_DEBUG_BIT) != 0){
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        debugSynchronousEnabled = true;
+        // Keep actionable debug output while muting known non-actionable NVIDIA perf hints.
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+        constexpr GLuint ignoredDebugIDs[] = {131154, 131185, 131218};
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
+            static_cast<GLsizei>(sizeof(ignoredDebugIDs) / sizeof(ignoredDebugIDs[0])), ignoredDebugIDs, GL_FALSE);
+    }
 #endif
 
     setupCallbacks();
@@ -280,13 +294,13 @@ int our::Application::run(int run_for_frames) {
 #if defined(ENABLE_OPENGL_DEBUG_MESSAGES)
         // Since ImGui causes many messages to be thrown, we are temporarily disabling the debug messages till we render the ImGui
         glDisable(GL_DEBUG_OUTPUT);
-        glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    if(debugSynchronousEnabled) glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); // Render the ImGui to the framebuffer
 #if defined(ENABLE_OPENGL_DEBUG_MESSAGES)
         // Re-enable the debug messages
         glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    if(debugSynchronousEnabled) glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
 
         // If F12 is pressed, take a screenshot
