@@ -1,6 +1,7 @@
 #include "forward-renderer.hpp"
 #include "../mesh/mesh-utils.hpp"
 #include "../texture/texture-utils.hpp"
+#include <stdexcept>
 
 namespace our {
 
@@ -64,6 +65,12 @@ namespace our {
 
             depthTarget = texture_utils::empty(GL_DEPTH_COMPONENT24, windowSize);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTarget->getOpenGLName(), 0);
+
+            GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            if(framebufferStatus != GL_FRAMEBUFFER_COMPLETE){
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                throw std::runtime_error("Postprocess framebuffer is incomplete.");
+            }
 
             //TODO: (Req 11) Unbind the framebuffer just to be safe
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
