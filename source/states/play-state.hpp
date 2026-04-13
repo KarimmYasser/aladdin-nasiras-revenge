@@ -6,6 +6,7 @@
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
+#include <systems/aladdin-controller.hpp>
 #include <asset-loader.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
@@ -15,6 +16,7 @@ class Playstate: public our::State {
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
+    our::AladdinControllerSystem aladdinController;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -29,6 +31,8 @@ class Playstate: public our::State {
         }
         // We initialize the camera controller system since it needs a pointer to the app
         cameraController.enter(getApp());
+        // Initialize the player controller system
+        aladdinController.enter(getApp());
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
@@ -38,6 +42,7 @@ class Playstate: public our::State {
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
+        aladdinController.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
@@ -49,6 +54,13 @@ class Playstate: public our::State {
             getApp()->changeState("menu");
         }
     }
+
+    // For Debugging only
+    // TODO - Remove or disable in production builds
+    void onImmediateGui() override {
+        aladdinController.onImmediateGui(&world);
+    }
+    //////////////////////////////////////////////
 
     void onDestroy() override {
         // Don't forget to destroy the renderer
