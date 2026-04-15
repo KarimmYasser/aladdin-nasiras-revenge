@@ -6,6 +6,7 @@
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
 #include "aladdin-controller.hpp"
+#include "collectible.hpp"
 
 namespace our {
 
@@ -25,6 +26,8 @@ namespace our {
             component = entity->addComponent<MeshRendererComponent>();
         } else if (type == AladdinControllerComponent::getID()) {
             component = entity->addComponent<AladdinControllerComponent>();
+        } else if (type == CollectibleComponent::getID()) {
+            component = entity->addComponent<CollectibleComponent>();
         }
         if(component) component->deserialize(data);
     }

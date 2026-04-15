@@ -7,6 +7,7 @@
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
 #include <systems/aladdin-controller.hpp>
+#include <systems/collectible.hpp>
 #include <asset-loader.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
@@ -17,6 +18,7 @@ class Playstate: public our::State {
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::AladdinControllerSystem aladdinController;
+    our::CollectibleSystem collectibleSystem;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -43,8 +45,12 @@ class Playstate: public our::State {
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         aladdinController.update(&world, (float)deltaTime);
+        collectibleSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
+
+        // Remove entities marked for deletion at the end of the frame
+        world.deleteMarkedEntities();
 
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
