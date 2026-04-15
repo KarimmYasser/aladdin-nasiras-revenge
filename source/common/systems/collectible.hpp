@@ -65,7 +65,11 @@ namespace our {
                 // TODO (Physics): Once Member 2 implements the PhysicsSystem, replace this 
                 // distance check with a Trigger Collider event.
                 if(aladdinEntity){
-                    float distance = glm::distance(aladdinEntity->localTransform.position, entity->localTransform.position);
+                    // We use world space positions for distance check to ensure it works even if entities are parented
+                    glm::vec3 aladdinPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+                    glm::vec3 collectiblePos = glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+
+                    float distance = glm::distance(aladdinPos, collectiblePos);
                     
                     if(distance < collectible->collectionRadius){
                         
