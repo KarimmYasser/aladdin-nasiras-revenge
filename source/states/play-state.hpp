@@ -10,6 +10,7 @@
 #include <systems/collectible.hpp>
 #include <systems/hazard.hpp>
 #include <systems/enemy.hpp>
+#include <systems/checkpoint.hpp>
 #include <asset-loader.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
@@ -23,6 +24,7 @@ class Playstate: public our::State {
     our::CollectibleSystem collectibleSystem;
     our::HazardSystem hazardSystem;
     our::EnemySystem enemySystem;
+    our::CheckpointSystem checkpointSystem;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -52,6 +54,7 @@ class Playstate: public our::State {
         collectibleSystem.update(&world, (float)deltaTime);
         hazardSystem.update(&world, (float)deltaTime);
         enemySystem.update(&world, (float)deltaTime);
+        checkpointSystem.update(&world);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 

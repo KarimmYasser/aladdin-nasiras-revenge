@@ -301,6 +301,10 @@ namespace our {
                 ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "INVINCIBLE: %.1fs", aladdin->invincibilityTimer);
             }
 
+            ImGui::Separator();
+            ImGui::Text("Respawn Position:");
+            ImGui::Text("%.1f, %.1f, %.1f", aladdin->respawnPosition.x, aladdin->respawnPosition.y, aladdin->respawnPosition.z);
+
             ImGui::End();
 
             // Original Debug Window

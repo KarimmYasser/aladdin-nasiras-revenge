@@ -10,6 +10,7 @@
 #include "hazard.hpp"
 #include "enemy.hpp"
 #include "breakable.hpp"
+#include "checkpoint.hpp"
 
 namespace our {
 
@@ -37,6 +38,8 @@ namespace our {
             component = entity->addComponent<EnemyComponent>();
         } else if (type == BreakableComponent::getID()) {
             component = entity->addComponent<BreakableComponent>();
+        } else if (type == CheckpointComponent::getID()) {
+            component = entity->addComponent<CheckpointComponent>();
         }
         if(component) component->deserialize(data);
     }

@@ -33,7 +33,7 @@ namespace our {
                 }
             }
 
-            if(!playerEntity || !playerController) return;
+            if(!playerEntity || !playerController || playerController->lives <= 0) return;
 
             // 2. Iterate through all hazards
             for(auto entity : world->getEntities()){
