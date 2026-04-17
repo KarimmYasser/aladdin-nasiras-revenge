@@ -7,6 +7,8 @@
 #include "movement.hpp"
 #include "aladdin-controller.hpp"
 #include "collectible.hpp"
+#include "hazard.hpp"
+#include "enemy.hpp"
 
 namespace our {
 
@@ -28,6 +30,10 @@ namespace our {
             component = entity->addComponent<AladdinControllerComponent>();
         } else if (type == CollectibleComponent::getID()) {
             component = entity->addComponent<CollectibleComponent>();
+        } else if (type == HazardComponent::getID()) {
+            component = entity->addComponent<HazardComponent>();
+        } else if (type == EnemyComponent::getID()) {
+            component = entity->addComponent<EnemyComponent>();
         }
         if(component) component->deserialize(data);
     }

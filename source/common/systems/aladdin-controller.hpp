@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/aladdin-controller.hpp"
 #include "../components/camera.hpp"
+#include "../components/enemy.hpp"
 #include "../application.hpp"
 #include <imgui.h>
 
@@ -90,6 +91,11 @@ namespace our {
                     aladdin->isGrounded = false;
                 }
 
+                // 3.5. Update Invincibility Timer
+                if(aladdin->invincibilityTimer > 0.0f) {
+                    aladdin->invincibilityTimer -= deltaTime;
+                }
+
                 // 4. Handle Melee Attack (Sword)
                 if(keyboard.justPressed(GLFW_KEY_F) && !aladdin->isAttacking) {
                     aladdin->isAttacking = true;
@@ -105,12 +111,14 @@ namespace our {
                     }
                     // Visual effect placeholder: slightly shake or tilt model
                     
-                    // Simple Combat Test: Check for nearby "Target" entities
+                    // Simple Combat Test: Check for nearby "Target" or "Enemy" entities
                     // TODO (Physics): Replace this distance-based check with the PhysicsSystem's
                     // collision detection between the sword's hitbox collider and enemy colliders.
                     // Damage should only be applied at a specific frame of the animation.
                     for(auto other : world->getEntities()){
                         if(other == entity) continue;
+
+                        // Check for Target objects (from original mock)
                         if(other->name.find("Target") != std::string::npos){
                             float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
                             if(dist < 2.0f){
@@ -119,6 +127,23 @@ namespace our {
                                 // Shift it slightly to show impact
                                 glm::vec3 dir = glm::normalize(other->localTransform.position - entity->localTransform.position);
                                 other->localTransform.position += dir * 0.1f;
+                            }
+                        }
+
+                        // Check for Real Enemies
+                        EnemyComponent* enemy = other->getComponent<EnemyComponent>();
+                        if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
+                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
+                            if(dist < 2.5f) { // Slightly larger range for Aladdin's sword
+                                enemy->health -= 25; // Aladdin deals 25 damage per hit
+                                std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
+                                
+                                if(enemy->health <= 0) {
+                                    enemy->currentState = EnemyComponent::State::DEAD;
+                                    std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
+                                }
+                                // To prevent hitting multiple times in one frame, we could break or add a hit cooldown
+                                // But since this is a simple system, we'll just allow it for now.
                             }
                         }
                     }
@@ -196,7 +221,42 @@ namespace our {
             // If no Aladdin component found, nothing to do
             if(!aladdin) return;
 
-            // Display a debug window for Aladdin state
+            // Display a HUD-like window for Aladdin status
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(300.0f, 180.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Aladdin HUD", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+            
+            // Visual Health Bar (Green to Red)
+            float healthFraction = (float)aladdin->health / 100.0f;
+            ImVec4 healthColor = ImVec4(1.0f - healthFraction, healthFraction, 0.0f, 1.0f);
+            ImGui::Text("Health: %d / 100", aladdin->health);
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, healthColor);
+            ImGui::ProgressBar(healthFraction, ImVec2(-1.0f, 20.0f), "");
+            ImGui::PopStyleColor();
+
+            // Visual Lives Display
+            ImGui::Spacing();
+            ImGui::Text("Lives Remaining:");
+            for(int i = 0; i < aladdin->lives; ++i) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "<3"); // Red hearts for lives
+            }
+            if(aladdin->lives <= 0) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "NONE - GAME OVER");
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Inventory:");
+            ImGui::Text("Coins: %d | Gems: %d | Apples: %d", aladdin->coinCount, aladdin->gemCount, aladdin->appleCount);
+            
+            if(aladdin->invincibilityTimer > 0.0f) {
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "INVINCIBLE: %.1fs", aladdin->invincibilityTimer);
+            }
+
+            ImGui::End();
+
+            // Original Debug Window
             ImGui::Begin("Aladdin Controller Debug");
             
             ImGui::Text("State Info:");

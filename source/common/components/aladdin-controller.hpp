@@ -41,7 +41,13 @@ namespace our {
         int coinCount = 0;                // Number of collected ancient coins
         int gemCount = 0;                 // Number of collected gems
         int appleCount = 10;              // Number of apples available for throwing
-        int health = 3;                   // Current health (hearts)
+        int health = 100;                 // Current health (hearts/points)
+        int lives = 3;                    // Current lives (retry attempts)
+        glm::vec3 respawnPosition = {0, 0, 0}; // Position to return to on death
+
+        // Invincibility after taking damage
+        float invincibilityTimer = 0.0f;  // Seconds of invincibility remaining
+        float invincibilityDuration = 2.0f; // Default duration after being hit
 
         // The ID of this component type is "Aladdin Controller"
         static std::string getID() { return "Aladdin Controller"; }
@@ -56,6 +62,16 @@ namespace our {
             speed = data.value("speed", speed);
             jumpForce = data.value("jumpForce", jumpForce);
             rotationSpeed = data.value("rotationSpeed", rotationSpeed);
+
+            health = data.value("health", health);
+            lives = data.value("lives", lives);
+            if(data.contains("respawnPosition")){
+                auto& v = data["respawnPosition"];
+                if(v.is_array() && v.size() >= 3){
+                    respawnPosition = {v[0].get<float>(), v[1].get<float>(), v[2].get<float>()};
+                }
+            }
+            invincibilityDuration = data.value("invincibilityDuration", invincibilityDuration);
 
             enableCameraFollow = data.value("enableCameraFollow", enableCameraFollow);
             if(data.contains("cameraOffset")){
