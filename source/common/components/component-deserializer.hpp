@@ -9,6 +9,7 @@
 #include "collectible.hpp"
 #include "hazard.hpp"
 #include "enemy.hpp"
+#include "breakable.hpp"
 
 namespace our {
 
@@ -34,6 +35,8 @@ namespace our {
             component = entity->addComponent<HazardComponent>();
         } else if (type == EnemyComponent::getID()) {
             component = entity->addComponent<EnemyComponent>();
+        } else if (type == BreakableComponent::getID()) {
+            component = entity->addComponent<BreakableComponent>();
         }
         if(component) component->deserialize(data);
     }

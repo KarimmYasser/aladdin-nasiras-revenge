@@ -4,6 +4,10 @@
 #include "../components/aladdin-controller.hpp"
 #include "../components/camera.hpp"
 #include "../components/enemy.hpp"
+#include "../components/breakable.hpp"
+#include "../components/collectible.hpp"
+#include "../components/mesh-renderer.hpp"
+#include "../asset-loader.hpp"
 #include "../application.hpp"
 #include <imgui.h>
 
@@ -133,6 +137,8 @@ namespace our {
                         // Check for Real Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
+                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
+                            // collision detection once the ColliderComponent is ready.
                             float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
                             if(dist < 2.5f) { // Slightly larger range for Aladdin's sword
                                 enemy->health -= 25; // Aladdin deals 25 damage per hit
@@ -144,6 +150,47 @@ namespace our {
                                 }
                                 // To prevent hitting multiple times in one frame, we could break or add a hit cooldown
                                 // But since this is a simple system, we'll just allow it for now.
+                            }
+                        }
+
+                        // Check for Breakable Props (Pots)
+                        BreakableComponent* breakable = other->getComponent<BreakableComponent>();
+                        if(breakable) {
+                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
+                            // collision detection once the ColliderComponent is ready.
+                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
+                            if(dist < 2.0f) {
+                                std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
+                                
+                                // Spawn multiple loot items if defined
+                                for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
+                                    const auto& lootEntry = breakable->lootItems[i];
+                                    
+                                    Entity* loot = world->add();
+                                    loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
+                                    
+                                    // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
+                                    float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
+                                    float radius = 3.5f; // Increased distance from the center for more scattering
+                                    glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
+                                    
+                                    loot->localTransform.position = other->localTransform.position + scatterOffset;
+                                    
+                                    // Add MeshRenderer for loot
+                                    auto mr = loot->addComponent<MeshRendererComponent>();
+                                    mr->mesh = AssetLoader<Mesh>::get("cube");
+                                    mr->material = AssetLoader<Material>::get("loot_mat");
+                                    
+                                    // Add Collectible component
+                                    auto coll = loot->addComponent<CollectibleComponent>();
+                                    if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
+                                    else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
+                                    else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
+                                    coll->value = lootEntry.value;
+                                }
+
+                                // Mark the pot for removal
+                                world->markForRemoval(other);
                             }
                         }
                     }
