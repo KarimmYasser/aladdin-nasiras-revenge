@@ -43,6 +43,8 @@ namespace our {
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if(!aladdin) continue;
 
+                if(aladdin->lives <= 0) continue;
+
                 auto& keyboard = app->getKeyboard();
 
                 // 1. Get movement direction from keyboard input

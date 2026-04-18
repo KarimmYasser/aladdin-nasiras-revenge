@@ -22,6 +22,8 @@ namespace our {
                 }
             }
 
+            if(!playerEntity || !playerController || playerController->lives <= 0) return;
+
             for(auto entity : world->getEntities()) {
                 EnemyComponent* enemy = entity->getComponent<EnemyComponent>();
                 if(!enemy) continue;
@@ -81,9 +83,15 @@ namespace our {
                             
                             if(playerController->health <= 0) {
                                 playerController->lives--;
-                                playerController->health = 100;
-                                playerEntity->localTransform.position = playerController->respawnPosition;
                                 std::cout << "[EnemySystem] Player died! Lives remaining: " << playerController->lives << std::endl;
+
+                                if(playerController->lives > 0){
+                                    playerController->health = 100;
+                                    playerEntity->localTransform.position = playerController->respawnPosition;
+                                    std::cout << "[EnemySystem] Respawning at " << playerController->respawnPosition.x << ", " << playerController->respawnPosition.y << ", " << playerController->respawnPosition.z << std::endl;
+                                } else {
+                                    std::cout << "[EnemySystem] GAME OVER! No more lives." << std::endl;
+                                }
                             }
                         }
                         enemy->currentAttackTimer = enemy->attackCooldown;
