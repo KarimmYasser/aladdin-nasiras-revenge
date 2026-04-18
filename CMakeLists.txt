@@ -14,6 +14,10 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)           # Don't build Installation I
 set(GLFW_USE_HYBRID_HPG ON CACHE BOOL "" FORCE)     # Add variables to use High Performance Graphics Card if available
 add_subdirectory(vendor/glfw)                       # Build the GLFW project to use later as a library
 
+
+set(RP3D_COMPILE_TESTBED OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendor/reactphysics3d)
+
 # A variable with all the source files of GLAD
 set(GLAD_SOURCE vendor/glad/src/gl.c)
 # A variables with all the source files of Dear ImGui
@@ -93,6 +97,7 @@ include_directories(
         vendor/glm
         vendor/imgui
         vendor/utils
+        vendor/reactphysics3d/include
 )
 
 
@@ -120,4 +125,4 @@ set(STATES_SOURCES
 file(COPY ${PROJECT_SOURCE_DIR}/config DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw)
+target_link_libraries(GAME_APPLICATION glfw reactphysics3d)
