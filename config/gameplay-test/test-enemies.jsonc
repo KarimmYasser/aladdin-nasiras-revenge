@@ -130,7 +130,7 @@
                         "chaseSpeed": 4.0,
                         "detectionRange": 10.0,
                         "attackRange": 1.5,
-                        "health": 50,
+                        "health": 500,
                         "damage": 10,
                         "waypoints": [
                             [-5, 0, -6],

@@ -104,6 +104,7 @@ namespace our {
                 if(keyboard.justPressed(GLFW_KEY_F) && !aladdin->isAttacking) {
                     aladdin->isAttacking = true;
                     aladdin->attackTimer = 0.4f; // Attack for 0.4 seconds
+                    aladdin->hitEntities.clear(); // Clear the list of entities hit in the previous attack
                     // TODO (Graphics): Trigger sword "swoosh" sound (Member 1)
                     // TODO (Animation): Trigger the "Sword Slash" animation (Member 1)
                 }
@@ -137,11 +138,22 @@ namespace our {
                         // Check for Real Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
+                            // Check if this enemy was already hit during the current attack
+                            bool alreadyHit = false;
+                            for(auto e : aladdin->hitEntities) {
+                                if(e == other) {
+                                    alreadyHit = true;
+                                    break;
+                                }
+                            }
+                            if(alreadyHit) continue;
+
                             // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
                             // collision detection once the ColliderComponent is ready.
                             float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
                             if(dist < 2.5f) { // Slightly larger range for Aladdin's sword
                                 enemy->health -= 25; // Aladdin deals 25 damage per hit
+                                aladdin->hitEntities.push_back(other); // Mark this enemy as hit
                                 std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
                                 
                                 if(enemy->health <= 0) {
@@ -156,10 +168,21 @@ namespace our {
                         // Check for Breakable Props (Pots)
                         BreakableComponent* breakable = other->getComponent<BreakableComponent>();
                         if(breakable) {
+                            // Check if this breakable was already hit during the current attack
+                            bool alreadyHit = false;
+                            for(auto e : aladdin->hitEntities) {
+                                if(e == other) {
+                                    alreadyHit = true;
+                                    break;
+                                }
+                            }
+                            if(alreadyHit) continue;
+
                             // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
                             // collision detection once the ColliderComponent is ready.
                             float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
                             if(dist < 2.0f) {
+                                aladdin->hitEntities.push_back(other); // Mark this breakable as hit
                                 std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
                                 
                                 // Spawn multiple loot items if defined

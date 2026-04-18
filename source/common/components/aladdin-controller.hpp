@@ -34,6 +34,7 @@ namespace our {
         // replace these booleans with triggers for the AnimatorComponent.
         bool isAttacking = false;         // Whether Aladdin is performing a sword attack
         float attackTimer = 0.0f;         // Timer for sword attack duration
+        std::vector<Entity*> hitEntities; // List of entities already hit in the current attack
         bool isThrowing = false;          // Whether Aladdin is throwing an apple
         float throwTimer = 0.0f;          // Timer for throw animation duration
 
