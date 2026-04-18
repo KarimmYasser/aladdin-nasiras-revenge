@@ -195,7 +195,7 @@ namespace our {
                 glm::vec3 lDir = glm::normalize(glm::vec3(lM * glm::vec4(0, 0, -1, 0)));
 
                 std::string base = "lights[" + std::to_string(i) + "]";
-                shader->set(base + ".type",       (GLint)lc->type);
+                shader->set(base + ".type",       static_cast<GLint>(lc->type));
                 shader->set(base + ".position",   lPos);
                 shader->set(base + ".direction",  lDir);
                 shader->set(base + ".color",      lc->color);

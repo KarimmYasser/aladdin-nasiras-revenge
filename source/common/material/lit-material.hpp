@@ -4,13 +4,12 @@
 #include "../texture/texture2d.hpp"
 #include "../texture/sampler.hpp"
 #include "../shader/shader.hpp"
+#include "material.hpp"
 
 #include <glm/vec3.hpp>
 #include <json/json.hpp>
 
 namespace our {
-    class Material;
-
     // LitMaterial is a material that supports the full Blinn-Phong lighting model.
     // It uses the "light.vert" / "light.frag" shader pair and supports the following
     // texture maps that control how the surface interacts with light:

@@ -23,7 +23,7 @@ namespace our {
         float attenuation_linear    = 0.09f;
         float attenuation_quadratic = 0.032f;
 
-        // Spot only, stored in degrees, converted on deserialization
+        // Spot only, converted later when used for rendering
         float inner_angle = 12.5f; // Full-intensity cone (degrees)
         float outer_angle = 17.5f; // Fade-to-zero cone  (degrees)
 

@@ -1,3 +1,4 @@
+#include "lit-material.hpp"
 #include "material.hpp"
 #include "../asset-loader.hpp"
 #include "../texture/texture-utils.hpp"

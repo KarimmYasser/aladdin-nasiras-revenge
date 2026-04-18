@@ -90,10 +90,6 @@ vec3 computeLight(vec3 N, vec3 V, vec3 albedo, float specular, Light light) {
         }
     }
 
-    // --- Ambient term ---
-    // A small constant contribution so surfaces never go completely black.
-    vec3 ambient_color = albedo * material.ambient;
-
     // --- Diffuse term (Lambertian) ---
     // max(dot,0) prevents lighting from "behind" the surface.
     float diff         = max(dot(N, L), 0.0);
@@ -105,10 +101,8 @@ vec3 computeLight(vec3 N, vec3 V, vec3 albedo, float specular, Light light) {
     float spec   = pow(max(dot(N, H), 0.0), material.shininess);
     vec3  specular_color = specular * spec * vec3(1.0); // white spec highlight
 
-    // Combine: ambient is added once (no light-color scaling),
-    // diffuse & specular are scaled by attenuation, spot, intensity and color.
-    return ambient_color
-         + (diffuse_color + specular_color) * light.color * light.intensity * attenuation * spot_factor;
+    // Combine: diffuse & specular are scaled by attenuation, spot, intensity and color.
+    return (diffuse_color + specular_color) * light.color * light.intensity * attenuation * spot_factor;
 }
 
 void main() {
@@ -126,9 +120,12 @@ void main() {
     for (int i = 0; i < light_count; i++) {
         lighting += computeLight(N, V, albedo, specular_value, lights[i]);
     }
+    
+    // Ambient term applied once globally
+    vec3 ambient = albedo * material.ambient;
 
     // Objects with no lights still show their emission glow
-    vec3 final_color = lighting + emission;
+    vec3 final_color = lighting + ambient + emission;
 
     frag_color = vec4(final_color, albedo_sample.a);
 }
