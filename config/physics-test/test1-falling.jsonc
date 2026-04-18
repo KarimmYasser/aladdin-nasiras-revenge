@@ -1,0 +1,84 @@
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Physics Test 1: Falling & Bouncing",
+        "size": { "width": 1280, "height": 720 },
+        "fullscreen": false
+    },
+    "scene": {
+        "renderer": { "sky": "assets/textures/sky.jpg" },
+        "assets": {
+            "shaders": {
+                "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" }
+            },
+            "materials": {
+                "groundMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.5, 0.2, 1.0] },
+                "bouncyMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.8, 0.2, 0.2, 1.0] },
+                "heavyMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.2, 0.8, 1.0] }
+            },
+            "meshes": {
+                "plane": "assets/models/plane.obj",
+                "sphere": "assets/models/sphere.obj",
+                "cube": "assets/models/cube.obj"
+            }
+        },
+        "world": [
+            {
+                "name": "Camera",
+                "position": [0, 8, 25],
+                "rotation": [-15, 0, 0],
+                "scale": [1, 1, 1],
+                "components": [
+                    {
+                        "type": "Camera",
+                        "cameraType": "perspective",
+                        "fovY": 90.0,
+                        "near": 0.1,
+                        "far": 100.0
+                    },
+                    {
+                        "type": "Free Camera Controller"
+                    }
+                ]
+            },
+            {
+                "name": "Ground",
+                "position": [0, -5, 0],
+                "rotation": [0, 0, 0],
+                "scale": [20, 1, 20],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "groundMat" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [20, 1, 20], "friction": 0.5, "restitution": 0.5 }
+                ]
+            },
+            {
+                "name": "Bouncy Sphere",
+                "position": [-5, 10, 0],
+                "rotation": [0, 0, 0],
+                "scale": [1, 1, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "sphere", "material": "bouncyMat" },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true, "velocity": [0, 0, 0] },
+                    { "type": "Collider", "shape": "sphere", "radius": 1.0, "friction": 0.3, "restitution": 0.8 }
+                ]
+            },
+            {
+                "name": "Heavy Cube",
+                "position": [5, 10, 0],
+                "rotation": [0, 0, 0],
+                "scale": [1, 1, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "cube", "material": "heavyMat" },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 10.0, "useGravity": true, "velocity": [0, 0, 0] },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.5, 0.5], "friction": 0.8, "restitution": 0.1 }
+                ]
+            }
+        ]
+    }
+}
+
+
+
+
+
