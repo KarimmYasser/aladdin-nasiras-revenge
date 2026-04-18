@@ -19,6 +19,8 @@ namespace our {
 
         // We create a static white texture once and reuse it for missing maps.
         static Texture2D* white = texture_utils::singleColor({255, 255, 255, 255});
+        // We create a static black texture for the emission map fallback.
+        static Texture2D* black = texture_utils::singleColor({0, 0, 0, 255});
 
         // --- Albedo (unit 0) ---
         glActiveTexture(GL_TEXTURE0);
@@ -28,13 +30,13 @@ namespace our {
 
         // --- Specular (unit 1) ---
         glActiveTexture(GL_TEXTURE1);
-        (specular_map ? specular_map : white)->bind();
+        (specular_map ? specular_map : black)->bind();
         if (sampler) sampler->bind(1);
         shader->set("material.specular_map", (GLint)1);
-
+        
         // --- Emission (unit 2) ---
         glActiveTexture(GL_TEXTURE2);
-        (emission_map ? emission_map : white)->bind();
+        (emission_map ? emission_map : black)->bind();
         if (sampler) sampler->bind(2);
         shader->set("material.emission_map", (GLint)2);
     }

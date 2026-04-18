@@ -1,5 +1,6 @@
 #include "light.hpp"
 #include <glm/glm.hpp>
+#include "../deserialize-utils.hpp"
 
 namespace our {
     // same arch like the camera component
