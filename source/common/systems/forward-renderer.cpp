@@ -184,8 +184,11 @@ namespace our {
         glm::vec3 cameraPos = glm::vec3(M[3]);
 
         // upload all collected lights to the shader currently bound by a LitMaterial.
-        // Called once per draw command whose material is a LitMaterial, after material->setup().
+        ShaderProgram* lastLitShader = nullptr; // Optimization: track last shader to avoid re-uploading lights
         auto uploadLights = [&](ShaderProgram* shader) {
+            if (shader == lastLitShader) return; // already uploaded for this shader this frame
+            lastLitShader = shader;
+
             shader->set("eye_pos",    cameraPos);
             shader->set("light_count", (GLint)std::min((int)lights.size(), MAX_LIGHTS));
             for (int i = 0; i < (int)lights.size() && i < MAX_LIGHTS; ++i) {
@@ -236,12 +239,11 @@ namespace our {
             command.material->shader->set("transform", VP * command.localToWorld);
             // If the material is a LitMaterial, also upload the model matrix, normal matrix, and lights
             if (auto* litMat = dynamic_cast<LitMaterial*>(command.material)) {
-                command.material->shader->set("model",      command.localToWorld);
+                ShaderProgram* sh = command.material->shader;
+                uploadLights(sh);
+                sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
-                glUniformMatrix3fv(
-                    command.material->shader->getUniformLocation("normal_mat"),
-                    1, GL_FALSE, &normalMat[0][0]);
-                uploadLights(command.material->shader);
+                glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
             }
             command.mesh->draw();
         }
@@ -273,12 +275,11 @@ namespace our {
             command.material->setup();
             command.material->shader->set("transform", VP * command.localToWorld);
             if (auto* litMat = dynamic_cast<LitMaterial*>(command.material)) {
-                command.material->shader->set("model",      command.localToWorld);
+                ShaderProgram* sh = command.material->shader;
+                uploadLights(sh);
+                sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
-                glUniformMatrix3fv(
-                    command.material->shader->getUniformLocation("normal_mat"),
-                    1, GL_FALSE, &normalMat[0][0]);
-                uploadLights(command.material->shader);
+                glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
             }
             command.mesh->draw();
         }
