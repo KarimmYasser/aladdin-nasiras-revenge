@@ -2,17 +2,26 @@
 // Created by mohse on 4/18/2026.
 //
 
-#ifndef GFX_LAB_PHYSICS_TYPES_H
-#define GFX_LAB_PHYSICS_TYPES_H
+#pragma once
 #include "glm/vec3.hpp"
 
 namespace our {
+    /**
+     * @brief Rigid body type enumeration
+     *
+     * - Static = 0
+     * - Dynamic = 1
+     * - Kinematic = 2
+     */
     enum class RigidBodyType {
         Static,
         Dynamic,
         Kinematic,
     };
 
+    /**
+     * @brief Collision shape types for colliders
+     */
     enum class ColliderShape {
         Box,
         Sphere,
@@ -37,5 +46,3 @@ namespace our {
         float restitution = 0.0f;// bounciness
     };
 }
-
-#endif //GFX_LAB_PHYSICS_TYPES_H

@@ -117,6 +117,13 @@ set(STATES_SOURCES
         source/states/material-test-state.hpp
         source/states/entity-test-state.hpp
         source/states/renderer-test-state.hpp
+        source/common/physics/physics-types.hpp
+        source/common/physics/physics-world.hpp
+        source/common/physics/physics-system.hpp
+        source/common/physics/physics-world.cpp
+        source/common/components/rigid-body.hpp
+        source/common/components/collider.hpp
+        source/common/logger.cpp
 )
 
 # For each example, we add an executable target
