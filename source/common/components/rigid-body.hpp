@@ -60,17 +60,17 @@ namespace our {
         }
 
         void deserialize(const nlohmann::json& data) override {
-            if (data.contains("type")) {
-                if (data["type"].is_number_integer()) {
-                    const int rawType = data["type"].get<int>();
+            if (data.contains("bodyType")) {
+                if (data["bodyType"].is_number_integer()) {
+                    const int rawType = data["bodyType"].get<int>();
                     switch (rawType) {
                     case 0: type = RigidBodyType::Static; break;
                     case 1: type = RigidBodyType::Dynamic; break;
                     case 2: type = RigidBodyType::Kinematic; break;
                     default: type = RigidBodyType::Dynamic; break;
                     }
-                } else if (data["type"].is_string()) {
-                    std::string typeString = data["type"].get<std::string>();
+                } else if (data["bodyType"].is_string()) {
+                    std::string typeString = data["bodyType"].get<std::string>();
                     std::transform(typeString.begin(), typeString.end(), typeString.begin(),
                         [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
