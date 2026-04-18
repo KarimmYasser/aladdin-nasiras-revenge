@@ -64,7 +64,7 @@ namespace our {
             return;
         }
 
-        const auto* transform = entity->getComponent<Transform>();
+        const auto* transform = &entity->localTransform;
         if (!transform) {
             Logger::error("PhysicsWorld", "Entity '", entity->name,
                           "' does not have a Transform component required for rigid body creation.");
@@ -88,7 +88,11 @@ namespace our {
             return;
         }
 
-        body->setType(static_cast<reactphysics3d::BodyType>(desc.type));
+        switch (desc.type) {
+            case RigidBodyType::Static:    body->setType(reactphysics3d::BodyType::STATIC); break;
+            case RigidBodyType::Dynamic:   body->setType(reactphysics3d::BodyType::DYNAMIC); break;
+            case RigidBodyType::Kinematic: body->setType(reactphysics3d::BodyType::KINEMATIC); break;
+        }
         body->setMass(desc.mass);
 
         // Apply gravity setting (only for dynamic bodies)
