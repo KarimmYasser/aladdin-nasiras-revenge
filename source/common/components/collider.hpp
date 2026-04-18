@@ -66,9 +66,12 @@ namespace our {
         void deserialize(const nlohmann::json& data) override {
             if (data.contains("shape")) {
                 std::string shapeStr = data["shape"];
-                if (shapeStr == "Box") shape = ColliderShape::Box;
-                else if (shapeStr == "Sphere") shape = ColliderShape::Sphere;
-                else if (shapeStr == "Capsule") shape = ColliderShape::Capsule;
+                std::transform(shapeStr.begin(), shapeStr.end(), shapeStr.begin(),
+                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+                if (shapeStr == "box") shape = ColliderShape::Box;
+                else if (shapeStr == "sphere") shape = ColliderShape::Sphere;
+                else if (shapeStr == "capsule") shape = ColliderShape::Capsule;
             }
             if (data.contains("halfExtents")) {
                 auto& ext = data["halfExtents"];

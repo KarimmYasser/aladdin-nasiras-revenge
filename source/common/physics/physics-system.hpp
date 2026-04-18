@@ -31,7 +31,7 @@ namespace our {
             for (auto entity : ecsWorld->getEntities()) {
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 auto* colliderComp = entity->getComponent<ColliderComponent>();
-                auto* transform = entity->getComponent<Transform>();
+                auto* transform = &entity->localTransform;
 
                 if (rbComp && transform) {
                     // If the rigid body hasn't been created yet, create it
@@ -55,7 +55,7 @@ namespace our {
             // We must push their new positions into the physics engine BEFORE stepping.
             for (auto entity : ecsWorld->getEntities()) {
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
-                auto* transform = entity->getComponent<Transform>();
+                auto* transform = &entity->localTransform;
 
                 if (rbComp && rbComp->bodyHandle && transform && rbComp->type == RigidBodyType::Kinematic) {
                     reactphysics3d::Transform rp3dTransform;
@@ -93,7 +93,7 @@ namespace our {
             // components so the Forward Renderer draws them in the correct spot.
             for (auto entity : ecsWorld->getEntities()) {
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
-                auto* transform = entity->getComponent<Transform>();
+                auto* transform = &entity->localTransform;
 
                 // We only need to sync DYNAMIC bodies. Static and kinematic bodies are handled differently.
                 if (rbComp && rbComp->bodyHandle && transform && rbComp->type == RigidBodyType::Dynamic) {
