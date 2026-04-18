@@ -4,6 +4,7 @@
 #include <stb/stb_image.h>
 
 #include <iostream>
+#include <unordered_map>
 
 our::Texture2D* our::texture_utils::empty(GLenum format, glm::ivec2 size){
     our::Texture2D* texture = new our::Texture2D();
@@ -57,5 +58,34 @@ our::Texture2D* our::texture_utils::loadImage(const std::string& filename, bool 
     texture->unbind();
     
     stbi_image_free(pixels); //Free image data after uploading to GPU
+    return texture;
+}
+
+// Creates (or returns a cached) 1x1 RGBA texture filled with the given color.
+// The cache is a static map keyed on the packed 32-bit RGBA value, so each unique
+// color is allocated exactly once on the GPU — no matter how many materials request it.
+our::Texture2D* our::texture_utils::singleColor(glm::u8vec4 color) {
+    // Pack the four bytes into a single uint32 so it can be used as a map key.
+    uint32_t key = (uint32_t(color.r)      )
+                 | (uint32_t(color.g) <<  8)
+                 | (uint32_t(color.b) << 16)
+                 | (uint32_t(color.a) << 24);
+
+    // static cache
+    static std::unordered_map<uint32_t, our::Texture2D*> cache;
+
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return it->second; // already on the GPU — reuse it
+
+    // First request for this color: allocate a new 1x1 texture and store it.
+    our::Texture2D* texture = new our::Texture2D();
+    texture->bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    texture->unbind();
+
+    cache[key] = texture;
     return texture;
 }

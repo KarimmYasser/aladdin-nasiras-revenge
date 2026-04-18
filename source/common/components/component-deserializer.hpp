@@ -12,6 +12,7 @@
 #include "breakable.hpp"
 #include "checkpoint.hpp"
 #include "level-exit.hpp"
+#include "light.hpp"
 
 namespace our {
 
@@ -43,6 +44,8 @@ namespace our {
             component = entity->addComponent<CheckpointComponent>();
         } else if (type == LevelExitComponent::getID()) {
             component = entity->addComponent<LevelExitComponent>();
+        } else if (type == LightComponent::getID()) {
+            component = entity->addComponent<LightComponent>();
         }
         if(component) component->deserialize(data);
     }

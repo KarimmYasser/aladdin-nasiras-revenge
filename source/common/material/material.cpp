@@ -2,6 +2,7 @@
 
 #include "../asset-loader.hpp"
 #include "deserialize-utils.hpp"
+#include "lit-material.hpp"
 
 namespace our {
 
@@ -64,6 +65,18 @@ namespace our {
         alphaThreshold = data.value("alphaThreshold", 0.0f);
         texture = AssetLoader<Texture2D>::get(data.value("texture", ""));
         sampler = AssetLoader<Sampler>::get(data.value("sampler", ""));
+    }
+
+    Material* createMaterialFromType(const std::string& type){
+        if(type == "tinted"){
+            return new TintedMaterial();
+        } else if(type == "textured"){
+            return new TexturedMaterial();
+        } else if(type == "lit"){
+            return new LitMaterial();
+        } else {
+            return new Material();
+        }
     }
 
 }
