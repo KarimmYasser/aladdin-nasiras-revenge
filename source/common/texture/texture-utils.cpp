@@ -59,3 +59,17 @@ our::Texture2D* our::texture_utils::loadImage(const std::string& filename, bool 
     stbi_image_free(pixels); //Free image data after uploading to GPU
     return texture;
 }
+
+// Creates a tiny 1×1 RGBA texture with the given solid color.
+// This is used as a neutral fallback when a LitMaterial texture map is not provided.
+// For example, a white (255,255,255,255) texture means "full brightness" for albedo/specular,
+// and a black (0,0,0,255) texture means "no emission" for the emission map.
+our::Texture2D* our::texture_utils::singleColor(glm::u8vec4 color) {
+    our::Texture2D* texture = new our::Texture2D();
+    texture->bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    texture->unbind();
+    return texture;
+}
