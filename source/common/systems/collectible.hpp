@@ -90,6 +90,10 @@ namespace our {
                                 std::cout << "[CollectibleSystem] Collected Apple! (Value: " << collectible->value 
                                         << "). Total Apples: " << aladdin->appleCount << std::endl;
                                 break;
+                            case CollectibleComponent::Type::KEY:
+                                aladdin->hasKey = true;
+                                std::cout << "[CollectibleSystem] Collected Key! Level Exit is now active." << std::endl;
+                                break;
                         }
 
                         // Mark the collectible for removal from the world

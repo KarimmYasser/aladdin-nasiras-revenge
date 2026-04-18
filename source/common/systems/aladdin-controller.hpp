@@ -297,6 +297,11 @@ namespace our {
             ImGui::Text("Inventory:");
             ImGui::Text("Coins: %d | Gems: %d | Apples: %d", aladdin->coinCount, aladdin->gemCount, aladdin->appleCount);
             
+            if(aladdin->hasKey) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), " | [KEY]");
+            }
+            
             if(aladdin->invincibilityTimer > 0.0f) {
                 ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "INVINCIBLE: %.1fs", aladdin->invincibilityTimer);
             }

@@ -11,6 +11,7 @@
 #include "enemy.hpp"
 #include "breakable.hpp"
 #include "checkpoint.hpp"
+#include "level-exit.hpp"
 
 namespace our {
 
@@ -40,6 +41,8 @@ namespace our {
             component = entity->addComponent<BreakableComponent>();
         } else if (type == CheckpointComponent::getID()) {
             component = entity->addComponent<CheckpointComponent>();
+        } else if (type == LevelExitComponent::getID()) {
+            component = entity->addComponent<LevelExitComponent>();
         }
         if(component) component->deserialize(data);
     }

@@ -18,7 +18,8 @@ namespace our {
         enum class Type {
             COIN,
             GEM,
-            APPLE
+            APPLE,
+            KEY
         };
 
         Type type = Type::COIN;           // Default type is Coin
@@ -50,6 +51,7 @@ namespace our {
             if(typeStr == "coin") type = Type::COIN;
             else if(typeStr == "gem") type = Type::GEM;
             else if(typeStr == "apple") type = Type::APPLE;
+            else if(typeStr == "key") type = Type::KEY;
 
             value = data.value("value", value);
             collectionRadius = data.value("collectionRadius", collectionRadius);

@@ -41,6 +41,7 @@ namespace our {
         int coinCount = 0;                // Number of collected ancient coins
         int gemCount = 0;                 // Number of collected gems
         int appleCount = 10;              // Number of apples available for throwing
+        bool hasKey = false;              // Does the player have the key to exit?
         int health = 100;                 // Current health (hearts/points)
         int lives = 3;                    // Current lives (retry attempts)
         glm::vec3 respawnPosition = {0, 0, 0}; // Position to return to on death

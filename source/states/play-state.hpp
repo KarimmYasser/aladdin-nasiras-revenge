@@ -11,6 +11,7 @@
 #include <systems/hazard.hpp>
 #include <systems/enemy.hpp>
 #include <systems/checkpoint.hpp>
+#include <systems/level-exit.hpp>
 #include <asset-loader.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
@@ -25,6 +26,7 @@ class Playstate: public our::State {
     our::HazardSystem hazardSystem;
     our::EnemySystem enemySystem;
     our::CheckpointSystem checkpointSystem;
+    our::LevelExitSystem levelExitSystem;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -47,6 +49,25 @@ class Playstate: public our::State {
     }
 
     void onDraw(double deltaTime) override {
+        // Check for level transition
+        std::string nextScene = levelExitSystem.getNextScene();
+        if(!nextScene.empty()){
+            levelExitSystem.clearNextScene();
+            // Load the new scene config
+            std::ifstream file_in(nextScene);
+            if(file_in){
+                nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
+                file_in.close();
+                // Update the app config with the new scene
+                getApp()->getConfig()["scene"] = new_config["scene"];
+                // Reload the play state
+                getApp()->changeState("play");
+                return;
+            } else {
+                std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+            }
+        }
+
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
@@ -55,6 +76,7 @@ class Playstate: public our::State {
         hazardSystem.update(&world, (float)deltaTime);
         enemySystem.update(&world, (float)deltaTime);
         checkpointSystem.update(&world);
+        levelExitSystem.update(&world);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
