@@ -53,12 +53,23 @@ namespace our {
         void deserialize(const nlohmann::json& data) override;
     };
 
-    // This function returns a new material instance based on the given type
+}
+
+// LitMaterial extends Material with Blinn-Phong lighting support.
+// Included after the base classes are defined to avoid circular dependency.
+#include "lit-material.hpp"
+
+namespace our {
+
+    // This function returns a new material instance based on the given type string.
+    // The type comes from the "type" key in the JSON material definition.
     inline Material* createMaterialFromType(const std::string& type){
         if(type == "tinted"){
             return new TintedMaterial();
         } else if(type == "textured"){
             return new TexturedMaterial();
+        } else if(type == "lit"){
+            return new LitMaterial();
         } else {
             return new Material();
         }
