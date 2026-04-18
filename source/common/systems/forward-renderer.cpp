@@ -1,7 +1,13 @@
 #include "forward-renderer.hpp"
 #include "../mesh/mesh-utils.hpp"
 #include "../texture/texture-utils.hpp"
+#include "../material/lit-material.hpp"
+#include <glm/gtc/matrix_inverse.hpp>
 #include <stdexcept>
+#include <iostream>
+
+
+#define MAX_LIGHTS 8
 
 namespace our {
 
@@ -126,11 +132,17 @@ namespace our {
     void ForwardRenderer::render(World* world){
         // First of all, we search for a camera and for all the mesh renderers
         CameraComponent* camera = nullptr;
+        // Clear light list every frame before collecting fresh ones
+        lights.clear();
         opaqueCommands.clear();
         transparentCommands.clear();
         for(auto entity : world->getEntities()){
             // If we hadn't found a camera yet, we look for a camera in this entity
             if(!camera) camera = entity->getComponent<CameraComponent>();
+            // Collect any light attached to this entity
+            if(auto lightComp = entity->getComponent<LightComponent>(); lightComp){
+                lights.push_back(lightComp);
+            }
             // If this entity has a mesh renderer component
             if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer){
                 // We construct a command from it
@@ -168,6 +180,37 @@ namespace our {
 
         //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
         glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
+        // extract the camera position for sky sphere centering and lit shader eye_pos uniform.
+        glm::vec3 cameraPos = glm::vec3(M[3]);
+
+        // upload all collected lights to the shader currently bound by a LitMaterial.
+        ShaderProgram* lastLitShader = nullptr; // Optimization: track last shader to avoid re-uploading lights
+        auto uploadLights = [&](ShaderProgram* shader) {
+            if (shader == lastLitShader) return; // already uploaded for this shader this frame
+            lastLitShader = shader;
+
+            shader->set("eye_pos",    cameraPos);
+            shader->set("light_count", (GLint)std::min((int)lights.size(), MAX_LIGHTS));
+            for (int i = 0; i < (int)lights.size() && i < MAX_LIGHTS; ++i) {
+                LightComponent* lc = lights[i];
+                glm::mat4 lM = lc->getOwner()->getLocalToWorldMatrix();
+                glm::vec3 lPos = glm::vec3(lM[3]);
+                glm::vec3 lDir = glm::normalize(glm::vec3(lM * glm::vec4(0, 0, -1, 0)));
+
+                std::string base = "lights[" + std::to_string(i) + "]";
+                shader->set(base + ".type",       static_cast<GLint>(lc->type));
+                shader->set(base + ".position",   lPos);
+                shader->set(base + ".direction",  lDir);
+                shader->set(base + ".color",      lc->color);
+                shader->set(base + ".intensity",  lc->intensity);
+                shader->set(base + ".att_constant",  lc->attenuation_constant);
+                shader->set(base + ".att_linear",    lc->attenuation_linear);
+                shader->set(base + ".att_quadratic", lc->attenuation_quadratic);
+                // Convert cone angles from degrees to cosines for the GLSL smoothstep comparison
+                shader->set(base + ".inner_cutoff", std::cos(glm::radians(lc->inner_angle)));
+                shader->set(base + ".outer_cutoff", std::cos(glm::radians(lc->outer_angle)));
+            }
+        };
         
         //TODO: (Req 9) Set the OpenGL viewport using viewportStart and viewportSize
         glViewport(0, 0, windowSize.x, windowSize.y);
@@ -194,16 +237,20 @@ namespace our {
         for(const auto& command : opaqueCommands){
             command.material->setup();
             command.material->shader->set("transform", VP * command.localToWorld);
+            // If the material is a LitMaterial, also upload the model matrix, normal matrix, and lights
+            if (auto* litMat = dynamic_cast<LitMaterial*>(command.material)) {
+                ShaderProgram* sh = command.material->shader;
+                uploadLights(sh);
+                sh->set("model", command.localToWorld);
+                glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
+                glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+            }
             command.mesh->draw();
         }
         // If there is a sky material, draw the sky
         if(this->skyMaterial){
             //TODO: (Req 10) setup the sky material
             this->skyMaterial->setup();
-
-            //TODO: (Req 10) Get the camera position
-            glm::mat4 cameraM = camera->getOwner()->getLocalToWorldMatrix();
-            glm::vec3 cameraPos = glm::vec3(cameraM[3]);
 
             //TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
             glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), cameraPos);
@@ -227,6 +274,13 @@ namespace our {
         for(const auto& command : transparentCommands){
             command.material->setup();
             command.material->shader->set("transform", VP * command.localToWorld);
+            if (auto* litMat = dynamic_cast<LitMaterial*>(command.material)) {
+                ShaderProgram* sh = command.material->shader;
+                uploadLights(sh);
+                sh->set("model", command.localToWorld);
+                glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
+                glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+            }
             command.mesh->draw();
         }
 

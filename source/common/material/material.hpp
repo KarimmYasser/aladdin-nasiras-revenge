@@ -53,15 +53,12 @@ namespace our {
         void deserialize(const nlohmann::json& data) override;
     };
 
-    // This function returns a new material instance based on the given type
-    inline Material* createMaterialFromType(const std::string& type){
-        if(type == "tinted"){
-            return new TintedMaterial();
-        } else if(type == "textured"){
-            return new TexturedMaterial();
-        } else {
-            return new Material();
-        }
-    }
+}
+
+namespace our {
+
+    // This function returns a new material instance based on the given type string.
+    // The type comes from the "type" key in the JSON material definition.
+    Material* createMaterialFromType(const std::string& type);
 
 }

@@ -1,0 +1,170 @@
+// Stage 1 & 2 Lighting Test
+// Tests:
+//  Stage 1 — LightComponent: a directional "sun" light entity is deserialized correctly
+//  Stage 2 — Lit shader:     the monkey (Suzanne) and ground plane use "lit" material
+//             and should show clear diffuse shading (dark/light sides based on sun direction)
+//
+// Expected visual result:
+//  - The monkey should have a lit side facing the top-right (sun direction)
+//    and a dark shadow side on the opposite face.
+//  - The ground plane should also show the same sun shading.
+//  - The sphere in the background uses a textured (non-lit) material as a control reference.
+{
+    "start-scene": "renderer-test",
+    "window": {
+        "title": "Lighting Test — Stage 1 & 2",
+        "size": { "width": 1024, "height": 512 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-1.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                // Existing non-lit shaders (used for the control sphere)
+                "textured": {
+                    "vs": "assets/shaders/textured.vert",
+                    "fs": "assets/shaders/textured.frag"
+                },
+                // NEW: The Blinn-Phong lit shader pair
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "moon":  "assets/textures/moon.jpg",
+                "wood":  "assets/textures/wood.jpg",
+                "grass": "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes": {
+                "monkey": "assets/models/monkey.obj",
+                "plane":  "assets/models/plane.obj",
+                "sphere": "assets/models/sphere.obj"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                // --- Lit materials (use the new light shader) ---
+                "lit-wood": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    // albedo_map drives the base color; wood texture gives a nice surface
+                    "albedo_map":  "wood",
+                    "sampler":     "default",
+                    "shininess":   64.0,
+                    "ambient":     0.08
+                },
+                "lit-grass": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "sampler":    "default",
+                    "shininess":  16.0,
+                    "ambient":    0.1
+                },
+                // --- Control material: non-lit (should look flat/unaffected by light) ---
+                "moon-unlit": {
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "tint":    [1, 1, 1, 1],
+                    "texture": "moon",
+                    "sampler": "default"
+                }
+            }
+        },
+        "world": [
+            // ----------------------------------------------------------------
+            // Camera — positioned to see the whole scene from a slight angle
+            // ----------------------------------------------------------------
+            {
+                "position": [0, 1.5, 8],
+                "rotation": [-10, 0, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Stage 1 Test: Sun light (DIRECTIONAL)
+            //   Entity rotation drives direction: -45 pitch → light comes from top-right.
+            //   No mesh renderer — it is purely a light source.
+            // ----------------------------------------------------------------
+            {
+                "name": "sun",
+                "rotation": [-45, 30, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color":     [1.0, 0.95, 0.85],
+                        "intensity": 1.2
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Stage 2 Test Objects — all use the "lit" material
+            // ----------------------------------------------------------------
+
+            // Monkey (Suzanne) — the primary shading test object
+            {
+                "position": [0, 0, 0],
+                "rotation": [15, -20, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "lit-wood"
+                    }
+                ]
+            },
+
+            // Ground plane — shows shading across a large flat surface
+            {
+                "position": [0, -1.5, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [8, 8, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-grass"
+                    }
+                ]
+            },
+
+            // Control sphere — uses the old textured shader (NOT lit)
+            // Should look flat compared to the lit objects above
+            {
+                "position": [3, 1, -2],
+                "scale":    [1.5, 1.5, 1.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "moon-unlit"
+                    }
+                ]
+            }
+        ]
+    }
+}
