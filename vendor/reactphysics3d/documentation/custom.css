@@ -1,8 +1,0 @@
-
-html {
-   --side-nav-fixed-width: 400px;
-}
-
-html.dark-mode {
-   --side-nav-fixed-width: 400px;
-}
