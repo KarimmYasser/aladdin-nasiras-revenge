@@ -65,11 +65,6 @@ namespace our {
         }
 
         const auto* transform = &entity->localTransform;
-        if (!transform) {
-            Logger::error("PhysicsWorld", "Entity '", entity->name,
-                          "' does not have a Transform component required for rigid body creation.");
-            return;
-        }
 
         Logger::info("PhysicsWorld", "Creating rigid body for entity '", entity->name, "'...");
 
@@ -80,7 +75,7 @@ namespace our {
             transform->position.x, transform->position.y, transform->position.z
         ));
 
-        rp3dTransform.setOrientation(transform->fromEulerAnglesToRP3DQuaternion(transform->rotation));
+        rp3dTransform.setOrientation(Transform::fromEulerAnglesToRP3DQuaternion(transform->rotation));
 
         auto body = physicsWorld->createRigidBody(rp3dTransform);
         if (!body) {
