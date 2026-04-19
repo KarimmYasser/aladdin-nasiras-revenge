@@ -17,6 +17,7 @@ namespace our {
         shader->set("material.shininess",   shininess);
         shader->set("material.ambient",     ambient);
         shader->set("material.albedo_tint", albedo_tint);
+        shader->set("uv_multiplier",        uv_multiplier);
 
         // We create a static white texture once and reuse it for missing maps.
         static Texture2D* white = texture_utils::singleColor({255, 255, 255, 255});
@@ -60,6 +61,7 @@ namespace our {
 
         shininess = data.value("shininess", 32.0f);
         ambient   = data.value("ambient",   0.1f);
+        uv_multiplier = data.value("uv_multiplier", glm::vec2(1.0f, 1.0f));
 
         // Look up textures from the AssetLoader by name (they were loaded earlier)
         albedo_map   = AssetLoader<Texture2D>::get(data.value("albedo_map",   ""));

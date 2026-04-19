@@ -16,6 +16,7 @@ out Varyings {
 uniform mat4 transform;
 uniform mat4 model;
 uniform mat3 normal_mat; // transpose for the model
+uniform vec2 uv_multiplier = vec2(1.0, 1.0);
 
 void main() {
     // Place the vertex in clip space for rasterization
@@ -30,6 +31,6 @@ void main() {
     // renormalize after interpolation to handle perspective distortion correctly.
     vs_out.normal    = normalize(normal_mat * normal);
 
-    vs_out.tex_coord = tex_coord;
+    vs_out.tex_coord = tex_coord * uv_multiplier;
     vs_out.color     = color;
 }

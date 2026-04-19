@@ -57,43 +57,14 @@ def generate_maze(rows, cols, seed=None):
 # ---- Greedy Rectangular Merging ----
 
 def greedy_merge_walls(grid):
-    """
-    Merge adjacent wall cells into minimal rectangles.
-    This prevents z-fighting by eliminating shared coplanar faces.
-    Returns list of (row, col, width, height) in grid coordinates.
-    """
     rows = len(grid)
     cols = len(grid[0])
-    visited = [[False]*cols for _ in range(rows)]
     rectangles = []
 
     for r in range(rows):
         for c in range(cols):
-            if grid[r][c] == 1 and not visited[r][c]:
-                # Find max width of contiguous walls in this row
-                w = 0
-                while c + w < cols and grid[r][c+w] == 1 and not visited[r][c+w]:
-                    w += 1
-
-                # Extend downward as far as the full width holds
-                h = 1
-                while r + h < rows:
-                    row_ok = True
-                    for cc in range(c, c + w):
-                        if grid[r+h][cc] != 1 or visited[r+h][cc]:
-                            row_ok = False
-                            break
-                    if row_ok:
-                        h += 1
-                    else:
-                        break
-
-                # Mark all cells in this rectangle as visited
-                for rr in range(r, r + h):
-                    for cc in range(c, c + w):
-                        visited[rr][cc] = True
-
-                rectangles.append((r, c, w, h))
+            if grid[r][c] == 1:
+                rectangles.append((r, c, 1, 1))
 
     return rectangles
 
@@ -163,13 +134,14 @@ def make_ground(grid):
         ]
     }
 
-def make_coin(name, x, z, y=1.5):
+def make_coin(name, x, z, y=1):
     return {
         "name": name,
         "position": [round(x, 3), y, round(z, 3)],
-        "scale": [0.3, 0.3, 0.3],
+        "rotation": [0, 0, 0],
+        "scale": [2.0, 2.0, 2.0],
         "components": [
-            {"type": "Mesh Renderer", "mesh": "sphere", "material": "coin-mat"},
+            {"type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat"},
             {"type": "Movement", "angularVelocity": [0, 120, 0]}
         ]
     }
@@ -198,14 +170,27 @@ def make_player(x, z):
     }
 
 def make_portal(x, z):
-    # Want a 2x3x0.3 portal → scale = size / CUBE_NATIVE
     return {
         "name": "end-portal",
-        "position": [round(x, 3), 1.5, round(z, 3)],
-        "scale": [1.0, 1.5, 0.15],
-        "components": [
-            {"type": "Mesh Renderer", "mesh": "cube", "material": "portal-mat"},
-            {"type": "Movement", "angularVelocity": [0, 30, 0]}
+        # The portal model spans from Z = -0.512 to +0.512 locally.
+        # Scaled by 0.75, its back is at -0.384. 
+        # The wall front is at z - 1.5. To make the back touch the wall,
+        # we place the center at z - 1.11.
+        "position": [round(x, 3), 0.0, round(z - 1.1, 3)],
+        "scale": [0.75, 0.75, 0.75], # Model is ~4.8 units tall, scaling down to fit the 4.0 height wall
+        "children": [
+            {
+                "name": "portal-arch",
+                "components": [
+                    {"type": "Mesh Renderer", "mesh": "portal_arch_mesh", "material": "portal-arch-mat"}
+                ]
+            },
+            {
+                "name": "portal-core",
+                "components": [
+                    {"type": "Mesh Renderer", "mesh": "portal_core_mesh", "material": "portal-core-mat"}
+                ]
+            }
         ]
     }
 
@@ -392,7 +377,7 @@ def generate_level(rows=7, cols=7, seed=42):
     return entities, coin_count, enemy_count
 
 
-def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120):
+def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120, grid_rows=15, grid_cols=15):
     return {
         "start-scene": "menu",
         "window": {
@@ -421,10 +406,11 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120):
                 "textures": {
                     "agrabah_ground": "assets/textures/agrabah_ground.png",
                     "agrabah_wall":   "assets/textures/agrabah_wall.png",
-                    "coin_gold":      "assets/textures/coin_gold.jpg",
+                    "coin_tex":       "assets/models/Coin/Item_Coin_Texture.png",
                     "aladdin_skin":   "assets/models/Aladdin/aladdin_diff.png",
                     "guard_diffuse":  "assets/textures/guard_diffuse.jpg",
-                    "portal_effect":  "assets/textures/portal_effect.png",
+                    "portal_texture_0": "assets/models/Portal/0.png",
+                    "portal_texture_1": "assets/models/Portal/1.png",
                     "moon":           "assets/textures/moon.jpg"
                 },
                 "meshes": {
@@ -432,7 +418,10 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120):
                     "plane":        "assets/models/plane.obj",
                     "sphere":       "assets/models/sphere.obj",
                     "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
-                    "monkey_mesh":  "assets/models/monkey.obj"
+                    "monkey_mesh":  "assets/models/monkey.obj",
+                    "coin_mesh":    "assets/models/Coin/Coin.obj",
+                    "portal_arch_mesh": "assets/models/Portal/mtl15.obj",
+                    "portal_core_mesh": "assets/models/Portal/mtl21.obj"
                 },
                 "samplers": {
                     "default": {},
@@ -443,7 +432,8 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120):
                         "type": "lit", "shader": "light",
                         "pipelineState": {"faceCulling": {"enabled": False}, "depthTesting": {"enabled": True}},
                         "albedo_map": "agrabah_ground", "sampler": "repeat",
-                        "shininess": 8.0, "ambient": 0.15
+                        "shininess": 8.0, "ambient": 0.15,
+                        "uv_multiplier": [grid_cols, grid_rows]
                     },
                     "lit-wall": {
                         "type": "lit", "shader": "light",
@@ -464,20 +454,22 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120):
                         "shininess": 24.0, "ambient": 0.1
                     },
                     "coin-mat": {
-                        "type": "textured", "shader": "textured",
-                        "pipelineState": {"faceCulling": {"enabled": False}, "depthTesting": {"enabled": True}},
-                        "tint": [1, 0.85, 0.2, 1],
-                        "texture": "coin_gold", "sampler": "default"
+                        "type": "lit", "shader": "light",
+                        "pipelineState": {"faceCulling": {"enabled": True}, "depthTesting": {"enabled": True}},
+                        "albedo_map": "coin_tex", "sampler": "default",
+                        "shininess": 16.0, "ambient": 0.2
                     },
-                    "portal-mat": {
-                        "type": "textured", "shader": "textured",
-                        "pipelineState": {
-                            "faceCulling": {"enabled": False}, "depthTesting": {"enabled": True},
-                            "blending": {"enabled": True, "sourceFactor": "GL_SRC_ALPHA", "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"}
-                        },
-                        "transparent": True,
-                        "tint": [0.4, 0.7, 1.0, 0.85],
-                        "texture": "portal_effect", "sampler": "default"
+                    "portal-arch-mat": {
+                        "type": "lit", "shader": "light",
+                        "pipelineState": {"faceCulling": {"enabled": False}, "depthTesting": {"enabled": True}},
+                        "albedo_map": "portal_texture_0", "sampler": "default",
+                        "shininess": 8.0, "ambient": 0.3
+                    },
+                    "portal-core-mat": {
+                        "type": "lit", "shader": "light",
+                        "pipelineState": {"faceCulling": {"enabled": False}, "depthTesting": {"enabled": True}},
+                        "albedo_map": "portal_texture_1", "sampler": "default",
+                        "shininess": 32.0, "ambient": 0.8
                     },
                     "sandstone": {
                         "type": "tinted", "shader": "tinted",
@@ -502,7 +494,7 @@ def main():
     args = parser.parse_args()
 
     entities, coins, enemies = generate_level(args.rows, args.cols, args.seed)
-    scene = build_scene_json(entities, coins, enemies, args.time3, args.time2, args.time1)
+    scene = build_scene_json(entities, coins, enemies, args.time3, args.time2, args.time1, args.rows, args.cols)
 
     # Write level1.jsonc
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
