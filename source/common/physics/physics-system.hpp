@@ -127,28 +127,40 @@ namespace our {
         }
 
         void shutdown(World* ecsWorld = nullptr) {
-            // If we have the ECS world, clean up rigid bodies properly
-            // @param ecsWorld Optional ECS world for cleanup. If provided, all rigid bodies
-            //                  will be properly destroyed before shutting down the physics world.
-            //                  If nullptr, physics world shuts down without explicit cleanup.
+            // If we have the ECS world, clean up rigid bodies and colliders properly
+            // @param ecsWorld Optional ECS world for cleanup. If provided, all physics handles
+            //                  cached on ECS components will be cleared before shutting down
+            //                  the physics world. If nullptr, physics world shuts down without
+            //                  explicit component cleanup.
             if (ecsWorld) {
-                Logger::info("PhysicsSystem", "Cleaning up physics bodies...");
+                Logger::info("PhysicsSystem", "Cleaning up physics bodies and colliders...");
                 int bodiesDestroyed = 0;
+                int collidersDestroyed = 0;
                 for (auto entity : ecsWorld->getEntities()) {
                     auto* rbComp = entity->getComponent<RigidBodyComponent>();
-                    if (rbComp && rbComp->bodyHandle) {
-                        try {
-                            // Note: Can't access destroyRigidBody directly,
-                            // physics world destruction will clean up bodies
+                    auto* colliderComp = entity->getComponent<ColliderComponent>();
+
+                    try {
+                        // Note: Can't access destroyRigidBody/destroyCollider directly here;
+                        // physics world destruction will clean up native objects. We must
+                        // still clear cached component handles so they don't dangle and so
+                        // future setup code can recreate physics objects correctly.
+                        if (rbComp && rbComp->bodyHandle) {
                             rbComp->bodyHandle = nullptr;
                             bodiesDestroyed++;
-                        } catch (const std::exception& e) {
-                            Logger::error("PhysicsSystem", "Error cleaning body for entity '", entity->name,
-                                         "': ", e.what());
                         }
+
+                        if (colliderComp && colliderComp->colliderHandle) {
+                            colliderComp->colliderHandle = nullptr;
+                            collidersDestroyed++;
+                        }
+                    } catch (const std::exception& e) {
+                        Logger::error("PhysicsSystem", "Error cleaning physics handles for entity '", entity->name,
+                                     "': ", e.what());
                     }
                 }
-                Logger::info("PhysicsSystem", "Cleared ", bodiesDestroyed, " rigid body references");
+                Logger::info("PhysicsSystem", "Cleared ", bodiesDestroyed, " rigid body references and ",
+                             collidersDestroyed, " collider references");
             }
 
             physicsWorld.shutdown();
