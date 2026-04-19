@@ -73,9 +73,16 @@ namespace our {
             // ====================================================================
             // PHASE 3: STEP THE PHYSICS SIMULATION
             // ====================================================================
+            constexpr int maxPhysicsStepsPerFrame = 5;
+            const float maxAccumulatedTime = fixedDeltaTime * static_cast<float>(maxPhysicsStepsPerFrame);
+
             accumulator += deltaTime;
+            if (accumulator > maxAccumulatedTime) {
+                accumulator = maxAccumulatedTime;
+            }
+
             int stepsCount = 0;
-            while (accumulator >= fixedDeltaTime) {
+            while (accumulator >= fixedDeltaTime && stepsCount < maxPhysicsStepsPerFrame) {
                 physicsWorld.step(fixedDeltaTime);
                 accumulator -= fixedDeltaTime;
                 stepsCount++;
