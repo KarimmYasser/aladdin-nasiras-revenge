@@ -43,7 +43,7 @@ class ShaderTestState: public our::State {
             }
         }
 
-        glCreateVertexArrays(1, &vertex_array);
+        glGenVertexArrays(1, &vertex_array);
 
         // We set the clear color to be black
         glClearColor(0.0, 0.0, 0.0, 1.0);

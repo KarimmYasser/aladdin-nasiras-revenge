@@ -7,6 +7,7 @@
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
 #include "rigid-body.hpp"
+#include "light.hpp"
 
 namespace our {
 
@@ -28,6 +29,8 @@ namespace our {
             component = entity->addComponent<RigidBodyComponent>();
         } else if (type == ColliderComponent::getID()) {
             component = entity->addComponent<ColliderComponent>();
+        } else if (type == LightComponent::getID()) {
+            component = entity->addComponent<LightComponent>();
         }
         if(component) component->deserialize(data);
     }
