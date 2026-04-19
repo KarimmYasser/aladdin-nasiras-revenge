@@ -17,6 +17,7 @@ class Playstate: public our::State {
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::PhysicsSystem physicsSystem;
+    bool physicsInitialized = false;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -34,11 +35,18 @@ class Playstate: public our::State {
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
-        // Initialize physics system
-        physicsSystem.initialize();
+        // Initialize physics system and abort this state if initialization fails
+        physicsInitialized = physicsSystem.initialize();
+        if(!physicsInitialized){
+            getApp()->changeState("menu");
+            return;
+        }
     }
 
     void onDraw(double deltaTime) override {
+        if(!physicsInitialized){
+            return;
+        }
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         physicsSystem.update(&world, (float)deltaTime);
@@ -57,7 +65,9 @@ class Playstate: public our::State {
 
     void onDestroy() override {
         // Shutdown physics system and clear its bodies
-        physicsSystem.shutdown(&world);
+        if(physicsInitialized){
+            physicsSystem.shutdown(&world);
+        }
         // Don't forget to destroy the renderer
         renderer.destroy();
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
