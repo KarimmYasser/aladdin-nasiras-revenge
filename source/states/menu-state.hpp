@@ -46,6 +46,8 @@ class Menustate: public our::State {
     float time;
     // An array of the button that we can interact with
     std::array<Button, 2> buttons;
+    // Selection marker icon
+    our::Texture2D* markerIcon = nullptr;
 
     void onInitialize() override {
         // First, we create a material for the menu's background
@@ -56,7 +58,7 @@ class Menustate: public our::State {
         menuMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
         menuMaterial->shader->link();
         // Then we load the menu texture
-        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/menu.png");
+        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/menu_bg.png");
         // Initially, the menu material will be black, then it will fade in
         menuMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -106,6 +108,9 @@ class Menustate: public our::State {
         buttons[1].position = {830.0f, 644.0f};
         buttons[1].size = {400.0f, 33.0f};
         buttons[1].action = [this](){this->getApp()->close();};
+
+        // Load marker icon
+        markerIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
     }
 
     void onDraw(double deltaTime) override {
@@ -157,20 +162,99 @@ class Menustate: public our::State {
         menuMaterial->setup();
         menuMaterial->shader->set("transform", VP*M);
         rectangle->draw();
+    }
 
-        // For every button, check if the mouse is inside it. If the mouse is inside, we draw the highlight rectangle over it.
-        for(auto& button: buttons){
-            if(button.isInside(mousePosition)){
-                highlightMaterial->setup();
-                highlightMaterial->shader->set("transform", VP*button.getLocalToWorld());
-                rectangle->draw();
-            }
+    void onImmediateGui() override {
+        ImGuiIO& io = ImGui::GetIO();
+        float w = io.DisplaySize.x;
+        float h = io.DisplaySize.y;
+
+        // ── Game Title ──
+        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.18f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("##Title", nullptr,
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetWindowFontScale(3.5f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.2f, 1.0f));
+        ImGui::Text("Aladdin: Nasira's Revenge");
+        ImGui::PopStyleColor();
+        ImGui::End();
+
+        // ── Subtitle ──
+        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.30f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("##Subtitle", nullptr,
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetWindowFontScale(1.5f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.8f));
+        ImGui::Text("The Streets of Agrabah");
+        ImGui::PopStyleColor();
+        ImGui::End();
+
+        // ── Buttons ──
+        float btnW = 220.0f;
+        float btnH = 50.0f;
+        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.55f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(btnW + 100, 0));
+        ImGui::Begin("##MenuButtons", nullptr,
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+        ImGui::SetWindowFontScale(2.0f);
+
+        // Style buttons
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.1f, 0.8f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+        if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH))) {
+            getApp()->changeState("play");
         }
-        
+        if (ImGui::IsItemHovered() && markerIcon) {
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 max = ImGui::GetItemRectMax();
+            float coinY = min.y + (btnH - 32.0f) * 0.5f;
+            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
+                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+        }
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+        if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
+            getApp()->close();
+        }
+        if (ImGui::IsItemHovered() && markerIcon) {
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 max = ImGui::GetItemRectMax();
+            float coinY = min.y + (btnH - 32.0f) * 0.5f;
+            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
+                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+        }
+
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(4);
+        ImGui::End();
+
+        // ── Controls hint ──
+        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.88f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("##Hint", nullptr,
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+        ImGui::Text("Press SPACE to play  |  ESC to exit");
+        ImGui::PopStyleColor();
+        ImGui::End();
     }
 
     void onDestroy() override {
         // Delete all the allocated resources
+        if(markerIcon) delete markerIcon;
         delete rectangle;
         delete menuMaterial->texture;
         delete menuMaterial->shader;

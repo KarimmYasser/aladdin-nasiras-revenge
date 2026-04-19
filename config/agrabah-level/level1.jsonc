@@ -1,0 +1,6147 @@
+// Auto-generated Agrabah Maze Level (v2 - greedy meshing)
+// Maze: 15x15 | Coins: 122 | Enemies: 8
+// Stars: 3-star < 120s | 2-star < 180s | 1-star < 240s
+{
+    "start-scene": "menu",
+    "window": {
+        "title": "Disney's Aladdin in Nasira's Revenge",
+        "size": {
+            "width": 1280,
+            "height": 720
+        },
+        "fullscreen": false
+    },
+    "game": {
+        "total_coins": 122,
+        "total_enemies": 8,
+        "time_3star": 120,
+        "time_2star": 180,
+        "time_1star": 240
+    },
+    "scene": {
+        "renderer": {
+            "sky": "assets/textures/sky_desert.png",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets": {
+            "shaders": {
+                "tinted": {
+                    "vs": "assets/shaders/tinted.vert",
+                    "fs": "assets/shaders/tinted.frag"
+                },
+                "textured": {
+                    "vs": "assets/shaders/textured.vert",
+                    "fs": "assets/shaders/textured.frag"
+                },
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "agrabah_ground": "assets/textures/agrabah_ground.png",
+                "agrabah_wall": "assets/textures/agrabah_wall.png",
+                "coin_gold": "assets/textures/coin_gold.jpg",
+                "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
+                "guard_diffuse": "assets/textures/guard_diffuse.jpg",
+                "portal_effect": "assets/textures/portal_effect.png",
+                "moon": "assets/textures/moon.jpg"
+            },
+            "meshes": {
+                "cube": "assets/models/cube.obj",
+                "plane": "assets/models/plane.obj",
+                "sphere": "assets/models/sphere.obj",
+                "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
+                "monkey_mesh": "assets/models/monkey.obj"
+            },
+            "samplers": {
+                "default": {},
+                "repeat": {
+                    "WRAP_S": "GL_REPEAT",
+                    "WRAP_T": "GL_REPEAT"
+                }
+            },
+            "materials": {
+                "lit-ground": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "albedo_map": "agrabah_ground",
+                    "sampler": "repeat",
+                    "shininess": 8.0,
+                    "ambient": 0.15
+                },
+                "lit-wall": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": true
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "albedo_map": "agrabah_wall",
+                    "sampler": "repeat",
+                    "shininess": 16.0,
+                    "ambient": 0.12
+                },
+                "lit-aladdin": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": true
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "albedo_map": "aladdin_skin",
+                    "sampler": "default",
+                    "shininess": 32.0,
+                    "ambient": 0.1
+                },
+                "lit-guard": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": true
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "albedo_map": "guard_diffuse",
+                    "sampler": "default",
+                    "shininess": 24.0,
+                    "ambient": 0.1
+                },
+                "coin-mat": {
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "tint": [
+                        1,
+                        0.85,
+                        0.2,
+                        1
+                    ],
+                    "texture": "coin_gold",
+                    "sampler": "default"
+                },
+                "portal-mat": {
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        },
+                        "blending": {
+                            "enabled": true,
+                            "sourceFactor": "GL_SRC_ALPHA",
+                            "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"
+                        }
+                    },
+                    "transparent": true,
+                    "tint": [
+                        0.4,
+                        0.7,
+                        1.0,
+                        0.85
+                    ],
+                    "texture": "portal_effect",
+                    "sampler": "default"
+                },
+                "sandstone": {
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "tint": [
+                        0.85,
+                        0.72,
+                        0.53,
+                        1
+                    ]
+                }
+            }
+        },
+        "world": [
+            {
+                "name": "main-camera",
+                "position": [
+                    0,
+                    40,
+                    35
+                ],
+                "rotation": [
+                    -50,
+                    0,
+                    0
+                ],
+                "components": [
+                    {
+                        "type": "Camera",
+                        "fov": 60
+                    },
+                    {
+                        "type": "Free Camera Controller"
+                    }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [
+                    -55,
+                    35,
+                    0
+                ],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color": [
+                            1.0,
+                            0.92,
+                            0.75
+                        ],
+                        "intensity": 1.4
+                    }
+                ]
+            },
+            {
+                "name": "torch-1",
+                "position": [
+                    -43.5,
+                    6,
+                    43.5
+                ],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color": [
+                            1.0,
+                            0.6,
+                            0.2
+                        ],
+                        "intensity": 3.0,
+                        "attenuation_linear": 0.07,
+                        "attenuation_quadratic": 0.017
+                    }
+                ]
+            },
+            {
+                "name": "torch-2",
+                "position": [
+                    43.5,
+                    6,
+                    -43.5
+                ],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color": [
+                            1.0,
+                            0.55,
+                            0.15
+                        ],
+                        "intensity": 3.0,
+                        "attenuation_linear": 0.07,
+                        "attenuation_quadratic": 0.017
+                    }
+                ]
+            },
+            {
+                "name": "portal-light",
+                "position": [
+                    40.5,
+                    8,
+                    -43.5
+                ],
+                "rotation": [
+                    -70,
+                    0,
+                    0
+                ],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "spot",
+                        "color": [
+                            0.5,
+                            0.7,
+                            1.0
+                        ],
+                        "intensity": 4.0,
+                        "inner_angle": 20.0,
+                        "outer_angle": 35.0,
+                        "attenuation_linear": 0.045,
+                        "attenuation_quadratic": 0.0075
+                    }
+                ]
+            },
+            {
+                "name": "ground",
+                "position": [
+                    0,
+                    -0.01,
+                    0
+                ],
+                "rotation": [
+                    -90,
+                    0,
+                    0
+                ],
+                "scale": [
+                    46.5,
+                    46.5,
+                    1
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-ground"
+                    }
+                ]
+            },
+            {
+                "name": "wall-0",
+                "position": [
+                    0.0,
+                    2.0,
+                    45.0
+                ],
+                "scale": [
+                    46.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-1",
+                "position": [
+                    -45.0,
+                    2.0,
+                    -1.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    45.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-2",
+                "position": [
+                    -39.0,
+                    2.0,
+                    40.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-3",
+                "position": [
+                    3.0,
+                    2.0,
+                    40.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-4",
+                "position": [
+                    27.0,
+                    2.0,
+                    40.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-5",
+                "position": [
+                    45.0,
+                    2.0,
+                    -1.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    45.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-6",
+                "position": [
+                    -34.5,
+                    2.0,
+                    39.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-7",
+                "position": [
+                    -27.0,
+                    2.0,
+                    18.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    22.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-8",
+                "position": [
+                    -10.5,
+                    2.0,
+                    39.0
+                ],
+                "scale": [
+                    12.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-9",
+                "position": [
+                    12.0,
+                    2.0,
+                    39.0
+                ],
+                "scale": [
+                    4.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-10",
+                "position": [
+                    21.0,
+                    2.0,
+                    36.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    4.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-11",
+                "position": [
+                    34.5,
+                    2.0,
+                    39.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-12",
+                "position": [
+                    -33.0,
+                    2.0,
+                    22.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    15.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-13",
+                "position": [
+                    -21.0,
+                    2.0,
+                    34.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-14",
+                "position": [
+                    9.0,
+                    2.0,
+                    34.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-15",
+                "position": [
+                    -40.5,
+                    2.0,
+                    33.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-16",
+                "position": [
+                    -4.5,
+                    2.0,
+                    33.0
+                ],
+                "scale": [
+                    12.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-17",
+                "position": [
+                    16.5,
+                    2.0,
+                    33.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-18",
+                "position": [
+                    31.5,
+                    2.0,
+                    33.0
+                ],
+                "scale": [
+                    9.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-19",
+                "position": [
+                    -39.0,
+                    2.0,
+                    22.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-20",
+                "position": [
+                    -15.0,
+                    2.0,
+                    28.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-21",
+                "position": [
+                    3.0,
+                    2.0,
+                    25.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-22",
+                "position": [
+                    15.0,
+                    2.0,
+                    28.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-23",
+                "position": [
+                    -21.0,
+                    2.0,
+                    27.0
+                ],
+                "scale": [
+                    4.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-24",
+                "position": [
+                    -6.0,
+                    2.0,
+                    27.0
+                ],
+                "scale": [
+                    4.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-25",
+                "position": [
+                    10.5,
+                    2.0,
+                    27.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-26",
+                "position": [
+                    19.5,
+                    2.0,
+                    27.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-27",
+                "position": [
+                    34.5,
+                    2.0,
+                    27.0
+                ],
+                "scale": [
+                    9.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-28",
+                "position": [
+                    -9.0,
+                    2.0,
+                    19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-29",
+                "position": [
+                    9.0,
+                    2.0,
+                    19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-30",
+                "position": [
+                    21.0,
+                    2.0,
+                    19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-31",
+                "position": [
+                    33.0,
+                    2.0,
+                    19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-32",
+                "position": [
+                    -16.5,
+                    2.0,
+                    21.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-33",
+                "position": [
+                    -1.5,
+                    2.0,
+                    21.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-34",
+                "position": [
+                    15.0,
+                    2.0,
+                    12.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    10.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-35",
+                "position": [
+                    25.5,
+                    2.0,
+                    21.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-36",
+                "position": [
+                    40.5,
+                    2.0,
+                    21.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-37",
+                "position": [
+                    -21.0,
+                    2.0,
+                    10.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-38",
+                "position": [
+                    -3.0,
+                    2.0,
+                    13.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-39",
+                "position": [
+                    -13.5,
+                    2.0,
+                    15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-40",
+                "position": [
+                    4.5,
+                    2.0,
+                    15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-41",
+                "position": [
+                    25.5,
+                    2.0,
+                    15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-42",
+                "position": [
+                    37.5,
+                    2.0,
+                    15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-43",
+                "position": [
+                    -15.0,
+                    2.0,
+                    10.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-44",
+                "position": [
+                    27.0,
+                    2.0,
+                    10.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-45",
+                "position": [
+                    -37.5,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-46",
+                "position": [
+                    -30.0,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-47",
+                "position": [
+                    -7.5,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-48",
+                "position": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-49",
+                "position": [
+                    10.5,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-50",
+                "position": [
+                    19.5,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-51",
+                "position": [
+                    36.0,
+                    2.0,
+                    9.0
+                ],
+                "scale": [
+                    7.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-52",
+                "position": [
+                    3.0,
+                    2.0,
+                    -1.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-53",
+                "position": [
+                    21.0,
+                    2.0,
+                    4.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-54",
+                "position": [
+                    -37.5,
+                    2.0,
+                    3.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-55",
+                "position": [
+                    -10.5,
+                    2.0,
+                    3.0
+                ],
+                "scale": [
+                    9.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-56",
+                "position": [
+                    7.5,
+                    2.0,
+                    3.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-57",
+                "position": [
+                    31.5,
+                    2.0,
+                    3.0
+                ],
+                "scale": [
+                    9.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-58",
+                "position": [
+                    -39.0,
+                    2.0,
+                    -1.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-59",
+                "position": [
+                    -15.0,
+                    2.0,
+                    -4.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-60",
+                "position": [
+                    -3.0,
+                    2.0,
+                    -10.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    12.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-61",
+                "position": [
+                    9.0,
+                    2.0,
+                    -1.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-62",
+                "position": [
+                    27.0,
+                    2.0,
+                    -7.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-63",
+                "position": [
+                    -31.5,
+                    2.0,
+                    -3.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-64",
+                "position": [
+                    -22.5,
+                    2.0,
+                    -3.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-65",
+                "position": [
+                    -9.0,
+                    2.0,
+                    -6.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    4.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-66",
+                "position": [
+                    16.5,
+                    2.0,
+                    -3.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-67",
+                "position": [
+                    36.0,
+                    2.0,
+                    -3.0
+                ],
+                "scale": [
+                    4.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-68",
+                "position": [
+                    -33.0,
+                    2.0,
+                    -16.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    12.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-69",
+                "position": [
+                    33.0,
+                    2.0,
+                    -22.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    18.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-70",
+                "position": [
+                    -37.5,
+                    2.0,
+                    -9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-71",
+                "position": [
+                    -22.5,
+                    2.0,
+                    -9.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-72",
+                "position": [
+                    -12.0,
+                    2.0,
+                    -9.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-73",
+                "position": [
+                    13.5,
+                    2.0,
+                    -9.0
+                ],
+                "scale": [
+                    9.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-74",
+                "position": [
+                    40.5,
+                    2.0,
+                    -9.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-75",
+                "position": [
+                    -27.0,
+                    2.0,
+                    -13.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-76",
+                "position": [
+                    9.0,
+                    2.0,
+                    -16.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-77",
+                "position": [
+                    21.0,
+                    2.0,
+                    -13.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-78",
+                "position": [
+                    39.0,
+                    2.0,
+                    -25.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    15.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-79",
+                "position": [
+                    -40.5,
+                    2.0,
+                    -15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-80",
+                "position": [
+                    -22.5,
+                    2.0,
+                    -15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-81",
+                "position": [
+                    -12.0,
+                    2.0,
+                    -15.0
+                ],
+                "scale": [
+                    4.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-82",
+                "position": [
+                    1.5,
+                    2.0,
+                    -15.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-83",
+                "position": [
+                    15.0,
+                    2.0,
+                    -24.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    10.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-84",
+                "position": [
+                    24.0,
+                    2.0,
+                    -15.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-85",
+                "position": [
+                    -39.0,
+                    2.0,
+                    -19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-86",
+                "position": [
+                    -21.0,
+                    2.0,
+                    -25.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-87",
+                "position": [
+                    -9.0,
+                    2.0,
+                    -19.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-88",
+                "position": [
+                    -27.0,
+                    2.0,
+                    -30.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    10.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-89",
+                "position": [
+                    -15.0,
+                    2.0,
+                    -24.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    4.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-90",
+                "position": [
+                    -6.0,
+                    2.0,
+                    -21.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-91",
+                "position": [
+                    4.5,
+                    2.0,
+                    -21.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-92",
+                "position": [
+                    24.0,
+                    2.0,
+                    -21.0
+                ],
+                "scale": [
+                    7.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-93",
+                "position": [
+                    3.0,
+                    2.0,
+                    -25.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    3.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-94",
+                "position": [
+                    21.0,
+                    2.0,
+                    -31.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    9.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-95",
+                "position": [
+                    -37.5,
+                    2.0,
+                    -27.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-96",
+                "position": [
+                    -30.0,
+                    2.0,
+                    -27.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-97",
+                "position": [
+                    -6.0,
+                    2.0,
+                    -27.0
+                ],
+                "scale": [
+                    7.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-98",
+                "position": [
+                    7.5,
+                    2.0,
+                    -27.0
+                ],
+                "scale": [
+                    3.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-99",
+                "position": [
+                    27.0,
+                    2.0,
+                    -36.0
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    10.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-100",
+                "position": [
+                    -37.5,
+                    2.0,
+                    -33.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-101",
+                "position": [
+                    -3.0,
+                    2.0,
+                    -33.0
+                ],
+                "scale": [
+                    16.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-102",
+                "position": [
+                    3.0,
+                    2.0,
+                    -40.5
+                ],
+                "scale": [
+                    1.5,
+                    2.0,
+                    6.0
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-103",
+                "position": [
+                    -34.5,
+                    2.0,
+                    -39.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-104",
+                "position": [
+                    -13.5,
+                    2.0,
+                    -39.0
+                ],
+                "scale": [
+                    12.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-105",
+                "position": [
+                    13.5,
+                    2.0,
+                    -39.0
+                ],
+                "scale": [
+                    6.0,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-106",
+                "position": [
+                    -21.0,
+                    2.0,
+                    -45.0
+                ],
+                "scale": [
+                    22.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-107",
+                "position": [
+                    15.0,
+                    2.0,
+                    -45.0
+                ],
+                "scale": [
+                    10.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "wall-108",
+                "position": [
+                    36.0,
+                    2.0,
+                    -45.0
+                ],
+                "scale": [
+                    7.5,
+                    2.0,
+                    1.5
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wall"
+                    }
+                ]
+            },
+            {
+                "name": "aladdin",
+                "position": [
+                    -42.0,
+                    0.0,
+                    42.0
+                ],
+                "rotation": [
+                    0,
+                    180,
+                    0
+                ],
+                "scale": [
+                    0.175,
+                    0.175,
+                    0.175
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "aladdin_mesh",
+                        "material": "lit-aladdin"
+                    }
+                ]
+            },
+            {
+                "name": "end-portal",
+                "position": [
+                    42.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    1.0,
+                    1.5,
+                    0.15
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "portal-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            30,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-0",
+                "position": [
+                    -36.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-1",
+                "position": [
+                    0.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-2",
+                "position": [
+                    30.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-3",
+                "position": [
+                    -42.0,
+                    1.5,
+                    30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-4",
+                "position": [
+                    18.0,
+                    1.5,
+                    30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-5",
+                "position": [
+                    42.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-6",
+                "position": [
+                    -12.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-7",
+                "position": [
+                    24.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-8",
+                "position": [
+                    -30.0,
+                    1.5,
+                    12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-9",
+                "position": [
+                    18.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-10",
+                "position": [
+                    -42.0,
+                    1.5,
+                    -0.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-11",
+                "position": [
+                    6.0,
+                    1.5,
+                    -0.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-12",
+                "position": [
+                    -12.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-13",
+                "position": [
+                    -24.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-14",
+                "position": [
+                    24.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-15",
+                "position": [
+                    42.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-16",
+                "position": [
+                    -42.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-17",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-18",
+                "position": [
+                    -30.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-19",
+                "position": [
+                    6.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-20",
+                "position": [
+                    18.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-21",
+                "position": [
+                    -30.0,
+                    1.5,
+                    15.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-22",
+                "position": [
+                    24.0,
+                    1.5,
+                    -3.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-23",
+                "position": [
+                    27.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-24",
+                "position": [
+                    30.0,
+                    1.5,
+                    -9.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-25",
+                "position": [
+                    15.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-26",
+                "position": [
+                    -42.0,
+                    1.5,
+                    21.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-27",
+                "position": [
+                    12.0,
+                    1.5,
+                    -21.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-28",
+                "position": [
+                    -39.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-29",
+                "position": [
+                    -3.0,
+                    1.5,
+                    36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-30",
+                "position": [
+                    39.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-31",
+                "position": [
+                    -6.0,
+                    1.5,
+                    30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-32",
+                "position": [
+                    18.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-33",
+                "position": [
+                    -18.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-34",
+                "position": [
+                    6.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-35",
+                "position": [
+                    -18.0,
+                    1.5,
+                    12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-36",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -3.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-37",
+                "position": [
+                    9.0,
+                    1.5,
+                    12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-38",
+                "position": [
+                    -21.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-39",
+                "position": [
+                    -15.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-40",
+                "position": [
+                    30.0,
+                    1.5,
+                    15.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-41",
+                "position": [
+                    -42.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-42",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-43",
+                "position": [
+                    -9.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-44",
+                "position": [
+                    -39.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-45",
+                "position": [
+                    0.0,
+                    1.5,
+                    -3.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-46",
+                "position": [
+                    -36.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-47",
+                "position": [
+                    -42.0,
+                    1.5,
+                    -9.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-48",
+                "position": [
+                    -3.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-49",
+                "position": [
+                    33.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-50",
+                "position": [
+                    33.0,
+                    1.5,
+                    30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-51",
+                "position": [
+                    -30.0,
+                    1.5,
+                    -0.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-52",
+                "position": [
+                    24.0,
+                    1.5,
+                    39.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-53",
+                "position": [
+                    0.0,
+                    1.5,
+                    -9.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-54",
+                "position": [
+                    42.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-55",
+                "position": [
+                    -39.0,
+                    1.5,
+                    36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-56",
+                "position": [
+                    0.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-57",
+                "position": [
+                    -9.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-58",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-59",
+                "position": [
+                    6.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-60",
+                "position": [
+                    -18.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-61",
+                "position": [
+                    42.0,
+                    1.5,
+                    -3.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-62",
+                "position": [
+                    42.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-63",
+                "position": [
+                    36.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-64",
+                "position": [
+                    15.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-65",
+                "position": [
+                    -18.0,
+                    1.5,
+                    -27.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-66",
+                "position": [
+                    36.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-67",
+                "position": [
+                    -15.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-68",
+                "position": [
+                    24.0,
+                    1.5,
+                    -33.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-69",
+                "position": [
+                    21.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-70",
+                "position": [
+                    -30.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-71",
+                "position": [
+                    -9.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-72",
+                "position": [
+                    30.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-73",
+                "position": [
+                    -42.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-74",
+                "position": [
+                    -39.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-75",
+                "position": [
+                    -30.0,
+                    1.5,
+                    33.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-76",
+                "position": [
+                    36.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-77",
+                "position": [
+                    0.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-78",
+                "position": [
+                    6.0,
+                    1.5,
+                    -15.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-79",
+                "position": [
+                    -12.0,
+                    1.5,
+                    12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-80",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-81",
+                "position": [
+                    -36.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-82",
+                "position": [
+                    -36.0,
+                    1.5,
+                    6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-83",
+                "position": [
+                    36.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-84",
+                "position": [
+                    0.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-85",
+                "position": [
+                    36.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-86",
+                "position": [
+                    42.0,
+                    1.5,
+                    -33.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-87",
+                "position": [
+                    36.0,
+                    1.5,
+                    -0.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-88",
+                "position": [
+                    6.0,
+                    1.5,
+                    39.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-89",
+                "position": [
+                    -24.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-90",
+                "position": [
+                    -12.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-91",
+                "position": [
+                    15.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-92",
+                "position": [
+                    -30.0,
+                    1.5,
+                    -33.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-93",
+                "position": [
+                    39.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-94",
+                "position": [
+                    42.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-95",
+                "position": [
+                    24.0,
+                    1.5,
+                    -39.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-96",
+                "position": [
+                    24.0,
+                    1.5,
+                    9.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-97",
+                "position": [
+                    -36.0,
+                    1.5,
+                    21.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-98",
+                "position": [
+                    27.0,
+                    1.5,
+                    36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-99",
+                "position": [
+                    -21.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-100",
+                "position": [
+                    -30.0,
+                    1.5,
+                    21.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-101",
+                "position": [
+                    -3.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-102",
+                "position": [
+                    -15.0,
+                    1.5,
+                    36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-103",
+                "position": [
+                    -24.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-104",
+                "position": [
+                    -18.0,
+                    1.5,
+                    24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-105",
+                "position": [
+                    -9.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-106",
+                "position": [
+                    -12.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-107",
+                "position": [
+                    3.0,
+                    1.5,
+                    -18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-108",
+                "position": [
+                    -6.0,
+                    1.5,
+                    -42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-109",
+                "position": [
+                    0.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-110",
+                "position": [
+                    3.0,
+                    1.5,
+                    -12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-111",
+                "position": [
+                    30.0,
+                    1.5,
+                    21.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-112",
+                "position": [
+                    -42.0,
+                    1.5,
+                    -30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-113",
+                "position": [
+                    -33.0,
+                    1.5,
+                    -36.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-114",
+                "position": [
+                    18.0,
+                    1.5,
+                    -6.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-115",
+                "position": [
+                    12.0,
+                    1.5,
+                    18.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-116",
+                "position": [
+                    30.0,
+                    1.5,
+                    -24.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-117",
+                "position": [
+                    12.0,
+                    1.5,
+                    30.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-118",
+                "position": [
+                    9.0,
+                    1.5,
+                    42.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-119",
+                "position": [
+                    42.0,
+                    1.5,
+                    -39.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-120",
+                "position": [
+                    21.0,
+                    1.5,
+                    12.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "coin-121",
+                "position": [
+                    18.0,
+                    1.5,
+                    -33.0
+                ],
+                "scale": [
+                    0.3,
+                    0.3,
+                    0.3
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "coin-mat"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [
+                            0,
+                            120,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "guard-0",
+                "position": [
+                    -18.0,
+                    1.0,
+                    -18.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-1",
+                "position": [
+                    6.0,
+                    1.0,
+                    12.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-2",
+                "position": [
+                    36.0,
+                    1.0,
+                    -42.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-3",
+                "position": [
+                    12.0,
+                    1.0,
+                    -24.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-4",
+                "position": [
+                    42.0,
+                    1.0,
+                    36.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-5",
+                "position": [
+                    24.0,
+                    1.0,
+                    30.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-6",
+                "position": [
+                    24.0,
+                    1.0,
+                    -6.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            },
+            {
+                "name": "guard-7",
+                "position": [
+                    18.0,
+                    1.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.75,
+                    0.75,
+                    0.75
+                ],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey_mesh",
+                        "material": "lit-guard"
+                    }
+                ]
+            }
+        ]
+    }
+}

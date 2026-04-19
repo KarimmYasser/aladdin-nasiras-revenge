@@ -8,13 +8,42 @@
 #include <systems/movement.hpp>
 #include <asset-loader.hpp>
 
-// This state shows how to use the ECS framework and deserialization.
+#include <imgui.h>
+#include <sstream>
+#include <iomanip>
+#include <texture/texture2d.hpp>
+#include <texture/texture-utils.hpp>
+
+// This state manages the main gameplay: loads the Agrabah maze level,
+// runs all ECS systems, and renders the HUD overlay with scoring.
 class Playstate: public our::State {
 
     our::World world;
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
+
+    // -- Game Scoring State --
+    int coinsCollected = 0;
+    int totalCoins = 0;
+    int enemiesKilled = 0;
+    int totalEnemies = 0;
+    float elapsedTime = 0.0f;
+
+    // -- Health & Lives --
+    int currentHealth = 3;
+    int maxHealth = 3;
+    int lives = 3;
+
+    // Star rating time thresholds (seconds)
+    int time3Star = 60;
+    int time2Star = 90;
+    int time1Star = 120;
+
+    // -- UI Textures --
+    our::Texture2D* coinIcon = nullptr;
+    our::Texture2D* heartIcon = nullptr;
+    our::Texture2D* enemyIcon = nullptr;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -32,9 +61,35 @@ class Playstate: public our::State {
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
+
+        // Read game metadata from config (set by the maze generator)
+        auto& appConfig = getApp()->getConfig();
+        if(appConfig.contains("game")){
+            auto& game = appConfig["game"];
+            totalCoins = game.value("total_coins", 0);
+            totalEnemies = game.value("total_enemies", 0);
+            time3Star = game.value("time_3star", 60);
+            time2Star = game.value("time_2star", 90);
+            time1Star = game.value("time_1star", 120);
+        }
+
+        // Reset gameplay state
+        coinsCollected = 0;
+        enemiesKilled = 0;
+        elapsedTime = 0.0f;
+        currentHealth = maxHealth;
+        lives = 3;
+
+        // Load UI icons
+        coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
+        heartIcon = our::texture_utils::loadImage("assets/textures/heart_icon.png");
+        enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
     }
 
     void onDraw(double deltaTime) override {
+        // Update elapsed time
+        elapsedTime += (float)deltaTime;
+
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
@@ -45,9 +100,203 @@ class Playstate: public our::State {
         auto& keyboard = getApp()->getKeyboard();
 
         if(keyboard.justPressed(GLFW_KEY_ESCAPE)){
-            // If the escape  key is pressed in this frame, go to the play state
+            // If the escape key is pressed in this frame, go to the menu state
             getApp()->changeState("menu");
         }
+
+        // Debug: press G for game over, V for victory
+        if(keyboard.justPressed(GLFW_KEY_G)){
+            getApp()->changeState("gameover");
+        }
+        if(keyboard.justPressed(GLFW_KEY_V)){
+            getApp()->changeState("victory");
+        }
+
+        // Debug: press C to simulate coin pickup, K to simulate enemy kill
+        if(keyboard.justPressed(GLFW_KEY_C)){
+            if(coinsCollected < totalCoins) coinsCollected++;
+        }
+        if(keyboard.justPressed(GLFW_KEY_K)){
+            if(enemiesKilled < totalEnemies) enemiesKilled++;
+        }
+
+        // Debug: press H to simulate taking damage from enemy
+        if(keyboard.justPressed(GLFW_KEY_H)){
+            currentHealth--;
+            if(currentHealth <= 0){
+                lives--;
+                if(lives <= 0){
+                    getApp()->changeState("gameover");
+                } else {
+                    currentHealth = maxHealth; // respawn with full health
+                }
+            }
+        }
+    }
+
+    // Helper to calculate star rating
+    int calculateStars() const {
+        // Stars based on time
+        int timeStars = 0;
+        if (elapsedTime <= time3Star) timeStars = 3;
+        else if (elapsedTime <= time2Star) timeStars = 2;
+        else if (elapsedTime <= time1Star) timeStars = 1;
+
+        // Bonus: all coins = +1 potential, all enemies = +1 potential
+        // Final rating = min(time-based stars, 3) with bonuses
+        float coinRatio = totalCoins > 0 ? (float)coinsCollected / totalCoins : 1.0f;
+        float enemyRatio = totalEnemies > 0 ? (float)enemiesKilled / totalEnemies : 1.0f;
+
+        // If you didn't collect enough or kill enough, cap the stars
+        if (coinRatio < 0.5f) timeStars = std::min(timeStars, 1);
+        if (coinRatio < 0.8f) timeStars = std::min(timeStars, 2);
+        if (enemyRatio < 0.5f) timeStars = std::min(timeStars, 2);
+
+        return std::max(0, timeStars);
+    }
+
+    // Helper to format time as MM:SS
+    std::string formatTime(float seconds) const {
+        int mins = (int)seconds / 60;
+        int secs = (int)seconds % 60;
+        std::ostringstream oss;
+        oss << std::setfill('0') << std::setw(2) << mins 
+            << ":" << std::setfill('0') << std::setw(2) << secs;
+        return oss.str();
+    }
+
+    void onImmediateGui() override {
+        ImGuiIO& io = ImGui::GetIO();
+        float screenWidth = io.DisplaySize.x;
+        float screenHeight = io.DisplaySize.y;
+
+        // Helper for consistent panel styling
+        auto beginPanel = [](const char* id, ImVec2 pos, ImVec2 size) {
+            ImGui::SetNextWindowPos(pos);
+            ImGui::SetNextWindowSize(size);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 8));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.45f));
+            ImGui::Begin(id, nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                ImGuiWindowFlags_NoNav | ImGuiWindowFlags_AlwaysAutoResize);
+        };
+
+        auto endPanel = []() {
+            ImGui::End();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar(2);
+        };
+
+        // ═══════════════════════════════════════════════════════
+        //  TOP-LEFT: Coin Collection
+        // ═══════════════════════════════════════════════════════
+        beginPanel("##CoinsPanel", ImVec2(20, 15), ImVec2(280, 0));
+        if (coinIcon) {
+            ImGui::Image((void*)(intptr_t)coinIcon->getOpenGLName(), ImVec2(32, 32));
+            ImGui::SameLine();
+        }
+        ImGui::BeginGroup();
+        ImGui::SetWindowFontScale(1.4f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.2f, 1.0f));
+        ImGui::Text("GOLD COINS");
+        ImGui::PopStyleColor();
+        
+        float progress = totalCoins > 0 ? (float)coinsCollected / totalCoins : 1.0f;
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 0.8f, 0.0f, 0.9f));
+        ImGui::ProgressBar(progress, ImVec2(200, 15), ""); 
+        ImGui::PopStyleColor();
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::Text("%d / %d Collected", coinsCollected, totalCoins);
+        ImGui::EndGroup();
+        endPanel();
+
+        // ═══════════════════════════════════════════════════════
+        //  TOP-CENTER: Timer & Stars
+        // ═══════════════════════════════════════════════════════
+        beginPanel("##TimerPanel", ImVec2(screenWidth / 2.0f - 85, 15), ImVec2(170, 0));
+        ImGui::SetWindowFontScale(2.2f);
+        ImVec4 timerColor;
+        if (elapsedTime <= time3Star) timerColor = ImVec4(0.2f, 1.0f, 0.3f, 1.0f);
+        else if (elapsedTime <= time2Star) timerColor = ImVec4(1.0f, 0.9f, 0.2f, 1.0f);
+        else if (elapsedTime <= time1Star) timerColor = ImVec4(1.0f, 0.5f, 0.1f, 1.0f);
+        else timerColor = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, timerColor);
+        std::string timeStr = formatTime(elapsedTime);
+        float textWidth = ImGui::CalcTextSize(timeStr.c_str()).x;
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - textWidth) * 0.5f);
+        ImGui::Text("%s", timeStr.c_str());
+        ImGui::PopStyleColor();
+
+        // Stars below timer
+        ImGui::SetWindowFontScale(1.6f);
+        int stars = calculateStars();
+        float starsWidth = (1.6f * 15.0f) * 3; // Approx
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 70) * 0.5f);
+        for (int i = 0; i < 3; i++) {
+            if (i > 0) ImGui::SameLine(0, 4);
+            if (i < stars) ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.1f, 1.0f), "*");
+            else ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 0.5f), "*");
+        }
+        endPanel();
+
+        // ═══════════════════════════════════════════════════════
+        //  TOP-RIGHT: Enemies Killed
+        // ═══════════════════════════════════════════════════════
+        beginPanel("##EnemiesPanel", ImVec2(screenWidth - 300, 15), ImVec2(280, 0));
+        if (enemyIcon) {
+            ImGui::Image((void*)(intptr_t)enemyIcon->getOpenGLName(), ImVec2(32, 32));
+            ImGui::SameLine();
+        }
+        ImGui::BeginGroup();
+        ImGui::SetWindowFontScale(1.4f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+        ImGui::Text("NASIRA'S GUARDS");
+        ImGui::PopStyleColor();
+
+        float enemyProgress = totalEnemies > 0 ? (float)enemiesKilled / totalEnemies : 1.0f;
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.8f, 0.1f, 0.1f, 0.9f));
+        ImGui::ProgressBar(enemyProgress, ImVec2(200, 15), "");
+        ImGui::PopStyleColor();
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::Text("%d / %d Defeated", enemiesKilled, totalEnemies);
+        ImGui::EndGroup();
+        endPanel();
+
+        // ═══════════════════════════════════════════════════════
+        //  BOTTOM-LEFT: Lives & Health
+        // ═══════════════════════════════════════════════════════
+        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 110), ImVec2(220, 0));
+        ImGui::SetWindowFontScale(1.4f);
+        ImGui::Text("LIVES: %d", lives);
+        
+        ImGui::Spacing();
+        if (heartIcon) {
+            for (int i = 0; i < maxHealth; i++) {
+                if (i > 0) ImGui::SameLine(0, 8);
+                ImVec4 tint = (i < currentHealth) ? ImVec4(1, 1, 1, 1) : ImVec4(0.2f, 0.2f, 0.2f, 0.4f);
+                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(30, 30), ImVec2(0,0), ImVec2(1,1), tint);
+            }
+        } else {
+            for (int i = 0; i < maxHealth; i++) {
+                if (i > 0) ImGui::SameLine(0, 6);
+                if (i < currentHealth) ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "<3");
+                else ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 0.4f), "<3");
+            }
+        }
+        endPanel();
+
+        // ═══════════════════════════════════════════════════════
+        //  BOTTOM-CENTER: Controls
+        // ═══════════════════════════════════════════════════════
+        ImGui::SetNextWindowPos(ImVec2(screenWidth / 2.0f - 250, screenHeight - 45));
+        ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetWindowFontScale(1.1f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
+        ImGui::Text("WASD: Move | Mouse: Look | C: Coin | K: Kill | H: Damage | ESC: Menu");
+        ImGui::PopStyleColor();
+        ImGui::End();
     }
 
     void onDestroy() override {
@@ -57,6 +306,11 @@ class Playstate: public our::State {
         cameraController.exit();
         // Clear the world
         world.clear();
+        // Delete UI icons
+        if(coinIcon) delete coinIcon;
+        if(heartIcon) delete heartIcon;
+        if(enemyIcon) delete enemyIcon;
+
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
         our::clearAllAssets();
     }
