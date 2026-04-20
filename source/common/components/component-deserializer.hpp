@@ -2,9 +2,11 @@
 
 #include "../ecs/entity.hpp"
 #include "camera.hpp"
+#include "collider.hpp"
 #include "mesh-renderer.hpp"
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
+#include "rigid-body.hpp"
 #include "aladdin-controller.hpp"
 #include "collectible.hpp"
 #include "hazard.hpp"
@@ -30,6 +32,10 @@ namespace our {
             component = entity->addComponent<MovementComponent>();
         } else if (type == MeshRendererComponent::getID()) {
             component = entity->addComponent<MeshRendererComponent>();
+        } else if (type == RigidBodyComponent::getID()) {
+            component = entity->addComponent<RigidBodyComponent>();
+        } else if (type == ColliderComponent::getID()) {
+            component = entity->addComponent<ColliderComponent>();
         } else if (type == AladdinControllerComponent::getID()) {
             component = entity->addComponent<AladdinControllerComponent>();
         } else if (type == CollectibleComponent::getID()) {

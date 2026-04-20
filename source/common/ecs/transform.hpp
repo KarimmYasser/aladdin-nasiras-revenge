@@ -3,6 +3,9 @@
 #include <glm/glm.hpp>
 #include <json/json.hpp>
 
+#include "glm/detail/type_quat.hpp"
+#include "reactphysics3d/mathematics/Quaternion.h"
+
 namespace our {
 
     // A transform defines the translation, rotation & scale of an object relative to its parent
@@ -16,6 +19,12 @@ namespace our {
         glm::mat4 toMat4() const;
          // Deserializes the entity data and components from a json object
         void deserialize(const nlohmann::json&);
+
+        //helper function for wrapping to rp3d lib
+        inline static reactphysics3d::Quaternion fromEulerAnglesToRP3DQuaternion(const glm::vec3& eulerAngles) {
+            glm::quat quat = glm::quat(eulerAngles);
+            return reactphysics3d::Quaternion(quat.x, quat.y, quat.z, quat.w);
+        }
     };
 
 }
