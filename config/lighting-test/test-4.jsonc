@@ -1,0 +1,170 @@
+// Lighting Test — Point Light Attenuation & Spot Light Cone
+//
+// Goal: Confirm that:
+//   (a) Point lights fall off with distance (bright directly below, dark far away).
+//   (b) Spot lights produce a clean cone with a soft penumbra on the floor.
+//   (c) Spotlight cone shape does NOT change when the camera moves — it is world-space.
+//
+//   - One large flat ground plane to make both effects clearly visible.
+//   - Point light at [-4, 2.5, 0] — bright disc of light on the left half of the floor.
+//   - Spot  light at [ 4, 4.0, 0] with inner=10°, outer=25°, aiming straight down.
+//   - Camera at [0, 8, 12] looking down-forward so both effects are in view.
+//   - A few spheres scattered on the floor to show light on 3D surfaces too.
+//
+// Pass criteria:
+//   1. Point light: floor is clearly bright directly below, fades to dark at the edges.
+//   2. Spot light:  a focused oval patch on the floor with soft outer-edge falloff.
+//   3. Outside the spot cone the floor is completely dark (only tiny ambient 0.03).
+//   4. Moving the camera around does NOT change the cone shape.
+//   5. Spheres close to each light source are lit from the correct direction.
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Lighting Test: Point Attenuation & Spot Cone",
+        "size": { "width": 1024, "height": 512 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-4.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "grass": "assets/textures/grass_ground_d.jpg",
+                "wood":  "assets/textures/wood.jpg"
+            },
+            "meshes": {
+                "sphere": "assets/models/sphere.obj",
+                "plane":  "assets/models/plane.obj"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                "lit-floor": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  4.0,
+                    "ambient":    0.03,
+                    "sampler":  "default"
+                },
+                "lit-sphere": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "wood",
+                    "shininess":  32.0,
+                    "ambient":    0.03,
+                    "sampler":  "default"
+                }
+            }
+        },
+        "world": [
+            {
+                "position": [0, 8, 12],
+                "rotation": [-30, 0, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            // POINT LIGHT — warm white, left half of the scene
+            {
+                "name": "point-light",
+                "position": [-4, 2.5, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color":     [1.0, 0.9, 0.7],
+                        "intensity": 3.0,
+                        "attenuation": { "constant": 1.0, "linear": 0.35, "quadratic": 0.44 }
+                    }
+                ]
+            },
+            // SPOT LIGHT — cool white, right half of the scene, aimed straight down.
+            //   rotation [-90, 0, 0] makes the entity's local -Z point downward (-Y world).
+            //   inner_angle = 10° → full-intensity cone
+            //   outer_angle = 25° → fades to zero between 10° and 25° (soft penumbra)
+            {
+                "name": "spot-light",
+                "position": [4, 4, 0],
+                "rotation": [-90, 0, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "spot",
+                        "color":       [0.8, 0.9, 1.0],
+                        "intensity":   4.0,
+                        "attenuation": { "constant": 1.0, "linear": 0.09, "quadratic": 0.032 },
+                        "inner_angle": 10.0,
+                        "outer_angle": 25.0
+                    }
+                ]
+            },
+            {
+                "position": [0, -0.5, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [20, 20, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-floor"
+                    }
+                ]
+            },
+            // Sphere near the point light — left
+            {
+                "position": [-4, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-sphere"
+                    }
+                ]
+            },
+            // Sphere under the spot light — right
+            {
+                "position": [4, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-sphere"
+                    }
+                ]
+            },
+            // Centre sphere — in the dark between both lights (ambient only)
+            {
+                "position": [0, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-sphere"
+                    }
+                ]
+            }
+        ]
+    }
+}
