@@ -1,0 +1,342 @@
+// ============================================================================
+// FULL LIGHTING SYSTEM INTEGRATION TEST
+// ============================================================================
+//
+// This single config exercises every feature of the lighting system:
+//
+//   [1] DIRECTIONAL light (sun) — Blinn-Phong diffuse + specular + SHADOWS
+//   [2] POINT light (magic lamp) — attenuation falloff, blue-white colour
+//   [3] SPOT light (torch)       — cone with soft penumbra, warm orange
+//   [4] SPECULAR MAP             — color-grid.png masks per-pixel shininess
+//   [5] EMISSION MAP             — glowing sphere visible in darkness (no light needed)
+//   [6] SHADOW MAPPING           — PCF soft shadows cast by all opaque objects
+//   [7] SKY SPHERE               — background panorama texture
+//   [8] POST-PROCESSING          — vignette darkens screen edges
+//   [9] TRANSPARENT MATERIAL     — glass panels sorted back-to-front
+//
+//
+// Pass criteria (run interactively, not just as a screenshot):
+//
+//   A) Sun-lit side of every object is brighter than the side facing away.
+//   B) Every opaque object casts a soft shadow on the ground.
+//   C) Shadows do NOT move when the camera moves.
+//   D) The monkey's face shows a specular CHECKERBOARD from the color-grid map:
+//      bright squares shimmer, dark squares stay matte.
+//   E) The glowing sphere on the right emits light even when you walk into its
+//      shadow (emission is independent of all lights).
+//   F) The blue-white point light visibly tints objects close to it.
+//   G) The spot-light torch creates a focused oval pool on the ground.
+//   H) Glass panels are transparent and sort correctly front-to-back.
+//   I) The sky panorama fills the background with no depth artefacts.
+//   J) Screen edges are subtly darkened by the vignette post-process.
+// ============================================================================
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Full Lighting Integration Test",
+        "size": { "width": 1280, "height": 720 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-full.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {
+            "sky": "assets/textures/sky.jpg",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                },
+                "textured": {
+                    "vs": "assets/shaders/textured.vert",
+                    "fs": "assets/shaders/textured.frag"
+                }
+            },
+            "textures": {
+                "wood":        "assets/textures/wood.jpg",
+                "moon":        "assets/textures/moon.jpg",
+                "grass":       "assets/textures/grass_ground_d.jpg",
+                "color-grid":  "assets/textures/color-grid.png",
+                "smile":       "assets/textures/smile.png",
+                "glass":       "assets/textures/glass-panels.png"
+            },
+            "meshes": {
+                "monkey": "assets/models/monkey.obj",
+                "sphere": "assets/models/sphere.obj",
+                "plane":  "assets/models/plane.obj",
+                "cube":   "assets/models/cube.obj"
+            },
+            "samplers": {
+                "default":    {},
+                "pixelated":  { "MAG_FILTER": "GL_NEAREST" }
+            },
+            "materials": {
+
+                // monkey with specular map
+                "mat-monkey": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map":   "wood",
+                    "specular_map": "color-grid",
+                    "shininess": 128.0,
+                    "ambient":    0.06,
+                    "sampler":  "default"
+                },
+                "mat-ground": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  4.0,
+                    "ambient":    0.05,
+                    "sampler":  "default"
+                },
+
+                // Bright moon spheres: show point-light colour mixing
+                "mat-sphere": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "moon",
+                    "shininess":  32.0,
+                    "ambient":    0.05,
+                    "sampler":  "default"
+                },
+
+                // Wood cubes: cast strong shadows, lit by spot/sun
+                "mat-cube": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "wood",
+                    "shininess":  24.0,
+                    "ambient":    0.06,
+                    "sampler":  "default"
+                },
+
+                // EMISSION sphere: glows even when fully in shadow
+                // albedo_tint = [0,0,0] -> zero diffuse/ambient contribution from lights
+                // emission_map= smile   -> the smiley pattern is self-lit
+                // This demonstrates that emission is completely independent of lights.
+                "mat-glow": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_tint":  [0.0, 0.0, 0.0],
+                    "emission_map": "smile",
+                    "shininess":    1.0,
+                    "ambient":      0.0,
+                    "sampler":  "default"
+                },
+
+                // TRANSPARENT glass panels: alpha-blended, sorted 
+                "mat-glass": {
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true },
+                        "blending": {
+                            "enabled": true,
+                            "sourceFactor":      "GL_SRC_ALPHA",
+                            "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"
+                        },
+                        "depthMask": false
+                    },
+                    "transparent": true,
+                    "tint":    [1, 1, 1, 1],
+                    "texture": "glass",
+                    "sampler": "pixelated"
+                }
+            }
+        },
+
+        "world": [
+            {
+                "name": "camera",
+                "position": [3, 6, 14],
+                "rotation": [-22, 10, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            // DIRECTIONAL light: desert sun from the upper-right.
+            {
+                "name": "sun",
+                "rotation": [-38, 25, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color":     [1.0, 0.92, 0.75],
+                        "intensity": 1.3
+                    }
+                ]
+            },
+
+            // POINT light: magic lamp sitting near the left cube.
+            {
+                "name": "magic-lamp",
+                "position": [-4.5, 1.0, 1.0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color":     [0.4, 0.7, 1.0],
+                        "intensity": 3.0,
+                        "attenuation": { "constant": 1.0, "linear": 0.35, "quadratic": 0.44 }
+                    }
+                ]
+            },
+
+            // SPOT light: a torch on the right side.
+            {
+                "name": "torch",
+                "position": [5.5, 4.5, -1.0],
+                "rotation": [-90, 0, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "spot",
+                        "color":     [1.0, 0.65, 0.2],
+                        "intensity": 4.5,
+                        "attenuation": { "constant": 1.0, "linear": 0.09, "quadratic": 0.032 },
+                        "inner_angle": 12.0,
+                        "outer_angle": 28.0
+                    }
+                ]
+            },
+            {
+                "name": "monkey",
+                "position": [0, 1.2, 0],
+                "rotation": [0, -15, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "mat-monkey"
+                    }
+                ]
+            },
+            {
+                "name": "glow-sphere",
+                "position": [3.5, 1.2, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "mat-glow"
+                    }
+                ]
+            },
+            // LEFT CUBE — near the magic-lamp point light.
+            {
+                "name": "cube-left",
+                "position": [-3.5, 0.9, 0],
+                "rotation": [0, 30, 0],
+                "scale": [1.5, 1.5, 1.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "mat-cube"
+                    }
+                ]
+            },
+            // RIGHT CUBE — inside the torch spot-light pool.
+            {
+                "name": "cube-right",
+                "position": [5.0, 0.9, -1.5],
+                "rotation": [0, -20, 0],
+                "scale": [1.4, 1.4, 1.4],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "mat-cube"
+                    }
+                ]
+            },
+            // BACK PILLAR — tall stretched sphere that casts a long shadow.
+            {
+                "name": "pillar",
+                "position": [-1.0, 2.8, -5.0],
+                "scale": [0.6, 3.5, 0.6],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "mat-sphere"
+                    }
+                ]
+            },
+            // SMALL MOON SPHERES
+            {
+                "name": "sphere-far-left",
+                "position": [-6.0, 0.8, 1.5],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "sphere", "material": "mat-sphere" }
+                ]
+            },
+            {
+                "name": "sphere-front",
+                "position": [1.5, 0.8, 4.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "sphere", "material": "mat-sphere" }
+                ]
+            },
+
+            // TRANSPARENT GLASS PANELS
+            {
+                "name": "glass-front",
+                "position": [0, 1.5, 2.5],
+                "scale": [3.0, 2.5, 1.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "mat-glass" }
+                ]
+            },
+            {
+                "name": "glass-back",
+                "position": [0, 1.5, 1.0],
+                "scale": [3.0, 2.5, 1.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "mat-glass" }
+                ]
+            },
+            {
+                "name": "ground",
+                "position": [0, -0.5, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [28, 28, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "mat-ground" }
+                ]
+            }
+        ]
+    }
+}
