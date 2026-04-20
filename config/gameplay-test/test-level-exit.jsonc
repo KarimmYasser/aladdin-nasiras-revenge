@@ -1,0 +1,149 @@
+{
+    "start-scene": "play",
+    "window":
+    {
+        "title":"Aladdin Level Exit Test",
+        "size":{
+            "width":1280,
+            "height":720
+        },
+        "fullscreen": false
+    },
+    "scene": {
+        "renderer": {
+            "clearColor": [0.1, 0.1, 0.1, 1],
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets":{
+            "shaders":{
+                "tinted":{
+                    "vs":"assets/shaders/tinted.vert",
+                    "fs":"assets/shaders/tinted.frag"
+                },
+                "textured":{
+                    "vs":"assets/shaders/textured.vert",
+                    "fs":"assets/shaders/textured.frag"
+                }
+            },
+            "textures":{
+                "grass": "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes":{
+                "cube": "assets/models/cube.obj",
+                "plane": "assets/models/plane.obj"
+            },
+            "samplers":{
+                "default":{}
+            },
+            "materials":{
+                "aladdin_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [1, 1, 1, 1]
+                },
+                "floor_mat":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "texture": "grass",
+                    "sampler": "default"
+                },
+                "key_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [1, 0.8, 0, 1]
+                },
+                "exit_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [0.5, 0, 0.5, 1]
+                }
+            }
+        },
+        "world":[
+            {
+                "name": "Camera",
+                "components": [
+                    {
+                        "type": "Camera",
+                        "cameraType": "perspective",
+                        "near": 0.1,
+                        "far": 1000,
+                        "fovY": 45
+                    }
+                ],
+                "position": [0, 5, 15],
+                "rotation": [-0.3, 0, 0]
+            },
+            {
+                "name": "Floor",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "floor_mat"
+                    }
+                ],
+                "position": [0, -0.01, 0],
+                "scale": [100, 1, 100]
+            },
+            {
+                "name": "Aladdin",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "aladdin_mat"
+                    },
+                    {
+                        "type": "Aladdin Controller",
+                        "speed": 10.0,
+                        "jumpForce": 15.0,
+                        "enableCameraFollow": true,
+                        "cameraOffset": [0, 5, 15],
+                        "cameraSmoothing": 5.0
+                    }
+                ],
+                "position": [0, 0, 0]
+            },
+            {
+                "name": "Golden Key",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "key_mat"
+                    },
+                    {
+                        "type": "Collectible",
+                        "collectibleType": "key",
+                        "rotationSpeed": 3.0,
+                        "bobbingHeight": 0.3
+                    }
+                ],
+                "position": [10, 1, 0],
+                "scale": [0.5, 0.5, 0.5]
+            },
+            {
+                "name": "Level Exit Door",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "exit_mat"
+                    },
+                    {
+                        "type": "LevelExit",
+                        "nextScene": "config/gameplay-test/test-aladdin.jsonc",
+                        "radius": 3.0
+                    }
+                ],
+                "position": [0, 1.5, -10],
+                "scale": [2, 3, 1]
+            }
+        ]
+    }
+}

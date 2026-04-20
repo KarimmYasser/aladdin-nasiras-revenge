@@ -83,6 +83,8 @@ set(COMMON_SOURCES
         source/common/components/free-camera-controller.cpp
         source/common/components/movement.hpp
         source/common/components/movement.cpp
+        source/common/components/aladdin-controller.hpp
+        source/common/components/collectible.hpp
         source/common/components/light.hpp
         source/common/components/light.cpp
         source/common/components/component-deserializer.hpp
@@ -91,6 +93,8 @@ set(COMMON_SOURCES
         source/common/systems/forward-renderer.cpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
+        source/common/systems/aladdin-controller.hpp
+        source/common/systems/collectible.hpp
 )
 
 # Define the directories in which to search for the included headers

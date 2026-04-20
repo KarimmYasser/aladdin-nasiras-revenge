@@ -118,6 +118,7 @@ namespace our {
         [[nodiscard]] const Mouse& getMouse() const { return mouse; }
 
         [[nodiscard]] const nlohmann::json& getConfig() const { return app_config; }
+        [[nodiscard]] nlohmann::json& getConfig() { return app_config; }
 
         // Get the size of the frame buffer of the window in pixels.
         glm::ivec2 getFrameBufferSize() {
