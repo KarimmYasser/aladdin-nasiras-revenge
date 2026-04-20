@@ -5,6 +5,13 @@
 #include "mesh-renderer.hpp"
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
+#include "aladdin-controller.hpp"
+#include "collectible.hpp"
+#include "hazard.hpp"
+#include "enemy.hpp"
+#include "breakable.hpp"
+#include "checkpoint.hpp"
+#include "level-exit.hpp"
 #include "light.hpp"
 
 namespace our {
@@ -23,6 +30,20 @@ namespace our {
             component = entity->addComponent<MovementComponent>();
         } else if (type == MeshRendererComponent::getID()) {
             component = entity->addComponent<MeshRendererComponent>();
+        } else if (type == AladdinControllerComponent::getID()) {
+            component = entity->addComponent<AladdinControllerComponent>();
+        } else if (type == CollectibleComponent::getID()) {
+            component = entity->addComponent<CollectibleComponent>();
+        } else if (type == HazardComponent::getID()) {
+            component = entity->addComponent<HazardComponent>();
+        } else if (type == EnemyComponent::getID()) {
+            component = entity->addComponent<EnemyComponent>();
+        } else if (type == BreakableComponent::getID()) {
+            component = entity->addComponent<BreakableComponent>();
+        } else if (type == CheckpointComponent::getID()) {
+            component = entity->addComponent<CheckpointComponent>();
+        } else if (type == LevelExitComponent::getID()) {
+            component = entity->addComponent<LevelExitComponent>();
         } else if (type == LightComponent::getID()) {
             component = entity->addComponent<LightComponent>();
         }
