@@ -1,0 +1,157 @@
+// Lighting Test — Blinn-Phong Specular Highlights
+//
+// Goal: Confirm that specular highlights appear and are VIEW-DEPENDENT.
+//
+// Scene:
+//   - 1 directional "sun" light from the upper-right
+//   - Left sphere  : wood albedo + color-grid specular map, shininess=128
+//                    (bright squares on color-grid = shiny, dark squares = matte)
+//   - Right sphere : moon albedo + moon specular map, shininess=16
+//                    (wider, softer highlight for comparison)
+//   - Ground plane with lit-grass material
+//   - FreeCameraController: move the camera with WASD + mouse drag,
+//     watch the specular hotspot FOLLOW the camera — that confirms Blinn-Phong is
+//     working correctly (pure Lambertian diffuse would NOT move with the camera).
+//
+// Pass criteria:
+//   1. A bright specular hotspot is visible on the side of the sphere facing the light.
+//   2. Orbiting the camera causes the highlight to shift position.
+//   3. Left sphere shows a clear checkerboard: shiny squares vs matte squares.
+//   4. Right sphere has a softer, wider highlight than the left one (lower shininess).
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Lighting Test: Blinn-Phong Specular",
+        "size": { "width": 1024, "height": 512 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-2.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "wood":       "assets/textures/wood.jpg",
+                "moon":       "assets/textures/moon.jpg",
+                "color-grid": "assets/textures/color-grid.png",
+                "grass":      "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes": {
+                "sphere": "assets/models/sphere.obj",
+                "plane":  "assets/models/plane.obj"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                // Left sphere: sharp specular highlights on the bright squares of color-grid.
+                // Dark squares on color-grid act as a specular mask -> matte.
+                "lit-sharp": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map":   "wood",
+                    "specular_map": "color-grid",
+                    "shininess": 128.0,
+                    "ambient":    0.06,
+                    "sampler":  "default"
+                },
+                // Right sphere: wider/softer highlight — demonstrates that shininess controls
+                // the size of the highlight (low value = large blurry highlight).
+                "lit-soft": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map":   "moon",
+                    "specular_map": "moon",
+                    "shininess": 16.0,
+                    "ambient":    0.06,
+                    "sampler":  "default"
+                },
+                // Ground uses lit-grass with no specular map (fallback = black = matte ground).
+                "lit-grass": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  8.0,
+                    "ambient":    0.1,
+                    "sampler":  "default"
+                }
+            }
+        },
+        "world": [
+            {
+                "position": [0, 2, 8],
+                "rotation": [-10, 0, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [-45, 30, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color":     [1.0, 0.95, 0.85],
+                        "intensity": 1.2
+                    }
+                ]
+            },
+            {
+                "position": [-2.5, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-sharp"
+                    }
+                ]
+            },
+            {
+                "position": [2.5, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-soft"
+                    }
+                ]
+            },
+            {
+                "position": [0, -1.2, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [12, 12, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-grass"
+                    }
+                ]
+            }
+        ]
+    }
+}

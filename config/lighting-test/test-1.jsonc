@@ -1,7 +1,7 @@
-// Stage 1 & 2 Lighting Test
+// Lighting Test - Directional Light
 // Tests:
-//  Stage 1 — LightComponent: a directional "sun" light entity is deserialized correctly
-//  Stage 2 — Lit shader:     the monkey (Suzanne) and ground plane use "lit" material
+//  LightComponent: a directional "sun" light entity is deserialized correctly
+//  Lit shader:     the monkey (Suzanne) and ground plane use "lit" material
 //             and should show clear diffuse shading (dark/light sides based on sun direction)
 //
 // Expected visual result:
@@ -12,7 +12,7 @@
 {
     "start-scene": "renderer-test",
     "window": {
-        "title": "Lighting Test — Stage 1 & 2",
+        "title": "Lighting Test: Directional Light",
         "size": { "width": 1024, "height": 512 },
         "fullscreen": false
     },
@@ -102,12 +102,6 @@
                     { "type": "Camera", "fov": 60 }
                 ]
             },
-
-            // ----------------------------------------------------------------
-            // Stage 1 Test: Sun light (DIRECTIONAL)
-            //   Entity rotation drives direction: -45 pitch → light comes from top-right.
-            //   No mesh renderer — it is purely a light source.
-            // ----------------------------------------------------------------
             {
                 "name": "sun",
                 "rotation": [-45, 30, 0],
@@ -120,12 +114,6 @@
                     }
                 ]
             },
-
-            // ----------------------------------------------------------------
-            // Stage 2 Test Objects — all use the "lit" material
-            // ----------------------------------------------------------------
-
-            // Monkey (Suzanne) — the primary shading test object
             {
                 "position": [0, 0, 0],
                 "rotation": [15, -20, 0],
