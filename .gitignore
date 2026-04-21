@@ -26,3 +26,7 @@ screenshots/
 
 # Errors Folder
 errors/
+
+# Python cache
+__pycache__/
+*.pyc
