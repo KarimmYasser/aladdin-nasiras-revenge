@@ -1,0 +1,33 @@
+{
+    "start-scene": "play",
+    "window": { "title": "Physics Test 7: Velocity & Momentum", "size": { "width": 1280, "height": 720 }, "fullscreen": false },
+    "scene": {
+        "renderer": { "sky": "assets/textures/sky.jpg" },
+        "assets": {
+            "shaders": { "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" } },
+            "materials": {
+                "groundMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.5, 0.2, 1.0] },
+                "heavyMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [1.0, 0.2, 0.2, 1.0] },
+                "lightMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.8, 0.8, 1.0] }
+            },
+            "meshes": { "plane": "assets/models/plane.obj", "cube": "assets/models/cube.obj", "sphere": "assets/models/sphere.obj" }
+        },
+        "world": [
+            { "name": "Camera", "position": [0, 8, 25], "rotation": [-15, 0, 0], "components": [ { "type": "Camera", "cameraType": "perspective", "fovY": 90.0, "near": 0.1, "far": 100.0 }, { "type": "Free Camera Controller" } ] },
+            { "name": "Ground", "position": [0, -2, 0], "scale": [20, 1, 20], "components": [ { "type": "Mesh Renderer", "mesh": "plane", "material": "groundMat" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [20, 1, 20], "friction": 0.5, "restitution": 0.0 } ] },
+
+            { "name": "Heavy Bullet (Red)", "position": [-15, 0.5, 0], "components": [
+                { "type": "Mesh Renderer", "mesh": "cube", "material": "heavyMat" },
+                { "type": "RigidBody", "bodyType": "dynamic", "mass": 10.0, "useGravity": true, "velocity": [30, 0, 0], "lockRotation": true },
+                { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.5, 0.5], "restitution": 0.5, "friction": 0.1 }
+            ] },
+
+            { "name": "Light Vehicle (Cyan)", "position": [10, 0.5, 0], "components": [
+                { "type": "Mesh Renderer", "mesh": "sphere", "material": "lightMat" },
+                { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true, "velocity": [-5, 0, 0], "lockRotation": false },
+                { "type": "Collider", "shape": "sphere", "radius": 0.5, "restitution": 0.5, "friction": 0.1 }
+            ] }
+        ]
+    }
+}
+

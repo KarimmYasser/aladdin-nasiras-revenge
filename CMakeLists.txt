@@ -14,6 +14,10 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)           # Don't build Installation I
 set(GLFW_USE_HYBRID_HPG ON CACHE BOOL "" FORCE)     # Add variables to use High Performance Graphics Card if available
 add_subdirectory(vendor/glfw)                       # Build the GLFW project to use later as a library
 
+
+set(RP3D_COMPILE_TESTBED OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendor/reactphysics3d)
+
 # A variable with all the source files of GLAD
 set(GLAD_SOURCE vendor/glad/src/gl.c)
 # A variables with all the source files of Dear ImGui
@@ -79,6 +83,8 @@ set(COMMON_SOURCES
         source/common/components/free-camera-controller.cpp
         source/common/components/movement.hpp
         source/common/components/movement.cpp
+        source/common/components/aladdin-controller.hpp
+        source/common/components/collectible.hpp
         source/common/components/light.hpp
         source/common/components/light.cpp
         source/common/components/component-deserializer.hpp
@@ -87,6 +93,8 @@ set(COMMON_SOURCES
         source/common/systems/forward-renderer.cpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
+        source/common/systems/aladdin-controller.hpp
+        source/common/systems/collectible.hpp
 )
 
 # Define the directories in which to search for the included headers
@@ -97,6 +105,7 @@ include_directories(
         vendor/glm
         vendor/imgui
         vendor/utils
+        vendor/reactphysics3d/include
 )
 
 
@@ -118,6 +127,13 @@ set(STATES_SOURCES
         source/states/material-test-state.hpp
         source/states/entity-test-state.hpp
         source/states/renderer-test-state.hpp
+        source/common/physics/physics-types.hpp
+        source/common/physics/physics-world.hpp
+        source/common/physics/physics-system.hpp
+        source/common/physics/physics-world.cpp
+        source/common/components/rigid-body.hpp
+        source/common/components/collider.hpp
+        source/common/logger.cpp
 )
 
 # For each example, we add an executable target
@@ -126,4 +142,4 @@ set(STATES_SOURCES
 file(COPY ${PROJECT_SOURCE_DIR}/config DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw)
+target_link_libraries(GAME_APPLICATION glfw reactphysics3d)

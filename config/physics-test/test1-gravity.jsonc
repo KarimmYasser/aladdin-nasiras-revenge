@@ -1,0 +1,25 @@
+{
+    "start-scene": "play",
+    "window": { "title": "Physics Test 1: Gravity & Mass", "size": { "width": 1280, "height": 720 }, "fullscreen": false },
+    "scene": {
+        "renderer": { "sky": "assets/textures/sky.jpg" },
+        "assets": {
+            "shaders": { "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" } },
+            "materials": {
+                "groundMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.5, 0.2, 1.0] },
+                "redMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [1.0, 0.2, 0.2, 1.0] },
+                "greenMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 1.0, 0.2, 1.0] },
+                "blueMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.2, 1.0, 1.0] }
+            },
+            "meshes": { "plane": "assets/models/plane.obj", "cube": "assets/models/cube.obj" }
+        },
+        "world": [
+            { "name": "Camera", "position": [0, 8, 25], "rotation": [-15, 0, 0], "components": [ { "type": "Camera", "cameraType": "perspective", "fovY": 90.0, "near": 0.1, "far": 100.0 }, { "type": "Free Camera Controller" } ] },
+            { "name": "Ground", "position": [0, -2, 0], "scale": [20, 1, 20], "components": [ { "type": "Mesh Renderer", "mesh": "plane", "material": "groundMat" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [20, 1, 20] } ] },
+            { "name": "Heavy Box (10 Mass)", "position": [-5, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "cube", "material": "redMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 10.0, "useGravity": true }, { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.5, 0.5] } ] },
+            { "name": "Light Box (1 Mass)", "position": [0, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "cube", "material": "greenMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true }, { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.5, 0.5] } ] },
+            { "name": "No Gravity Box", "position": [5, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "cube", "material": "blueMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.5, 0.5] } ] }
+        ]
+    }
+}
+

@@ -3,6 +3,7 @@
 #include "../texture/texture-utils.hpp"
 #include "../material/lit-material.hpp"
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
 #include <iostream>
 
@@ -106,6 +107,40 @@ namespace our {
             // so it is more performant to disable the depth mask
             postprocessMaterial->pipelineState.depthMask = false;
         }
+
+        // -----------------------------------------------------------------------
+        // Shadow map resources
+        // A 2048×2048 depth-only texture is used as the shadow map for the primary
+        // directional light. Fragments outside the light frustum are clamped to the
+        // border value (1.0 = max depth = not in shadow).
+        // -----------------------------------------------------------------------
+        glGenTextures(1, &shadowDepthTexture);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                     SHADOW_MAP_SIZE, SHADOW_MAP_SIZE,
+                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        // Clamp to border = 1.0 so fragments outside the shadow frustum are treated as lit.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        float shadowBorderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, shadowBorderColor);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glGenFramebuffers(1, &shadowFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, shadowDepthTexture, 0);
+        // No colour attachment — depth only.
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        shadowShader = new ShaderProgram();
+        shadowShader->attach("assets/shaders/shadow.vert", GL_VERTEX_SHADER);
+        shadowShader->attach("assets/shaders/shadow.frag", GL_FRAGMENT_SHADER);
+        shadowShader->link();
     }
 
     void ForwardRenderer::destroy(){
@@ -127,6 +162,10 @@ namespace our {
             delete postprocessMaterial->shader;
             delete postprocessMaterial;
         }
+        // Delete shadow mapping resources
+        if(shadowFBO)          { glDeleteFramebuffers(1, &shadowFBO);  shadowFBO = 0; }
+        if(shadowDepthTexture) { glDeleteTextures(1, &shadowDepthTexture); shadowDepthTexture = 0; }
+        if(shadowShader)       { delete shadowShader; shadowShader = nullptr; }
     }
 
     void ForwardRenderer::render(World* world){
@@ -163,6 +202,53 @@ namespace our {
 
         // If there is no camera, we return (we cannot render without a camera)
         if(camera == nullptr) return;
+
+        // Find the first directional light and render all opaque geometry from its perspective into the shadow depth map.
+        LightComponent* shadowCaster = nullptr;
+        for (auto* lc : lights) {
+            if (lc->type == LightComponent::LightType::DIRECTIONAL) {
+                shadowCaster = lc;
+                break;
+            }
+        }
+
+        shadowEnabled = (shadowCaster != nullptr && !opaqueCommands.empty());
+        if (shadowEnabled) {
+            // Build the light's view matrix.
+            // The directional light has no true position; we place the "eye" far back
+            // along the opposite of the light direction so the scene fits in the frustum.
+            glm::mat4 lM  = shadowCaster->getOwner()->getLocalToWorldMatrix();
+            glm::vec3 lDir = glm::normalize(glm::vec3(lM * glm::vec4(0, 0, -1, 0)));
+
+            // Choose an up vector that is not parallel to lDir.
+            glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f)
+                           ? glm::vec3(1, 0, 0)
+                           : glm::vec3(0, 1, 0);
+            glm::vec3 lEye = -lDir * 20.0f;
+            glm::mat4 lightView = glm::lookAt(lEye, lEye + lDir, up);
+
+            // Orthographic projection covers ±15 units from the scene origin.
+            // Adjust 'range' if the scene is larger.
+            float range = 15.0f;
+            glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 50.0f);
+            lightSpaceMatrix = lightProj * lightView;
+
+            // Render the scene depth from the light's point of view.
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+            glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
+
+            shadowShader->use();
+            for (const auto& command : opaqueCommands) {
+                shadowShader->set("light_space_matrix", lightSpaceMatrix);
+                shadowShader->set("model", command.localToWorld);
+                command.mesh->draw();
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
 
         //TODO: (Req 9) Modify the following line such that "cameraForward" contains a vector pointing the camera forward direction
         // HINT: See how you wrote the CameraComponent::getViewMatrix, it should help you solve this one
@@ -210,7 +296,16 @@ namespace our {
                 shader->set(base + ".inner_cutoff", std::cos(glm::radians(lc->inner_angle)));
                 shader->set(base + ".outer_cutoff", std::cos(glm::radians(lc->outer_angle)));
             }
+
+            // Shadow uniforms — unit 3
+            shader->set("shadow_enabled",    (GLint)shadowEnabled);
+            shader->set("shadow_map",        (GLint)3);
+            shader->set("light_space_matrix", lightSpaceMatrix);
         };
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+        glActiveTexture(GL_TEXTURE0); // restore default active unit
         
         //TODO: (Req 9) Set the OpenGL viewport using viewportStart and viewportSize
         glViewport(0, 0, windowSize.x, windowSize.y);

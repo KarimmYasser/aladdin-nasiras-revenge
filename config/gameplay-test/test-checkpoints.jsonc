@@ -1,0 +1,198 @@
+{
+    "start-scene": "play",
+    "window":
+    {
+        "title":"Aladdin Checkpoint Gameplay Test",
+        "size":{
+            "width":1280,
+            "height":720
+        },
+        "fullscreen": false
+    },
+    "scene": {
+        "renderer": {
+            "clearColor": [0.1, 0.1, 0.1, 1],
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets":{
+            "shaders":{
+                "tinted":{
+                    "vs":"assets/shaders/tinted.vert",
+                    "fs":"assets/shaders/tinted.frag"
+                },
+                "textured":{
+                    "vs":"assets/shaders/textured.vert",
+                    "fs":"assets/shaders/textured.frag"
+                }
+            },
+            "textures":{
+                "grass": "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes":{
+                "cube": "assets/models/cube.obj",
+                "plane": "assets/models/plane.obj"
+            },
+            "samplers":{
+                "default":{}
+            },
+            "materials":{
+                "aladdin_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling":{"enabled": false},
+                        "depthTesting": {"enabled": true}
+                    },
+                    "tint": [1, 0.5, 0, 1]
+                },
+                "floor_mat":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":{"enabled": false},
+                        "depthTesting": {"enabled": true}
+                    },
+                    "tint": [1, 1, 1, 1],
+                    "texture": "grass",
+                    "sampler": "default"
+                },
+                "hazard_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling":{"enabled": false},
+                        "depthTesting": {"enabled": true}
+                    },
+                    "tint": [1, 0, 0, 1]
+                },
+                "checkpoint_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling":{"enabled": false},
+                        "depthTesting": {"enabled": true}
+                    },
+                    "tint": [0.5, 0.5, 0.5, 1]
+                }
+            }
+        },
+        "world":[
+            {
+                "name": "Camera",
+                "components": [
+                    {
+                        "type": "Camera",
+                        "cameraType": "perspective",
+                        "near": 0.1,
+                        "far": 1000,
+                        "fovY": 45
+                    }
+                ],
+                "position": [0, 10, 20],
+                "rotation": [-0.5, 0, 0]
+            },
+            {
+                "name": "Floor",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "floor_mat"
+                    }
+                ],
+                "position": [0, 0, 0],
+                "scale": [100, 1, 100]
+            },
+            {
+                "name": "Aladdin",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "aladdin_mat"
+                    },
+                    {
+                        "type": "Aladdin Controller",
+                        "speed": 10.0,
+                        "jumpForce": 15.0,
+                        "enableCameraFollow": true,
+                        "cameraOffset": [0, 5, 10],
+                        "cameraSmoothing": 5.0,
+                        "health": 100,
+                        "lives": 3,
+                        "respawnPosition": [0, 0, 0]
+                    }
+                ],
+                "position": [0, 0, 0]
+            },
+            {
+                "name": "Checkpoint 1",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "checkpoint_mat"
+                    },
+                    {
+                        "type": "Checkpoint",
+                        "radius": 3.0,
+                        "activeColor": [0, 1, 0]
+                    }
+                ],
+                "position": [0, 0, -10],
+                "scale": [0.5, 2, 0.5]
+            },
+            {
+                "name": "Lava Pit 1",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "hazard_mat"
+                    },
+                    {
+                        "type": "Hazard",
+                        "damage": 100,
+                        "radius": 2.5
+                    }
+                ],
+                "position": [0, 0, -20],
+                "scale": [2, 0.1, 2]
+            },
+            {
+                "name": "Checkpoint 2",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "checkpoint_mat"
+                    },
+                    {
+                        "type": "Checkpoint",
+                        "radius": 3.0,
+                        "activeColor": [0, 1, 0]
+                    }
+                ],
+                "position": [0, 0, -30],
+                "scale": [0.5, 2, 0.5]
+            },
+            {
+                "name": "Death Pit",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "hazard_mat"
+                    },
+                    {
+                        "type": "Hazard",
+                        "instakill": true,
+                        "radius": 2.5
+                    }
+                ],
+                "position": [0, 0, -40],
+                "scale": [2, 0.1, 2]
+            }
+        ]
+    }
+}

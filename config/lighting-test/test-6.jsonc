@@ -1,0 +1,213 @@
+// Lighting Test — Shadow Mapping
+//
+// Scene:
+//   - One directional sun light from the upper-right at a shallow oblique angle.
+//     Shallow angle = long shadows, which are far easier to see and verify.
+//   - Monkey head at the origin (primary shadow CASTER).
+//   - Two spheres and a tall stretched pillar to cast distinct shadow shapes.
+//   - A cube whose straight edges make alignment errors obvious.
+//   - A large flat ground plane (primary shadow RECEIVER).
+//   - Camera looking steeply downward from above so the ground is clearly visible.
+//
+// Pass criteria:
+//   1. Dark shadow patches on the ground behind/beside each object.
+//   2. Shadows fall in the correct direction (opposite the light).
+//   3. Shadow edges are soft (PCF) rather than hard and aliased.
+//   4. No "shadow acne" self-shadowing noise on the lit faces of objects.
+//   5. Shadow shapes match the silhouette of each caster object.
+//   6. Moving the camera changes the view but NOT the shadow shape.
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Lighting Test — Stage 7: Shadow Mapping",
+        "size": { "width": 1280, "height": 640 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-6.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "wood":  "assets/textures/wood.jpg",
+                "grass": "assets/textures/grass_ground_d.jpg",
+                "moon":  "assets/textures/moon.jpg"
+            },
+            "meshes": {
+                "monkey": "assets/models/monkey.obj",
+                "sphere": "assets/models/sphere.obj",
+                "plane":  "assets/models/plane.obj",
+                "cube":   "assets/models/cube.obj"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                "lit-wood": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "wood",
+                    "shininess":  8.0,
+                    "ambient":    0.05,
+                    "sampler":  "default"
+                },
+                "lit-moon": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "moon",
+                    "shininess":  16.0,
+                    "ambient":    0.05,
+                    "sampler":  "default"
+                },
+                "lit-ground": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  4.0,
+                    "ambient":    0.05,
+                    "sampler":  "default"
+                }
+            }
+        },
+        "world": [
+            {
+                "position": [2, 14, 10],
+                "rotation": [-58, 8, 0],
+                "components": [
+                    { "type": "Camera", "fov": 55 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [-32, 20, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color":     [1.0, 0.95, 0.85],
+                        "intensity": 1.4
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Monkey head — primary shadow caster, elevated to cast a clear
+            // shadow footprint on the ground.
+            // ----------------------------------------------------------------
+            {
+                "name": "monkey",
+                "position": [0, 1.2, 0],
+                "rotation": [0, 30, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "lit-wood"
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Left sphere — well separated from the monkey so its shadow is
+            // visible as a distinct blob on the ground.
+            // ----------------------------------------------------------------
+            {
+                "name": "sphere-left",
+                "position": [-4.5, 1.2, 0.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-moon"
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Right sphere.
+            // ----------------------------------------------------------------
+            {
+                "name": "sphere-right",
+                "position": [4.5, 1.2, 0.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-moon"
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Tall pillar — elongated sphere scaled on Y.  Its shadow streak
+            // on the ground is long and thin, which makes it very easy to
+            // confirm the correct shadow direction.
+            // ----------------------------------------------------------------
+            {
+                "name": "pillar",
+                "position": [0, 2.5, -4.5],
+                "scale": [0.5, 3.0, 0.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-moon"
+                    }
+                ]
+            },
+
+            // ----------------------------------------------------------------
+            // Cube — straight edges produce hard-edged shadow shapes that
+            // immediately reveal any misalignment or bias problems.
+            // ----------------------------------------------------------------
+            {
+                "name": "cube",
+                "position": [-2.5, 1.0, -2.5],
+                "rotation": [0, 30, 0],
+                "scale": [1.5, 1.5, 1.5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "lit-wood"
+                    }
+                ]
+            },
+            {
+                "position": [0, -0.5, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [24, 24, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-ground"
+                    }
+                ]
+            }
+        ]
+    }
+}

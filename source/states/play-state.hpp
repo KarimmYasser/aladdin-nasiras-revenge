@@ -6,6 +6,13 @@
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
+#include <systems/aladdin-controller.hpp>
+#include <systems/collectible.hpp>
+#include <systems/hazard.hpp>
+#include <systems/enemy.hpp>
+#include <systems/checkpoint.hpp>
+#include <systems/level-exit.hpp>
+#include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 
 #include <imgui.h>
@@ -22,6 +29,14 @@ class Playstate: public our::State {
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
+    our::PhysicsSystem physicsSystem;
+    bool physicsInitialized = false;
+    our::AladdinControllerSystem aladdinController;
+    our::CollectibleSystem collectibleSystem;
+    our::HazardSystem hazardSystem;
+    our::EnemySystem enemySystem;
+    our::CheckpointSystem checkpointSystem;
+    our::LevelExitSystem levelExitSystem;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -58,6 +73,8 @@ class Playstate: public our::State {
         }
         // We initialize the camera controller system since it needs a pointer to the app
         cameraController.enter(getApp());
+        // Initialize the player controller system
+        aladdinController.enter(getApp());
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
@@ -89,12 +106,53 @@ class Playstate: public our::State {
     void onDraw(double deltaTime) override {
         // Update elapsed time
         elapsedTime += (float)deltaTime;
+        // Initialize physics system and abort this state if initialization fails
+        physicsInitialized = physicsSystem.initialize();
+        if(!physicsInitialized){
+            getApp()->changeState("menu");
+            return;
+        }
+    }
+
+    void onDraw(double deltaTime) override {
+        if(!physicsInitialized) {
+            return;
+        }
+
+        // Check for level transition
+        std::string nextScene = levelExitSystem.getNextScene();
+        if(!nextScene.empty()){
+            levelExitSystem.clearNextScene();
+            // Load the new scene config
+            std::ifstream file_in(nextScene);
+            if(file_in){
+                nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
+                file_in.close();
+                // Update the app config with the new scene
+                getApp()->getConfig()["scene"] = new_config["scene"];
+                // Reload the play state
+                getApp()->changeState("play");
+                return;
+            } else {
+                std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+            }
+        }
 
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
+        physicsSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
+        aladdinController.update(&world, (float)deltaTime);
+        collectibleSystem.update(&world, (float)deltaTime);
+        hazardSystem.update(&world, (float)deltaTime);
+        enemySystem.update(&world, (float)deltaTime);
+        checkpointSystem.update(&world);
+        levelExitSystem.update(&world);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
+
+        // Remove entities marked for deletion at the end of the frame
+        world.deleteMarkedEntities();
 
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
@@ -297,7 +355,18 @@ class Playstate: public our::State {
         ImGui::End();
     }
 
+    // For Debugging only
+    // TODO - Remove or disable in production builds
+    void onImmediateGui() override {
+        aladdinController.onImmediateGui(&world);
+    }
+    //////////////////////////////////////////////
+
     void onDestroy() override {
+        // Shutdown physics system and clear its bodies
+        if(physicsInitialized){
+            physicsSystem.shutdown(&world);
+        }
         // Don't forget to destroy the renderer
         renderer.destroy();
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked

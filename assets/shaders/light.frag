@@ -6,6 +6,7 @@ in Varyings {
     vec3 normal;
     vec2 tex_coord;
     vec4 color;
+    vec4 frag_pos_light_space; // for shadow map lookup
 } fs_in;
 
 out vec4 frag_color;
@@ -48,6 +49,45 @@ uniform int   light_count;  // Number of active lights (<= MAX_LIGHTS)
 
 // Camera position in world space — needed for the view direction (specular)
 uniform vec3 eye_pos;
+
+// shadows
+uniform sampler2D shadow_map;
+uniform int       shadow_enabled;  // 0 = no shadows this frame, 1 = shadow map is valid
+
+// Compute the shadow factor for a directional-light shadow map.
+// Uses a 3x3 PCF kernel so shadow edges are soft rather than aliased.
+
+// light_space_pos — the fragment position in the light's clip space (from vertex shader)
+// N               — surface normal (world space, normalized)
+// L               — direction toward the light (world space, normalized)
+float computeShadow(vec4 light_space_pos, vec3 N, vec3 L) {
+    if (shadow_enabled == 0) return 0.0;
+
+    vec3 proj = light_space_pos.xyz / light_space_pos.w;
+
+    // Map NDC range [-1, 1] → texture coordinate range [0, 1]
+    proj = proj * 0.5 + 0.5;
+
+    // Fragments beyond the far plane of the light frustum are not in shadow.
+    if (proj.z > 1.0) return 0.0;
+
+    float current_depth = proj.z;
+
+    // to avoid "shadow acne" (self-shadowing noise due to limited depth precision).
+    float bias = max(0.05 * (1.0 - dot(N, L)), 0.005);
+
+    // PCF: sample the shadow map in a 3x3 neighbourhood and average the results.
+    // This produces a soft penumbra instead of a hard aliased edge.
+    float shadow = 0.0;
+    vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            float closest_depth = texture(shadow_map, proj.xy + vec2(x, y) * texel_size).r;
+            shadow += (current_depth - bias > closest_depth) ? 1.0 : 0.0;
+        }
+    }
+    return shadow / 9.0;
+}
 
 // ---------------------------------------------------------------------------
 // Blinn-Phong lighting function
@@ -101,8 +141,14 @@ vec3 computeLight(vec3 N, vec3 V, vec3 albedo, float specular, Light light) {
     float spec   = pow(max(dot(N, H), 0.0), material.shininess);
     vec3  specular_color = specular * spec * vec3(1.0); // white spec highlight
 
-    // Combine: diffuse & specular are scaled by attenuation, spot, intensity and color.
-    return (diffuse_color + specular_color) * light.color * light.intensity * attenuation * spot_factor;
+    // Shadow factor — only the primary directional light (type 0) casts shadows.
+    // Point and spot lights do not use shadow maps in this implementation.
+    float shadow = 0.0;
+    if (light.type == 0) {
+        shadow = computeShadow(fs_in.frag_pos_light_space, N, L);
+    }
+
+    return (diffuse_color + specular_color) * (1.0 - shadow) * light.color * light.intensity * attenuation * spot_factor;
 }
 
 void main() {

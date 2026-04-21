@@ -5,9 +5,11 @@
 #include "../components/mesh-renderer.hpp"
 #include "../components/light.hpp"
 #include "../material/lit-material.hpp"
+#include "../shader/shader.hpp"
 #include "../asset-loader.hpp"
 
 #include <glad/gl.h>
+#include <glm/glm.hpp>
 #include <vector>
 #include <algorithm>
 
@@ -44,6 +46,15 @@ namespace our
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;
         TexturedMaterial* postprocessMaterial;
+
+        // Shadow mapping resources
+        static constexpr int SHADOW_MAP_SIZE = 2048; // shadow map resolution (square)
+        GLuint shadowFBO          = 0;               // depth-only framebuffer object
+        GLuint shadowDepthTexture = 0;               // GL_DEPTH_COMPONENT texture
+        ShaderProgram* shadowShader = nullptr;       // shadow.vert / shadow.frag
+        glm::mat4 lightSpaceMatrix{1.0f};            // current frame's light VP matrix
+        bool shadowEnabled = false;                  // true when a valid shadow map exists
+
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.
         // windowSize is the width & height of the window (in pixels).

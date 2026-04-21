@@ -1,0 +1,196 @@
+{
+    "start-scene": "play",
+    "window":
+    {
+        "title":"Aladdin Collectibles Test",
+        "size":{
+            "width":1280,
+            "height":720
+        },
+        "fullscreen": false
+    },
+    "scene": {
+        "renderer": {
+            "clearColor": [0.1, 0.1, 0.1, 1],
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets":{
+            "shaders":{
+                "tinted":{
+                    "vs":"assets/shaders/tinted.vert",
+                    "fs":"assets/shaders/tinted.frag"
+                },
+                "textured":{
+                    "vs":"assets/shaders/textured.vert",
+                    "fs":"assets/shaders/textured.frag"
+                }
+            },
+            "textures":{
+                "grass": "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes":{
+                "cube": "assets/models/cube.obj",
+                "plane": "assets/models/plane.obj"
+            },
+            "samplers":{
+                "default":{}
+            },
+            "materials":{
+                "aladdin_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [1, 0.5, 0, 1]
+                },
+                "floor_mat":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "texture": "grass",
+                    "sampler": "default"
+                },
+                "coin_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [1, 1, 0, 1]
+                },
+                "gem_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [0.5, 0, 1, 1]
+                },
+                "apple_mat":{
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {"depthTesting": {"enabled": true}},
+                    "tint": [1, 0, 0, 1]
+                }
+            }
+        },
+        "world":[
+            {
+                "name": "Camera",
+                "components": [
+                    {
+                        "type": "Camera",
+                        "cameraType": "perspective",
+                        "near": 0.1,
+                        "far": 1000,
+                        "fovY": 45
+                    }
+                ],
+                "position": [0, 5, 15],
+                "rotation": [-0.3, 0, 0]
+            },
+            {
+                "name": "Floor",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "floor_mat"
+                    }
+                ],
+                "position": [0, -0.01, 0],
+                "scale": [100, 1, 100]
+            },
+            {
+                "name": "Aladdin",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "aladdin_mat"
+                    },
+                    {
+                        "type": "Aladdin Controller",
+                        "speed": 10.0,
+                        "jumpForce": 15.0,
+                        "enableCameraFollow": true,
+                        "cameraOffset": [0, 5, 15],
+                        "cameraSmoothing": 5.0
+                    }
+                ],
+                "position": [0, 0, 0]
+            },
+            {
+                "name": "Coin 1",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "coin_mat"
+                    },
+                    {
+                        "type": "Collectible",
+                        "collectibleType": "coin",
+                        "value": 1,
+                        "rotationSpeed": 3.0,
+                        "bobbingHeight": 0.3
+                    }
+                ],
+                "position": [5, 1, 0],
+                "scale": [0.5, 0.5, 0.5]
+            },
+            {
+                "name": "Coin 2",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "coin_mat"
+                    },
+                    {
+                        "type": "Collectible",
+                        "collectibleType": "coin",
+                        "value": 5,
+                        "rotationSpeed": 3.0,
+                        "bobbingHeight": 0.3
+                    }
+                ],
+                "position": [7, 1, 0],
+                "scale": [0.6, 0.6, 0.6]
+            },
+            {
+                "name": "Gem 1",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "gem_mat"
+                    },
+                    {
+                        "type": "Collectible",
+                        "collectibleType": "gem",
+                        "value": 1,
+                        "rotationSpeed": 5.0,
+                        "bobbingHeight": 0.5
+                    }
+                ],
+                "position": [0, 1, -5],
+                "scale": [0.4, 0.4, 0.4]
+            },
+            {
+                "name": "Apple 1",
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cube",
+                        "material": "apple_mat"
+                    },
+                    {
+                        "type": "Collectible",
+                        "collectibleType": "apple",
+                        "value": 3,
+                        "rotationSpeed": 2.0,
+                        "bobbingHeight": 0.2
+                    }
+                ],
+                "position": [-5, 1, 0],
+                "scale": [0.4, 0.4, 0.4]
+            }
+        ]
+    }
+}

@@ -1,0 +1,174 @@
+// Lighting Test — LitMaterial Full Texture Maps
+//
+// Goal: Confirm all three LitMaterial texture channels work independently.
+//
+// Sub-tests in one scene (objects arranged side by side):
+//
+//   LEFT monkey  — Specular-map test
+//     albedo_map   = wood        (normal base colour)
+//     specular_map = color-grid  (bright squares = shiny, dark squares = matte)
+//     shininess    = 128         (sharp highlights so the checkerboard is clearly visible)
+//     A directional sun light is present so Blinn-Phong specular is active.
+//     Expected: alternating shiny / matte patches on the surface.
+//
+//   RIGHT monkey — Emission test
+//     albedo_tint  = [0, 0, 0]   (BLACK — no diffuse or ambient contribution from any light)
+//     emission_map = smile        (the smile.png texture acts as a self-glow mask)
+//     ambient      = 0.0          (no ambient either)
+//     shininess    = 1.0
+//     Expected: the smile pattern GLOWS even though the surface absorbs all light.
+//     The directional sun is still in the scene but contributes nothing because albedo is black.
+//
+// Pass criteria:
+//   1. Left monkey: bright specular sparkles on the color-grid white squares;
+//      the darker squares on the grid have no specular.
+//   2. Right monkey: completely dark except for the glowing smile pattern from emission_map.
+//   3. Removing / disabling the sun light should NOT affect the right monkey at all
+//      (emission is independent of lights).
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Lighting Test: LitMaterial Texture Maps",
+        "size": { "width": 1024, "height": 512 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-5.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "textures": {
+                "wood":       "assets/textures/wood.jpg",
+                "color-grid": "assets/textures/color-grid.png",
+                "smile":      "assets/textures/smile.png",
+                "grass":      "assets/textures/grass_ground_d.jpg"
+            },
+            "meshes": {
+                "monkey": "assets/models/monkey.obj",
+                "plane":  "assets/models/plane.obj"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                // Left monkey: specular-map test.
+                // color-grid acts as a per-pixel specular mask.
+                // White/bright cells on the grid -> specular_value=1 -> shiny.
+                // Dark cells -> specular_value=0 -> completely matte.
+                "lit-specular-test": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map":   "wood",
+                    "specular_map": "color-grid",
+                    "shininess": 128.0,
+                    "ambient":    0.08,
+                    "sampler":  "default"
+                },
+
+                // Right monkey: emission-only test.
+                // albedo_tint = [0,0,0] → diffuse = albedo * NdotL = 0  (always zero)
+                // ambient     = 0.0     → ambient  = albedo * ambient  = 0  (always zero)
+                // emission_map= smile   → the smile texture is added directly to the output
+                // Result: only the smile.png pixels are visible — pure emission glow.
+                "lit-emissive": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_tint":  [0.0, 0.0, 0.0],
+                    "emission_map": "smile",
+                    "shininess": 1.0,
+                    "ambient":   0.0,
+                    "sampler": "default"
+                },
+
+                "lit-grass": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  8.0,
+                    "ambient":    0.08,
+                    "sampler":  "default"
+                }
+            }
+        },
+        "world": [
+            {
+                "position": [0, 1.5, 8],
+                "rotation": [-8, 0, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [-45, 30, 0],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "directional",
+                        "color":     [1.0, 0.95, 0.85],
+                        "intensity": 1.2
+                    }
+                ]
+            },
+            // LEFT monkey — specular-map
+            {
+                "position": [-2.5, 0, 0],
+                "rotation": [0, 20, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "lit-specular-test"
+                    }
+                ]
+            },
+            // RIGHT monkey — emission-only
+            {
+                "position": [2.5, 0, 0],
+                "rotation": [0, -20, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "lit-emissive"
+                    }
+                ]
+            },
+            {
+                "position": [0, -1.2, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [12, 12, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-grass"
+                    }
+                ]
+            }
+        ]
+    }
+}

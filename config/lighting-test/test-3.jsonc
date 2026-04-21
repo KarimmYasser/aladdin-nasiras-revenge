@@ -1,0 +1,171 @@
+// Lighting Test — Multiple Colored Lights
+//
+// Goal: Confirm that the full lights[] array is uploaded and colors blend correctly.
+//
+// Scene:
+//   - 3 point lights (red left, green right, blue back) arranged around a white sphere.
+//   - A second white monkey head for a more complex surface shape.
+//   - Ambient intentionally very low (0.02) so color contribution per light is pure.
+//   - No directional light so there is no "free" uniform illumination drowning out the colors.
+//
+// Pass criteria:
+//   1. The sphere face nearest the RED light is red-tinted.
+//   2. The sphere face nearest the GREEN light is green-tinted.
+//   3. The sphere face nearest the BLUE light is blue-tinted.
+//   4. Where two lights overlap (e.g., red+green), the surface appears yellow.
+//   5. With all three lights at equal distance and the sphere dead-center, the overall
+//      illuminated areas are white-ish (R+G+B = white).
+//   6. Shadowed/ambient areas are almost completely dark (ambient = 0.02).
+{
+    "start-scene": "play",
+    "window": {
+        "title": "Lighting Test: Multiple Colored Lights",
+        "size": { "width": 1024, "height": 512 },
+        "fullscreen": false
+    },
+    "screenshots": {
+        "directory": "screenshots/lighting-test",
+        "requests": [
+            { "file": "test-3.png", "frame": 1 }
+        ]
+    },
+    "scene": {
+        "renderer": {},
+        "assets": {
+            "shaders": {
+                "light": {
+                    "vs": "assets/shaders/light.vert",
+                    "fs": "assets/shaders/light.frag"
+                }
+            },
+            "meshes": {
+                "sphere": "assets/models/sphere.obj",
+                "monkey": "assets/models/monkey.obj",
+                "plane":  "assets/models/plane.obj"
+            },
+            "textures": {
+                "grass": "assets/textures/grass_ground_d.jpg"
+            },
+            "samplers": {
+                "default": {}
+            },
+            "materials": {
+                // White surface (no albedo_map → white fallback, no specular_map → black fallback).
+                // White is ideal for color mixing tests: any light color reflects purely.
+                "lit-white": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": true },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_tint": [1.0, 1.0, 1.0],
+                    "shininess": 32.0,
+                    "ambient":    0.02,
+                    "sampler":  "default"
+                },
+                "lit-grass": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": {
+                        "faceCulling":  { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    },
+                    "albedo_map": "grass",
+                    "shininess":  8.0,
+                    "ambient":    0.02,
+                    "sampler":  "default"
+                }
+            }
+        },
+        "world": [
+            {
+                "position": [0, 3, 9],
+                "rotation": [-15, 0, 0],
+                "components": [
+                    { "type": "Camera", "fov": 60 },
+                    { "type": "Free Camera Controller" }
+                ]
+            },
+            // RED point light  (left side)
+            {
+                "name": "light-red",
+                "position": [-3, 1, 1],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color":     [1.0, 0.0, 0.0],
+                        "intensity": 2.5,
+                        "attenuation": { "constant": 1.0, "linear": 0.22, "quadratic": 0.20 }
+                    }
+                ]
+            },
+            // GREEN point light  (right side)
+            {
+                "name": "light-green",
+                "position": [3, 1, 1],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color":     [0.0, 1.0, 0.0],
+                        "intensity": 2.5,
+                        "attenuation": { "constant": 1.0, "linear": 0.22, "quadratic": 0.20 }
+                    }
+                ]
+            },
+            // BLUE point light  (behind / back centre)
+            {
+                "name": "light-blue",
+                "position": [0, 1, -3],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color":     [0.0, 0.5, 1.0],
+                        "intensity": 2.5,
+                        "attenuation": { "constant": 1.0, "linear": 0.22, "quadratic": 0.20 }
+                    }
+                ]
+            },
+            // White sphere — primary colour-mixing test object
+            {
+                "position": [0, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "lit-white"
+                    }
+                ]
+            },
+            // Monkey head — shows colour mixing on a complex surface
+            {
+                "position": [0, 0.5, -1.5],
+                "rotation": [0, 180, 0],
+                "scale": [0.8, 0.8, 0.8],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "lit-white"
+                    }
+                ]
+            },
+            // Ground plane — shows the colored light pools on the floor
+            {
+                "position": [0, -1.2, 0],
+                "rotation": [-90, 0, 0],
+                "scale":    [14, 14, 1],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "plane",
+                        "material": "lit-grass"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "start-scene": "play",
+    "window": { "title": "Physics Test 2: Restitution", "size": { "width": 1280, "height": 720 }, "fullscreen": false },
+    "scene": {
+        "renderer": { "sky": "assets/textures/sky.jpg" },
+        "assets": {
+            "shaders": { "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" } },
+            "materials": {
+                "groundMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.5, 0.2, 1.0] },
+                "redMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [1.0, 0.2, 0.2, 1.0] },
+                "greenMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 1.0, 0.2, 1.0] },
+                "blueMat": { "type": "tinted", "shader": "tinted", "pipelineState": { "faceCulling":{ "enabled": false }, "depthTesting": { "enabled": true } }, "tint": [0.2, 0.2, 1.0, 1.0] }
+            },
+            "meshes": { "plane": "assets/models/plane.obj", "sphere": "assets/models/sphere.obj" }
+        },
+        "world": [
+            { "name": "Camera", "position": [0, 8, 25], "rotation": [-15, 0, 0], "components": [ { "type": "Camera", "cameraType": "perspective", "fovY": 90.0, "near": 0.1, "far": 100.0 }, { "type": "Free Camera Controller" } ] },
+            { "name": "Ground", "position": [0, -2, 0], "scale": [20, 1, 20], "components": [ { "type": "Mesh Renderer", "mesh": "plane", "material": "groundMat" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [20, 1, 20], "restitution": 0.0 } ] },
+            { "name": "Super Bouncy (0.9)", "position": [-5, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "sphere", "material": "redMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true }, { "type": "Collider", "shape": "sphere", "radius": 1.0, "restitution": 0.9 } ] },
+            { "name": "Medium Drop (0.4)", "position": [0, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "sphere", "material": "greenMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true }, { "type": "Collider", "shape": "sphere", "radius": 1.0, "restitution": 0.4 } ] },
+            { "name": "Mud Drop (0.0)", "position": [5, 10, 0], "components": [ { "type": "Mesh Renderer", "mesh": "sphere", "material": "blueMat" }, { "type": "RigidBody", "bodyType": "dynamic", "mass": 1.0, "useGravity": true }, { "type": "Collider", "shape": "sphere", "radius": 1.0, "restitution": 0.0 } ] }
+        ]
+    }
+}
+
+
