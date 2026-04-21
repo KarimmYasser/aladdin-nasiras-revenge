@@ -17,6 +17,7 @@ out Varyings {
 uniform mat4 transform;
 uniform mat4 model;
 uniform mat3 normal_mat; // transpose for the model
+uniform vec2 uv_multiplier = vec2(1.0, 1.0);
 uniform mat4 light_space_matrix; // Primary directional light VP matrix (set by ForwardRenderer each frame)
 
 void main() {
@@ -32,7 +33,7 @@ void main() {
     // renormalize after interpolation to handle perspective distortion correctly.
     vs_out.normal    = normalize(normal_mat * normal);
 
-    vs_out.tex_coord = tex_coord;
+    vs_out.tex_coord = tex_coord * uv_multiplier;
     vs_out.color     = color;
 
     // Project the world-space position into the primary light's clip space.

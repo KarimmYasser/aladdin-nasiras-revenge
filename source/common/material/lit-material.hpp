@@ -26,6 +26,8 @@ namespace our {
         // Shared sampler for all texture maps
         Sampler* sampler = nullptr;
 
+        glm::vec2 uv_multiplier = {1.0f, 1.0f};
+
         glm::vec3 albedo_tint = {1.0f, 1.0f, 1.0f};
 
         // Higher = smaller, sharper highlight (metal-like); lower = wider (plastic-like).
