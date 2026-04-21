@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/collectible.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -25,7 +26,7 @@ namespace our {
          * @param world The world containing entities and components.
          * @param deltaTime The time elapsed since the last frame.
          */
-        void update(World* world, float deltaTime) {
+        void update(World* world, const PhysicsSystem* physicsSystem, float deltaTime) {
             
             // Find Aladdin's entity to check for proximity
             Entity* aladdinEntity = nullptr;
@@ -46,7 +47,7 @@ namespace our {
                 if(!collectible) continue;
 
                 // 1. Visual Animation: Handle Rotation and Bobbing
-                
+
                 // Rotation
                 entity->localTransform.rotation.y += collectible->rotationSpeed * deltaTime;
 
@@ -61,17 +62,16 @@ namespace our {
                 float verticalOffset = glm::sin(collectible->animationTimer * collectible->bobbingFrequency) * collectible->bobbingHeight;
                 entity->localTransform.position.y = collectible->initialY + verticalOffset;
 
-                // 2. Collection Logic: Distance check
-                // TODO (Physics): Once Member 2 implements the PhysicsSystem, replace this 
-                // distance check with a Trigger Collider event.
+                // 2. Collection Logic: Physics trigger/contact check
                 if(aladdinEntity){
-                    // We use world space positions for distance check to ensure it works even if entities are parented
-                    glm::vec3 aladdinPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
-                    glm::vec3 collectiblePos = glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+                    bool collected = false;
+                    if (physicsSystem) {
+                        const auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                        collected = physicsWorld.hasTriggerEvent(aladdinEntity, entity) ||
+                                    physicsWorld.hasContactEvent(aladdinEntity, entity);
+                    }
 
-                    float distance = glm::distance(aladdinPos, collectiblePos);
-                    
-                    if(distance < collectible->collectionRadius){
+                    if(collected){
                         
                         // Increment Aladdin's stats based on the collectible type
                         switch(collectible->type){
