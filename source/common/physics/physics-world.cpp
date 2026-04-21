@@ -4,6 +4,8 @@
 #include "components/collider.hpp"
 #include "glm/detail/type_quat.hpp"
 #include "logger.hpp"
+#include "reactphysics3d/engine/EventListener.h"
+#include "reactphysics3d/collision/OverlapCallback.h"
 
 namespace our {
     // HELPERS - Define early so they can be used throughout
@@ -18,6 +20,87 @@ namespace our {
     inline reactphysics3d::Quaternion toRP3D(const glm::quat& q) {
         return reactphysics3d::Quaternion(q.x, q.y, q.z, q.w);
     }
+
+    static PhysicsEventPhase toContactPhase(const reactphysics3d::CollisionCallback::ContactPair::EventType eventType) {
+        switch (eventType) {
+            case reactphysics3d::CollisionCallback::ContactPair::EventType::ContactStart: return PhysicsEventPhase::Begin;
+            case reactphysics3d::CollisionCallback::ContactPair::EventType::ContactStay: return PhysicsEventPhase::Stay;
+            case reactphysics3d::CollisionCallback::ContactPair::EventType::ContactExit: return PhysicsEventPhase::End;
+            default: return PhysicsEventPhase::Stay;
+        }
+    }
+
+    static PhysicsEventPhase toTriggerPhase(const reactphysics3d::OverlapCallback::OverlapPair::EventType eventType) {
+        switch (eventType) {
+            case reactphysics3d::OverlapCallback::OverlapPair::EventType::OverlapStart: return PhysicsEventPhase::Begin;
+            case reactphysics3d::OverlapCallback::OverlapPair::EventType::OverlapStay: return PhysicsEventPhase::Stay;
+            case reactphysics3d::OverlapCallback::OverlapPair::EventType::OverlapExit: return PhysicsEventPhase::End;
+            default: return PhysicsEventPhase::Stay;
+        }
+    }
+
+    class PhysicsWorldEventListener final : public reactphysics3d::EventListener {
+    private:
+        PhysicsWorld* owner;
+
+    public:
+        explicit PhysicsWorldEventListener(PhysicsWorld* owner): owner(owner) {}
+
+        void onContact(const reactphysics3d::CollisionCallback::CallbackData& callbackData) override {
+            if (!owner) return;
+
+            const auto pairCount = callbackData.getNbContactPairs();
+            for (reactphysics3d::uint32 i = 0; i < pairCount; i++) {
+                const auto pair = callbackData.getContactPair(i);
+                auto* bodyA = pair.getBody1();
+                auto* bodyB = pair.getBody2();
+                if (!bodyA || !bodyB) continue;
+
+                auto* entityA = static_cast<Entity*>(bodyA->getUserData());
+                auto* entityB = static_cast<Entity*>(bodyB->getUserData());
+                if (!entityA || !entityB) continue;
+
+                PhysicsEvent event;
+                event.type = PhysicsEventType::Contact;
+                event.phase = toContactPhase(pair.getEventType());
+                event.entityA = entityA;
+                event.entityB = entityB;
+
+                if (pair.getNbContactPoints() > 0) {
+                    auto point = pair.getContactPoint(0);
+                    const auto& normal = point.getWorldNormal();
+                    event.normal = glm::vec3(normal.x, normal.y, normal.z);
+                    event.penetrationDepth = static_cast<float>(point.getPenetrationDepth());
+                }
+
+                owner->contactEvents.push_back(event);
+            }
+        }
+
+        void onTrigger(const reactphysics3d::OverlapCallback::CallbackData& callbackData) override {
+            if (!owner) return;
+
+            const auto pairCount = callbackData.getNbOverlappingPairs();
+            for (reactphysics3d::uint32 i = 0; i < pairCount; i++) {
+                const auto pair = callbackData.getOverlappingPair(i);
+                auto* bodyA = pair.getBody1();
+                auto* bodyB = pair.getBody2();
+                if (!bodyA || !bodyB) continue;
+
+                auto* entityA = static_cast<Entity*>(bodyA->getUserData());
+                auto* entityB = static_cast<Entity*>(bodyB->getUserData());
+                if (!entityA || !entityB) continue;
+
+                PhysicsEvent event;
+                event.type = PhysicsEventType::Trigger;
+                event.phase = toTriggerPhase(pair.getEventType());
+                event.entityA = entityA;
+                event.entityB = entityB;
+
+                owner->triggerEvents.push_back(event);
+            }
+        }
+    };
 
     bool PhysicsWorld::initialize() {
         if (initialized) {
@@ -34,6 +117,15 @@ namespace our {
         }
 
         physicsWorld->setGravity(reactphysics3d::Vector3(0.0f, -9.81f, 0.0f));
+
+        if (eventListener) {
+            delete eventListener;
+            eventListener = nullptr;
+        }
+        eventListener = new PhysicsWorldEventListener(this);
+        physicsWorld->setEventListener(eventListener);
+
+        clearFrameEvents();
         Logger::info("PhysicsWorld", "Initialization successful. Gravity set to (0, -9.81, 0).");
         return initialized = true;
     }
@@ -47,9 +139,17 @@ namespace our {
 
         Logger::info("PhysicsWorld", "Shutting down physics world...");
         if (physicsWorld) {
+            physicsWorld->setEventListener(nullptr);
             physicsCommon.destroyPhysicsWorld(physicsWorld);
             physicsWorld = nullptr;
         }
+
+        if (eventListener) {
+            delete eventListener;
+            eventListener = nullptr;
+        }
+
+        clearFrameEvents();
         initialized = false;
         Logger::info("PhysicsWorld", "Shutdown complete.");
     }
@@ -76,6 +176,12 @@ namespace our {
         ));
 
         rp3dTransform.setOrientation(Transform::fromEulerAnglesToRP3DQuaternion(transform->rotation));
+
+        if (!rp3dTransform.isValid()) {
+            Logger::warning("PhysicsWorld", "Invalid transform for entity '", entity->name,
+                            "'. Resetting to identity transform before rigid body creation.");
+            rp3dTransform = reactphysics3d::Transform::identity();
+        }
 
         auto body = physicsWorld->createRigidBody(rp3dTransform);
         if (!body) {
@@ -279,7 +385,6 @@ namespace our {
 
             // Retrieve and store the entity that was hit
             if (!info.body->getUserData()) {
-                Logger::warning("PhysicsWorld", "Raycast hit a body with no user data!");
                 res.entity = nullptr;
             } else {
                 res.entity = static_cast<Entity*>(info.body->getUserData());
@@ -301,15 +406,61 @@ namespace our {
 
         physicsWorld->raycast(ray, &closestHit);
         if (closestHit.res.hasHit) {
-            Logger::info("PhysicsWorld", "Raycast hit at point (", closestHit.res.point.x, ", ",
-                         closestHit.res.point.y, ", ", closestHit.res.point.z, ") with normal (",
-                         closestHit.res.normal.x, ", ", closestHit.res.normal.y, ", ", closestHit.res.normal.z,
-                         ") at distance ", closestHit.res.distance);
             closestHit.res.distance *= maxDistance; // Scale the distance by maxDistance to get the actual distance
-        } else {
-            Logger::info("PhysicsWorld", "Raycast did not hit any object.");
         }
         return closestHit.res;
+    }
+
+    void PhysicsWorld::clearFrameEvents() {
+        contactEvents.clear();
+        triggerEvents.clear();
+    }
+
+    static bool matchesPair(const PhysicsEvent& event, const Entity* a, const Entity* b, const bool includeStay) {
+        if (!event.entityA || !event.entityB || !a || !b) return false;
+        if (!includeStay && event.phase == PhysicsEventPhase::Stay) return false;
+
+        return (event.entityA == a && event.entityB == b) ||
+               (event.entityA == b && event.entityB == a);
+    }
+
+    bool PhysicsWorld::hasContactEvent(Entity* a, Entity* b, const bool includeStay) const {
+        if (!a || !b) return false;
+        for (const auto& event : contactEvents) {
+            if (matchesPair(event, a, b, includeStay) && event.phase != PhysicsEventPhase::End) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool PhysicsWorld::hasTriggerEvent(Entity* a, Entity* b, const bool includeStay) const {
+        if (!a || !b) return false;
+        for (const auto& event : triggerEvents) {
+            if (matchesPair(event, a, b, includeStay) && event.phase != PhysicsEventPhase::End) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool PhysicsWorld::hasAnyInteraction(Entity* a, Entity* b, const bool includeStay) const {
+        return hasContactEvent(a, b, includeStay) || hasTriggerEvent(a, b, includeStay);
+    }
+
+    bool PhysicsWorld::isGrounded(Entity* entity, const float minUpDot) const {
+        if (!entity) return false;
+
+        for (const auto& event : contactEvents) {
+            if (event.phase == PhysicsEventPhase::End) continue;
+            if (event.entityA != entity && event.entityB != entity) continue;
+
+            const float supportY = (event.entityA == entity) ? -event.normal.y : event.normal.y;
+            if (supportY >= minUpDot) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
