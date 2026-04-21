@@ -104,23 +104,20 @@ class Playstate: public our::State {
             getApp()->changeState("menu");
         }
 
-        // Debug: press G for game over, V for victory
+#if !defined(NDEBUG)
+        // Debug shortcuts (enabled only in non-release builds)
         if(keyboard.justPressed(GLFW_KEY_G)){
             getApp()->changeState("gameover");
         }
         if(keyboard.justPressed(GLFW_KEY_V)){
             getApp()->changeState("victory");
         }
-
-        // Debug: press C to simulate coin pickup, K to simulate enemy kill
         if(keyboard.justPressed(GLFW_KEY_C)){
             if(coinsCollected < totalCoins) coinsCollected++;
         }
         if(keyboard.justPressed(GLFW_KEY_K)){
             if(enemiesKilled < totalEnemies) enemiesKilled++;
         }
-
-        // Debug: press H to simulate taking damage from enemy
         if(keyboard.justPressed(GLFW_KEY_H)){
             currentHealth--;
             if(currentHealth <= 0){
@@ -132,6 +129,7 @@ class Playstate: public our::State {
                 }
             }
         }
+#endif
     }
 
     // Helper to calculate star rating

@@ -134,7 +134,7 @@ class GameOverState : public our::State {
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0.05f, 0.05f, 1.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
         if (ImGui::Button("  RETRY  ", ImVec2(260, 45))) {
-            getApp()->changeState("menu");
+            getApp()->changeState("play");
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);

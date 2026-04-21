@@ -4,7 +4,7 @@ Generates a maze-based level for the Aladdin game engine.
 Merges adjacent walls into large rectangles to prevent z-fighting.
 
 Usage:
-    python generate_maze.py [--rows 7] [--cols 7] [--seed 42]
+    python generate_maze.py [--rows 7] [--cols 7] [--seed 42] [--write-app-config]
 """
 
 import json
@@ -60,11 +60,33 @@ def greedy_merge_walls(grid):
     rows = len(grid)
     cols = len(grid[0])
     rectangles = []
+    consumed = [[False] * cols for _ in range(rows)]
 
     for r in range(rows):
         for c in range(cols):
-            if grid[r][c] == 1:
-                rectangles.append((r, c, 1, 1))
+            if grid[r][c] != 1 or consumed[r][c]:
+                continue
+
+            width = 0
+            while c + width < cols and grid[r][c + width] == 1 and not consumed[r][c + width]:
+                width += 1
+
+            height = 1
+            while r + height < rows:
+                can_expand = True
+                for cc in range(c, c + width):
+                    if grid[r + height][cc] != 1 or consumed[r + height][cc]:
+                        can_expand = False
+                        break
+                if not can_expand:
+                    break
+                height += 1
+
+            for rr in range(r, r + height):
+                for cc in range(c, c + width):
+                    consumed[rr][cc] = True
+
+            rectangles.append((r, c, width, height))
 
     return rectangles
 
@@ -491,6 +513,8 @@ def main():
     parser.add_argument("--time3", type=int, default=60,  help="3-star time limit (sec)")
     parser.add_argument("--time2", type=int, default=90,  help="2-star time limit (sec)")
     parser.add_argument("--time1", type=int, default=120, help="1-star time limit (sec)")
+    parser.add_argument("--write-app-config", action="store_true",
+                        help="Overwrite config/app.jsonc with generated scene config")
     args = parser.parse_args()
 
     entities, coins, enemies = generate_level(args.rows, args.cols, args.seed)
@@ -509,13 +533,15 @@ def main():
         json.dump(scene, f, indent=4)
     print(f"Wrote: {level_path}")
 
-    # Write app.jsonc
-    app_path = os.path.join(root_dir, "config", "app.jsonc")
-    with open(app_path, "w", encoding="utf-8") as f:
-        f.write(f"// Auto-generated Agrabah Maze - App Config\n")
-        f.write(f"// Maze: {args.rows}x{args.cols} | Coins: {coins} | Enemies: {enemies}\n")
-        json.dump(scene, f, indent=4)
-    print(f"Wrote: {app_path}")
+    if args.write_app_config:
+        app_path = os.path.join(root_dir, "config", "app.jsonc")
+        with open(app_path, "w", encoding="utf-8") as f:
+            f.write(f"// Auto-generated Agrabah Maze - App Config\n")
+            f.write(f"// Maze: {args.rows}x{args.cols} | Coins: {coins} | Enemies: {enemies}\n")
+            json.dump(scene, f, indent=4)
+        print(f"Wrote: {app_path}")
+    else:
+        print("Skipped writing config/app.jsonc (use --write-app-config to enable).")
 
 
 if __name__ == "__main__":
