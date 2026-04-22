@@ -3,7 +3,6 @@
 #include "../ecs/world.hpp"
 #include "../components/level-exit.hpp"
 #include "../components/aladdin-controller.hpp"
-#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -20,11 +19,14 @@ namespace our {
     public:
 
         /**
-         * @brief Updates level exit checks.
-         * 
+         * @brief Updates level exit checks (distance to exit vs radius).
+         *
+         * Trigger/collision-based exits can pass a physics/trigger layer here later;
+         * the current implementation only uses entity transforms.
+         *
          * @param world The world containing entities and components.
          */
-        void update(World* world, const PhysicsSystem* physicsSystem) {
+        void update(World* world) {
             
             Entity* aladdinEntity = nullptr;
             AladdinControllerComponent* aladdin = nullptr;

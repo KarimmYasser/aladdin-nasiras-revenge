@@ -50,6 +50,16 @@ namespace our {
     public:
         bool inBlackout() const { return blackoutRemaining > 0.0f; }
 
+        /// Drop any in-flight transition and pending entity pointers (call when (re)entering play or destroying the world).
+        void reset() noexcept {
+            blackoutRemaining = 0.0f;
+            pendingPlayer = nullptr;
+            pendingPortal = nullptr;
+            pendingPos = glm::vec3(0.0f);
+            pendingYawY = 0.0f;
+            pendingSetYaw = true;
+        }
+
         /// Call at the start of each frame (before gameplay / renderer when not blacking out).
         void update(World* world, float deltaTime) {
             if(!world) return;

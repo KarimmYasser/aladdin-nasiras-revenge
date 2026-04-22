@@ -62,6 +62,9 @@ class Playstate: public our::State {
     our::Texture2D* enemyIcon = nullptr;
 
     void onInitialize() override {
+        // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
+        roomPortalSystem.reset();
+
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
@@ -170,7 +173,7 @@ class Playstate: public our::State {
         collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
         hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
         checkpointSystem.update(&world, &physicsSystem);
-        levelExitSystem.update(&world, &physicsSystem);
+        levelExitSystem.update(&world);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
@@ -394,6 +397,7 @@ class Playstate: public our::State {
         renderer.destroy();
         // Free-camera may have locked the cursor; exit restores normal cursor mode.
         cameraController.exit();
+        roomPortalSystem.reset();
         // Clear the world
         world.clear();
         // Delete UI icons
