@@ -106,16 +106,6 @@ namespace our
                       up = glm::vec3(matrix * glm::vec4(0, 1, 0, 0)), 
                       right = glm::vec3(matrix * glm::vec4(1, 0, 0, 0));
 
-            bool aladdinDrivingCamera = false;
-            for (auto e : world->getEntities()) {
-                if (auto* aladdin = e->getComponent<AladdinControllerComponent>()) {
-                    if (aladdin->enableCameraFollow) {
-                        aladdinDrivingCamera = true;
-                        break;
-                    }
-                }
-            }
-
             glm::vec3 current_sensitivity = controller->positionSensitivity;
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= controller->speedupFactor;
