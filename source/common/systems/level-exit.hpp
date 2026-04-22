@@ -15,6 +15,7 @@ namespace our {
      */
     class LevelExitSystem {
         std::string nextScene = "";
+        std::string nextApplicationState = "";
     public:
 
         /**
@@ -51,10 +52,15 @@ namespace our {
                 float distance = glm::distance(aladdinPos, exitPos);
 
                 if(distance < exit->radius){
-                    if(aladdin->hasKey){
+                    if(!exit->requiresKey || aladdin->hasKey){
                         exit->activated = true;
-                        std::cout << "[LevelExitSystem] Level Complete! Moving to: " << exit->nextScene << std::endl;
-                        nextScene = exit->nextScene;
+                        if(!exit->nextState.empty()){
+                            std::cout << "[LevelExitSystem] Exit triggered. nextState=" << exit->nextState << std::endl;
+                            nextApplicationState = exit->nextState;
+                        } else if(!exit->nextScene.empty()){
+                            std::cout << "[LevelExitSystem] Level Complete! Moving to: " << exit->nextScene << std::endl;
+                            nextScene = exit->nextScene;
+                        }
                     } else {
                         // Optional: Show a hint that a key is needed
                         static float hintTimer = 0.0f;
@@ -70,6 +76,9 @@ namespace our {
 
         std::string getNextScene() { return nextScene; }
         void clearNextScene() { nextScene = ""; }
+
+        std::string getNextApplicationState() { return nextApplicationState; }
+        void clearNextApplicationState() { nextApplicationState = ""; }
     };
 
 }
