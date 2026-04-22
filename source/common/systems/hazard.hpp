@@ -3,6 +3,8 @@
 #include "../ecs/world.hpp"
 #include "../components/hazard.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../components/rigid-body.hpp"
+#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -11,7 +13,7 @@ namespace our {
     /**
      * @brief System that handles interactions between hazards and the player.
      * 
-     * Since real physics is postponed, it uses distance-based detection.
+     * Uses physics trigger/contact events to detect hazard hits.
      */
     class HazardSystem {
     public:
@@ -19,9 +21,10 @@ namespace our {
          * @brief Checks if the player is within any hazard's radius and applies damage.
          * 
          * @param world The scene world containing entities.
+         * @param physicsSystem Physics system used to query overlap/contact events.
          * @param deltaTime The time elapsed since the last frame.
          */
-        void update(World* world, float deltaTime) {
+        void update(World* world, PhysicsSystem* physicsSystem, float /*deltaTime*/) {
             // 1. Find the player (entity with AladdinControllerComponent)
             Entity* playerEntity = nullptr;
             AladdinControllerComponent* playerController = nullptr;
@@ -40,11 +43,14 @@ namespace our {
                 HazardComponent* hazard = entity->getComponent<HazardComponent>();
                 if(!hazard) continue;
 
-                // 3. Mock Collision Detection: Check distance between player and hazard
-                float distance = glm::distance(playerEntity->localTransform.position, entity->localTransform.position);
-                
+                if(!physicsSystem) continue;
+
+                const auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                const bool isColliding = physicsWorld.hasTriggerEvent(playerEntity, entity) ||
+                                         physicsWorld.hasContactEvent(playerEntity, entity);
+
                 // 4. If colliding and player is not invincible
-                if(distance < hazard->radius && playerController->invincibilityTimer <= 0.0f){
+                if(isColliding && playerController->invincibilityTimer <= 0.0f){
                     // Apply Damage
                     if(hazard->instakill){
                         playerController->health = 0;
@@ -65,6 +71,19 @@ namespace our {
                             playerController->health = 100; // Reset health to 100
                             playerController->velocity = {0,0,0};
                             playerController->invincibilityTimer = playerController->invincibilityDuration;
+
+                            // Keep rigidbody state in sync with respawn
+                            if (auto* rbComp = playerEntity->getComponent<RigidBodyComponent>(); rbComp && rbComp->bodyHandle) {
+                                reactphysics3d::Transform respawnTransform = rbComp->bodyHandle->getTransform();
+                                respawnTransform.setPosition(reactphysics3d::Vector3(
+                                    playerController->respawnPosition.x,
+                                    playerController->respawnPosition.y,
+                                    playerController->respawnPosition.z
+                                ));
+                                rbComp->bodyHandle->setTransform(respawnTransform);
+                                rbComp->bodyHandle->setLinearVelocity(reactphysics3d::Vector3(0, 0, 0));
+                            }
+
                             std::cout << "[HazardSystem] Respawning at " << playerController->respawnPosition.x << ", " << playerController->respawnPosition.y << ", " << playerController->respawnPosition.z << std::endl;
                         } else {
                             // Game Over

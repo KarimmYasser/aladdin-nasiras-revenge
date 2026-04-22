@@ -6,14 +6,20 @@
 #include "../components/enemy.hpp"
 #include "../components/breakable.hpp"
 #include "../components/collectible.hpp"
+#include "../components/rigid-body.hpp"
+#include "../components/collider.hpp"
 #include "../components/mesh-renderer.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
+#include "../physics/physics-system.hpp"
 #include <imgui.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 
 namespace our {
 
@@ -25,11 +31,54 @@ namespace our {
      */
     class AladdinControllerSystem {
         Application* app; // Pointer to the application for input handling
+        std::unordered_map<Entity*, Entity*> swordHitboxes;
 
     public:
         // Initialize with the application pointer
         void enter(Application* app) {
             this->app = app;
+        }
+
+        static bool wasHitInCurrentAttack(AladdinControllerComponent* aladdin, Entity* target) {
+            return std::find(aladdin->hitEntities.begin(), aladdin->hitEntities.end(), target) != aladdin->hitEntities.end();
+        }
+
+        static void markHitInCurrentAttack(AladdinControllerComponent* aladdin, Entity* target) {
+            aladdin->hitEntities.push_back(target);
+        }
+
+        Entity* getOrCreateSwordHitbox(World* world, Entity* player) {
+            auto it = swordHitboxes.find(player);
+            if (it != swordHitboxes.end() && it->second) {
+                return it->second;
+            }
+
+            Entity* hitbox = world->add();
+            hitbox->name = player->name + "_SwordHitbox";
+
+            auto* rb = hitbox->addComponent<RigidBodyComponent>();
+            rb->type = RigidBodyType::Kinematic;
+            rb->mass = 0.0f;
+            rb->useGravity = false;
+            rb->lockRotation = true;
+
+            auto* collider = hitbox->addComponent<ColliderComponent>();
+            collider->shape = ColliderShape::Box;
+            collider->halfExtents = glm::vec3(0.5f, 0.6f, 0.9f);
+            collider->isTrigger = true;
+
+            swordHitboxes[player] = hitbox;
+            return hitbox;
+        }
+
+        static void updateSwordHitboxTransform(Entity* player, Entity* swordHitbox) {
+            const float yaw = player->localTransform.rotation.y;
+            const glm::vec3 forward = glm::normalize(glm::vec3(glm::sin(yaw), 0.0f, glm::cos(yaw)));
+            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.9f, 0.0f);
+
+            swordHitbox->localTransform.position = player->localTransform.position + offset;
+            swordHitbox->localTransform.rotation = glm::vec3(0.0f, yaw, 0.0f);
+            swordHitbox->localTransform.scale = glm::vec3(1.0f);
         }
 
         /**
@@ -38,8 +87,16 @@ namespace our {
          * @param world The scene world containing entities.
          * @param deltaTime The time elapsed since the last frame.
          */
-        void update(World* world, float deltaTime) {
-            for(auto entity : world->getEntities()){
+        void update(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
+            std::vector<Entity*> players;
+            players.reserve(world->getEntities().size());
+            for (auto candidate : world->getEntities()) {
+                if (candidate->getComponent<AladdinControllerComponent>()) {
+                    players.push_back(candidate);
+                }
+            }
+
+            for(auto entity : players){
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if(!aladdin) continue;
 
@@ -54,47 +111,67 @@ namespace our {
                 if(keyboard.isPressed(GLFW_KEY_A)) moveDir.x -= 1.0f; // Left
                 if(keyboard.isPressed(GLFW_KEY_D)) moveDir.x += 1.0f; // Right
 
-                // 2. Apply movement (horizontal)
-                // TODO (Physics): Replace manual position updates with force/velocity
-                // application on the player's Rigidbody/Collider.
-                if(glm::length(moveDir) > 0.001f) {
+                const bool hasMoveInput = glm::length(moveDir) > 0.001f;
+                if(hasMoveInput) {
                     moveDir = glm::normalize(moveDir);
-                    entity->localTransform.position += moveDir * aladdin->speed * deltaTime;
 
                     // Rotate entity to face the movement direction
                     float targetYaw = glm::atan(moveDir.x, moveDir.z);
-                    // Smoothly interpolate rotation
-                    float currentYaw = entity->localTransform.rotation.y;
-                    float diff = targetYaw - currentYaw;
-                    while(diff > glm::pi<float>()) diff -= 2 * glm::pi<float>();
-                    while(diff < -glm::pi<float>()) diff += 2 * glm::pi<float>();
-                    entity->localTransform.rotation.y += diff * aladdin->rotationSpeed * deltaTime;
+                    entity->localTransform.rotation.y = targetYaw;
                 }
 
-                // 3. Handle Jumping (Vertical logic)
-                // TODO (Physics): Use the physics engine's gravity instead of this constant.
-                // Mock Gravity (Temporary until Physics Dev finishes PhysicsSystem)
-                const float gravity = -20.0f; 
-                aladdin->velocity.y += gravity * deltaTime;
+                auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
 
-                // Apply vertical velocity
-                entity->localTransform.position.y += aladdin->velocity.y * deltaTime;
+                Entity* swordHitbox = getOrCreateSwordHitbox(world, entity);
+                updateSwordHitboxTransform(entity, swordHitbox);
 
-                // TODO (Physics): Replace this Y=0 check with real collision detection
-                // from the PhysicsSystem (isGrounded should come from the Collider).
-                // Simple floor check (Mocking ground at Y=0)
-                if(entity->localTransform.position.y <= 0.0f) {
-                    entity->localTransform.position.y = 0.0f;
-                    aladdin->velocity.y = 0.0f;
-                    aladdin->isGrounded = true;
+                // 3. Handle gravity, movement and jumping via real physics (if body exists)
+                if (hasPhysicsBody) {
+                    auto& physicsWorld = physicsSystem->getPhysicsWorld();
+
+                    bool groundedFromContacts = physicsWorld.isGrounded(entity, 0.5f);
+                    bool groundedFromRaycast = false;
+                    if (!groundedFromContacts) {
+                        float probeDistance = 1.15f;
+                        if (auto* collider = entity->getComponent<ColliderComponent>()) {
+                            switch (collider->shape) {
+                                case ColliderShape::Box:
+                                    probeDistance = collider->halfExtents.y + 0.25f;
+                                    break;
+                                case ColliderShape::Sphere:
+                                    probeDistance = collider->radius + 0.25f;
+                                    break;
+                                case ColliderShape::Capsule:
+                                    probeDistance = (collider->height * 0.5f) + collider->radius + 0.25f;
+                                    break;
+                            }
+                        }
+
+                        const glm::vec3 origin = entity->localTransform.position + glm::vec3(0.0f, 0.05f, 0.0f);
+                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), probeDistance);
+                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && groundHit.entity != entity && groundHit.normal.y >= 0.5f;
+                    }
+
+                    aladdin->isGrounded = groundedFromContacts || groundedFromRaycast;
+
+                    glm::vec3 currentVelocity = physicsWorld.getLinearVelocity(entity);
+                    glm::vec3 targetVelocity = currentVelocity;
+                    targetVelocity.x = hasMoveInput ? moveDir.x * aladdin->speed : 0.0f;
+                    targetVelocity.z = hasMoveInput ? moveDir.z * aladdin->speed : 0.0f;
+
+                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
+                        targetVelocity.y = aladdin->jumpForce;
+                        aladdin->isGrounded = false;
+                    }
+
+                    physicsWorld.setLinearVelocity(entity, targetVelocity);
+                    aladdin->velocity = targetVelocity;
                 } else {
-                    aladdin->isGrounded = false;
-                }
-
-                // Trigger Jump
-                if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
-                    aladdin->velocity.y = aladdin->jumpForce;
-                    aladdin->isGrounded = false;
+                    // Fallback for scenes that still do not have a rigid body setup yet
+                    if(hasMoveInput) {
+                        entity->localTransform.position += moveDir * aladdin->speed * deltaTime;
+                    }
                 }
 
                 // 3.5. Update Invincibility Timer
@@ -118,105 +195,93 @@ namespace our {
                     }
                     // Visual effect placeholder: slightly shake or tilt model
                     
-                    // Simple Combat Test: Check for nearby "Target" or "Enemy" entities
-                    // TODO (Physics): Replace this distance-based check with the PhysicsSystem's
-                    // collision detection between the sword's hitbox collider and enemy colliders.
-                    // Damage should only be applied at a specific frame of the animation.
+                    // Simple Combat Test: consume physics interactions for sword hits.
+                    // This assumes entities that can be hit have colliders configured.
                     for(auto other : world->getEntities()){
-                        if(other == entity) continue;
+                        if(other == entity || other == swordHitbox) continue;
+
+                        bool swordOverlap = false;
+                        if (physicsSystem) {
+                            auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                            swordOverlap = physicsWorld.hasAnyInteraction(swordHitbox, other, false);
+                        }
+                        if(!swordOverlap) continue;
 
                         // Check for Target objects (from original mock)
                         if(other->name.find("Target") != std::string::npos){
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.0f){
-                                // "Hit" the target - for now just log and maybe move it
-                                std::cout << "Sword Hit: " << other->name << "!" << std::endl;
-                                // Shift it slightly to show impact
-                                glm::vec3 dir = glm::normalize(other->localTransform.position - entity->localTransform.position);
-                                other->localTransform.position += dir * 0.1f;
+                            if (wasHitInCurrentAttack(aladdin, other)) continue;
+
+                            markHitInCurrentAttack(aladdin, other);
+                            std::cout << "Sword Hit: " << other->name << "!" << std::endl;
+                            glm::vec3 dir = other->localTransform.position - entity->localTransform.position;
+                            if(glm::length(dir) > 0.0001f) {
+                                other->localTransform.position += glm::normalize(dir) * 0.1f;
                             }
                         }
 
                         // Check for Real Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
-                            // Check if this enemy was already hit during the current attack
-                            bool alreadyHit = false;
-                            for(auto e : aladdin->hitEntities) {
-                                if(e == other) {
-                                    alreadyHit = true;
-                                    break;
-                                }
-                            }
-                            if(alreadyHit) continue;
+                            if(wasHitInCurrentAttack(aladdin, other)) continue;
 
-                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
-                            // collision detection once the ColliderComponent is ready.
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.5f) { // Slightly larger range for Aladdin's sword
-                                enemy->health -= 25; // Aladdin deals 25 damage per hit
-                                aladdin->hitEntities.push_back(other); // Mark this enemy as hit
-                                std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
-                                
-                                if(enemy->health <= 0) {
-                                    enemy->currentState = EnemyComponent::State::DEAD;
-                                    std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
-                                }
-                                // To prevent hitting multiple times in one frame, we could break or add a hit cooldown
-                                // But since this is a simple system, we'll just allow it for now.
+                            enemy->health -= 25; // Aladdin deals 25 damage per hit
+                            markHitInCurrentAttack(aladdin, other); // Mark this enemy as hit
+                            std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
+
+                            if(enemy->health <= 0) {
+                                enemy->currentState = EnemyComponent::State::DEAD;
+                                std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
                             }
                         }
 
                         // Check for Breakable Props (Pots)
                         BreakableComponent* breakable = other->getComponent<BreakableComponent>();
                         if(breakable) {
-                            // Check if this breakable was already hit during the current attack
-                            bool alreadyHit = false;
-                            for(auto e : aladdin->hitEntities) {
-                                if(e == other) {
-                                    alreadyHit = true;
-                                    break;
-                                }
-                            }
-                            if(alreadyHit) continue;
+                            if(wasHitInCurrentAttack(aladdin, other)) continue;
 
-                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
-                            // collision detection once the ColliderComponent is ready.
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.0f) {
-                                aladdin->hitEntities.push_back(other); // Mark this breakable as hit
-                                std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
-                                
-                                // Spawn multiple loot items if defined
-                                for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
-                                    const auto& lootEntry = breakable->lootItems[i];
-                                    
-                                    Entity* loot = world->add();
-                                    loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
-                                    
-                                    // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
-                                    float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
-                                    float radius = 3.5f; // Increased distance from the center for more scattering
-                                    glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
-                                    
-                                    loot->localTransform.position = other->localTransform.position + scatterOffset;
-                                    
-                                    // Add MeshRenderer for loot
-                                    auto mr = loot->addComponent<MeshRendererComponent>();
-                                    mr->mesh = AssetLoader<Mesh>::get("cube");
-                                    mr->material = AssetLoader<Material>::get("loot_mat");
-                                    
+                            markHitInCurrentAttack(aladdin, other); // Mark this breakable as hit
+                            std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
+
+                            // Spawn multiple loot items if defined
+                            for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
+                                const auto& lootEntry = breakable->lootItems[i];
+
+                                Entity* loot = world->add();
+                                loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
+
+                                // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
+                                float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
+                                float radius = 3.5f; // Increased distance from the center for more scattering
+                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
+
+                                loot->localTransform.position = other->localTransform.position + scatterOffset;
+
+                                // Add MeshRenderer for loot
+                                auto mr = loot->addComponent<MeshRendererComponent>();
+                                mr->mesh = AssetLoader<Mesh>::get("cube");
+                                mr->material = AssetLoader<Material>::get("loot_mat");
+
                                     // Add Collectible component
                                     auto coll = loot->addComponent<CollectibleComponent>();
                                     if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
                                     else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
                                     else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
                                     coll->value = lootEntry.value;
+
+                                    // Add physics trigger so collectible system can detect pickup
+                                    auto rb = loot->addComponent<RigidBodyComponent>();
+                                    rb->type = RigidBodyType::Static;
+                                    rb->mass = 0.0f;
+                                    rb->useGravity = false;
+
+                                    auto lootCollider = loot->addComponent<ColliderComponent>();
+                                    lootCollider->shape = ColliderShape::Sphere;
+                                    lootCollider->radius = 0.5f;
+                                    lootCollider->isTrigger = true;
                                 }
 
-                                // Mark the pot for removal
-                                world->markForRemoval(other);
-                            }
+                            // Mark the pot for removal
+                            world->markForRemoval(other);
                         }
                     }
                 }

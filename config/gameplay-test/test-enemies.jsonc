@@ -89,9 +89,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "plane",
                         "material": "floor_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [50, 0.5, 50],
+                        "friction": 0.8,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0],
+                "position": [0, -0.5, 0],
                 "scale": [100, 1, 100]
             },
             {
@@ -111,10 +124,25 @@
                         "cameraSmoothing": 5.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [0, 0, 0]
+                        "respawnPosition": [0, 2, 0]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, -4],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Palace Guard 1",
@@ -136,9 +164,24 @@
                             [-5, 0, -6],
                             [5, 0, -6]
                         ]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, 0],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Palace Guard 2",
@@ -160,9 +203,24 @@
                             [-8, 0, -12],
                             [8, 0, -12]
                         ]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [-8, 0, -12]
+                "position": [-8, 2, -12],
+                "scale": [1, 2, 1]
             }
         ]
     }

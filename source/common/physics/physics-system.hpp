@@ -25,6 +25,9 @@ namespace our {
                 return;
             }
 
+            // Clear the frame events so gameplay systems consume only fresh events
+            physicsWorld.clearFrameEvents();
+
             // ====================================================================
             // PHASE 1: Initialize missing bodies/colliders
             // ====================================================================
@@ -111,21 +114,25 @@ namespace our {
                     const reactphysics3d::Vector3& pos = physicsTransform.getPosition();
                     transform->position = glm::vec3(pos.x, pos.y, pos.z);
 
-                    // 2. Sync Rotation (Converting RP3D Quaternion back to Euler angles in degrees)
-                    const reactphysics3d::Quaternion& rp3dQuat = physicsTransform.getOrientation();
+                    // 2. Sync Rotation
+                    // If rotation is locked in physics, gameplay code is expected to control visual facing,
+                    // so we preserve ECS rotation and only sync position/velocity from physics.
+                    if (!rbComp->lockRotation) {
+                        const reactphysics3d::Quaternion& rp3dQuat = physicsTransform.getOrientation();
 
-                    // Construct GLM quaternion from RP3D quaternion (w, x, y, z order)
-                    glm::quat glmQuat(rp3dQuat.w, rp3dQuat.x, rp3dQuat.y, rp3dQuat.z);
+                        // Construct GLM quaternion from RP3D quaternion (w, x, y, z order)
+                        glm::quat glmQuat(rp3dQuat.w, rp3dQuat.x, rp3dQuat.y, rp3dQuat.z);
 
-                    // Validate quaternion before conversion
-                    if (glm::isnan(glmQuat.w) || glm::isnan(glmQuat.x) || glm::isnan(glmQuat.y) || glm::isnan(glmQuat.z)) {
-                        Logger::error("PhysicsSystem", "Invalid quaternion for entity '", entity->name,
-                                     "' - NaN component detected");
-                        continue;
+                        // Validate quaternion before conversion
+                        if (glm::isnan(glmQuat.w) || glm::isnan(glmQuat.x) || glm::isnan(glmQuat.y) || glm::isnan(glmQuat.z)) {
+                            Logger::error("PhysicsSystem", "Invalid quaternion for entity '", entity->name,
+                                         "' - NaN component detected");
+                            continue;
+                        }
+
+                        // Keep Transform rotation in radians (engine convention)
+                        transform->rotation = glm::eulerAngles(glmQuat);
                     }
-
-                    // Keep Transform rotation in radians (engine convention)
-                    transform->rotation = glm::eulerAngles(glmQuat);
 
                     // 3. Sync Linear Velocity
                     rbComp->velocity = physicsWorld.getLinearVelocity(entity);
@@ -174,6 +181,10 @@ namespace our {
         }
 
         PhysicsWorld& getPhysicsWorld() {
+            return physicsWorld;
+        }
+
+        const PhysicsWorld& getPhysicsWorld() const {
             return physicsWorld;
         }
     private:

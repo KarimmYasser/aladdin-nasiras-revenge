@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/level-exit.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -22,7 +23,7 @@ namespace our {
          * 
          * @param world The world containing entities and components.
          */
-        void update(World* world) {
+        void update(World* world, const PhysicsSystem* physicsSystem) {
             
             Entity* aladdinEntity = nullptr;
             AladdinControllerComponent* aladdin = nullptr;
@@ -43,14 +44,14 @@ namespace our {
                 LevelExitComponent* exit = entity->getComponent<LevelExitComponent>();
                 if(!exit || exit->activated) continue;
 
-                // Distance check (Mock Physics)
-                // TODO (Member 2): Replace with trigger collision
-                glm::vec3 aladdinPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
-                glm::vec3 exitPos = glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+                bool isAtExit = false;
+                if (physicsSystem) {
+                    const auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                    isAtExit = physicsWorld.hasTriggerEvent(aladdinEntity, entity) ||
+                               physicsWorld.hasContactEvent(aladdinEntity, entity);
+                }
 
-                float distance = glm::distance(aladdinPos, exitPos);
-
-                if(distance < exit->radius){
+                if(isAtExit){
                     if(aladdin->hasKey){
                         exit->activated = true;
                         std::cout << "[LevelExitSystem] Level Complete! Moving to: " << exit->nextScene << std::endl;

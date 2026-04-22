@@ -140,14 +140,14 @@ class Playstate: public our::State {
 
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
+        aladdinController.update(&world, &physicsSystem, (float)deltaTime);
+        enemySystem.update(&world, &physicsSystem, (float)deltaTime);
         physicsSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
-        aladdinController.update(&world, (float)deltaTime);
-        collectibleSystem.update(&world, (float)deltaTime);
-        hazardSystem.update(&world, (float)deltaTime);
-        enemySystem.update(&world, (float)deltaTime);
-        checkpointSystem.update(&world);
-        levelExitSystem.update(&world);
+        collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
+        hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
+        checkpointSystem.update(&world, &physicsSystem);
+        levelExitSystem.update(&world, &physicsSystem);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 

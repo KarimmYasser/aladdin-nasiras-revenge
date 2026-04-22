@@ -2,6 +2,7 @@
 #include "components/checkpoint.hpp"
 #include "components/aladdin-controller.hpp"
 #include "components/mesh-renderer.hpp"
+#include "physics/physics-system.hpp"
 #include "material/material.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
@@ -11,7 +12,7 @@ namespace our {
     // The CheckpointSystem handles player interaction with checkpoints.
     class CheckpointSystem {
     public:
-        void update(World* world) {
+        void update(World* world, const PhysicsSystem* physicsSystem) {
             Entity* player = nullptr;
             AladdinControllerComponent* playerController = nullptr;
 
@@ -26,17 +27,19 @@ namespace our {
 
             if (!player) return;
 
-            glm::vec3 playerPos = player->localTransform.position;
-
             // Check proximity to all checkpoints
             for (auto entity : world->getEntities()) {
                 CheckpointComponent* checkpoint = entity->getComponent<CheckpointComponent>();
                 if (!checkpoint || checkpoint->activated) continue;
 
-                // TODO (Member 2): Replace distance check with Physics onTriggerEnter
-                float distance = glm::distance(playerPos, entity->localTransform.position);
+                bool reachedCheckpoint = false;
+                if (physicsSystem) {
+                    const auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                    reachedCheckpoint = physicsWorld.hasTriggerEvent(player, entity) ||
+                                        physicsWorld.hasContactEvent(player, entity);
+                }
 
-                if (distance < checkpoint->radius) {
+                if (reachedCheckpoint) {
                     checkpoint->activated = true;
                     playerController->respawnPosition = entity->localTransform.position;
                     
