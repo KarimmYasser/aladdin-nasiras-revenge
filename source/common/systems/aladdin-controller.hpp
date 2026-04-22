@@ -7,9 +7,13 @@
 #include "../components/breakable.hpp"
 #include "../components/collectible.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/movement.hpp"
+#include "../components/rigid-body.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
+#include "../input/mouse.hpp"
 #include <imgui.h>
+#include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -30,6 +34,21 @@ namespace our {
         // Initialize with the application pointer
         void enter(Application* app) {
             this->app = app;
+        }
+
+        /// Unlock cursor if follow-cam mouse look had it captured (call from Playstate onDestroy / scene change).
+        void unlockFollowCameraMouse(World* world) {
+            if(!app || !world) return;
+            GLFWwindow* win = app->getWindow();
+            for(auto entity : world->getEntities()){
+                if(auto* a = entity->getComponent<AladdinControllerComponent>()) {
+                    if(a->followCamMouseLocked) {
+                        Mouse::unlockMouse(win);
+                        a->followCamMouseLocked = false;
+                        a->followCamSkipNextLookDelta = false;
+                    }
+                }
+            }
         }
 
         /**
@@ -54,47 +73,81 @@ namespace our {
                 if(keyboard.isPressed(GLFW_KEY_A)) moveDir.x -= 1.0f; // Left
                 if(keyboard.isPressed(GLFW_KEY_D)) moveDir.x += 1.0f; // Right
 
-                // 2. Apply movement (horizontal)
-                // TODO (Physics): Replace manual position updates with force/velocity
-                // application on the player's Rigidbody/Collider.
-                if(glm::length(moveDir) > 0.001f) {
-                    moveDir = glm::normalize(moveDir);
-                    entity->localTransform.position += moveDir * aladdin->speed * deltaTime;
+                MovementComponent* movement = entity->getComponent<MovementComponent>();
+                const bool useMovementSystem = movement != nullptr;
 
-                    // Rotate entity to face the movement direction
-                    float targetYaw = glm::atan(moveDir.x, moveDir.z);
-                    // Smoothly interpolate rotation
-                    float currentYaw = entity->localTransform.rotation.y;
-                    float diff = targetYaw - currentYaw;
-                    while(diff > glm::pi<float>()) diff -= 2 * glm::pi<float>();
-                    while(diff < -glm::pi<float>()) diff += 2 * glm::pi<float>();
-                    entity->localTransform.rotation.y += diff * aladdin->rotationSpeed * deltaTime;
-                }
-
-                // 3. Handle Jumping (Vertical logic)
-                // TODO (Physics): Use the physics engine's gravity instead of this constant.
-                // Mock Gravity (Temporary until Physics Dev finishes PhysicsSystem)
-                const float gravity = -20.0f; 
+                const float gravity = -20.0f;
                 aladdin->velocity.y += gravity * deltaTime;
 
-                // Apply vertical velocity
-                entity->localTransform.position.y += aladdin->velocity.y * deltaTime;
-
-                // TODO (Physics): Replace this Y=0 check with real collision detection
-                // from the PhysicsSystem (isGrounded should come from the Collider).
-                // Simple floor check (Mocking ground at Y=0)
-                if(entity->localTransform.position.y <= 0.0f) {
-                    entity->localTransform.position.y = 0.0f;
-                    aladdin->velocity.y = 0.0f;
-                    aladdin->isGrounded = true;
+                if(useMovementSystem) {
+                    glm::vec3 horizVel(0.0f);
+                    if(glm::length(moveDir) > 0.001f) {
+                        moveDir = glm::normalize(moveDir);
+                        // Local WASD in character space (W = model -Z) rotated into world by facing yaw
+                        const float yf = aladdin->facingYaw;
+                        const float c = glm::cos(yf);
+                        const float s = glm::sin(yf);
+                        const glm::vec3 worldDir(
+                            moveDir.x * c + moveDir.z * s,
+                            0.0f,
+                            -moveDir.x * s + moveDir.z * c
+                        );
+                        horizVel = worldDir * aladdin->speed;
+                        // Pure strafe (A/D only): move sideways without spinning facing or the follow camera.
+                        if(std::abs(moveDir.z) > 0.001f) {
+                            const float targetYaw = std::atan2(worldDir.x, worldDir.z);
+                            float currentYaw = aladdin->facingYaw;
+                            float diff = targetYaw - currentYaw;
+                            while(diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
+                            while(diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
+                            aladdin->facingYaw = currentYaw + diff * aladdin->rotationSpeed * deltaTime;
+                        }
+                        entity->localTransform.rotation.x = 0.0f;
+                        entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                        entity->localTransform.rotation.z = 0.0f;
+                    }
+                    movement->linearVelocity = glm::vec3(horizVel.x, aladdin->velocity.y, horizVel.z);
+                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
+                        aladdin->velocity.y = aladdin->jumpForce;
+                        aladdin->isGrounded = false;
+                        movement->linearVelocity.y = aladdin->velocity.y;
+                    }
                 } else {
-                    aladdin->isGrounded = false;
-                }
-
-                // Trigger Jump
-                if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
-                    aladdin->velocity.y = aladdin->jumpForce;
-                    aladdin->isGrounded = false;
+                    if(glm::length(moveDir) > 0.001f) {
+                        moveDir = glm::normalize(moveDir);
+                        const float yf = aladdin->facingYaw;
+                        const float c = glm::cos(yf);
+                        const float s = glm::sin(yf);
+                        const glm::vec3 worldDir(
+                            moveDir.x * c + moveDir.z * s,
+                            0.0f,
+                            -moveDir.x * s + moveDir.z * c
+                        );
+                        entity->localTransform.position += worldDir * aladdin->speed * deltaTime;
+                        if(std::abs(moveDir.z) > 0.001f) {
+                            const float targetYaw = std::atan2(worldDir.x, worldDir.z);
+                            float currentYaw = aladdin->facingYaw;
+                            float diff = targetYaw - currentYaw;
+                            while(diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
+                            while(diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
+                            aladdin->facingYaw = currentYaw + diff * aladdin->rotationSpeed * deltaTime;
+                        }
+                        entity->localTransform.rotation.x = 0.0f;
+                        entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                        entity->localTransform.rotation.z = 0.0f;
+                    }
+                    entity->localTransform.position.y += aladdin->velocity.y * deltaTime;
+                    if(entity->localTransform.position.y <= 0.0f) {
+                        entity->localTransform.position.y = 0.0f;
+                        aladdin->velocity.y = 0.0f;
+                        aladdin->isGrounded = true;
+                    } else {
+                        aladdin->isGrounded = false;
+                    }
+                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
+                        aladdin->velocity.y = aladdin->jumpForce;
+                        aladdin->isGrounded = false;
+                    }
                 }
 
                 // 3.5. Update Invincibility Timer
@@ -160,6 +213,7 @@ namespace our {
                                 
                                 if(enemy->health <= 0) {
                                     enemy->currentState = EnemyComponent::State::DEAD;
+                                    aladdin->enemyCount += 1;
                                     std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
                                 }
                                 // To prevent hitting multiple times in one frame, we could break or add a hit cooldown
@@ -200,18 +254,42 @@ namespace our {
                                     glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
                                     
                                     loot->localTransform.position = other->localTransform.position + scatterOffset;
-                                    
-                                    // Add MeshRenderer for loot
+
+                                    Mesh* lootMesh = nullptr;
+                                    Material* lootMat = nullptr;
+                                    glm::vec3 lootScale(1.0f);
+                                    float lootRotSpeed = 2.0f;
+                                    float lootBob = 0.15f;
+                                    if(lootEntry.type == "coin") {
+                                        lootMesh = AssetLoader<Mesh>::get("coin_mesh");
+                                        lootMat = AssetLoader<Material>::get("coin-mat");
+                                        lootScale = glm::vec3(4.6f);
+                                        lootRotSpeed = 3.0f;
+                                        lootBob = 0.15f;
+                                    } else if(lootEntry.type == "apple") {
+                                        lootMesh = AssetLoader<Mesh>::get("apple_mesh");
+                                        lootMat = AssetLoader<Material>::get("lit-apple");
+                                        lootScale = glm::vec3(1.3f);
+                                        lootRotSpeed = 2.0f;
+                                        lootBob = 0.12f;
+                                    } else {
+                                        lootMesh = AssetLoader<Mesh>::get("coin_mesh");
+                                        lootMat = AssetLoader<Material>::get("coin-mat");
+                                        lootScale = glm::vec3(4.6f);
+                                    }
+                                    loot->localTransform.scale = lootScale;
+
                                     auto mr = loot->addComponent<MeshRendererComponent>();
-                                    mr->mesh = AssetLoader<Mesh>::get("cube");
-                                    mr->material = AssetLoader<Material>::get("loot_mat");
-                                    
-                                    // Add Collectible component
+                                    mr->mesh = lootMesh ? lootMesh : AssetLoader<Mesh>::get("cube");
+                                    mr->material = lootMat ? lootMat : AssetLoader<Material>::get("coin-mat");
+
                                     auto coll = loot->addComponent<CollectibleComponent>();
                                     if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
                                     else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
                                     else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
                                     coll->value = lootEntry.value;
+                                    coll->rotationSpeed = lootRotSpeed;
+                                    coll->bobbingHeight = lootBob;
                                 }
 
                                 // Mark the pot for removal
@@ -242,35 +320,141 @@ namespace our {
                     // will handle its own collision with enemies independently.
                 }
 
-                // 6. Handle Camera Follow
-                if(aladdin->enableCameraFollow){
-                    // Search for a camera entity
-                    Entity* cameraEntity = nullptr;
-                    for(auto e : world->getEntities()){
-                        if(e->getComponent<CameraComponent>()){
-                            cameraEntity = e;
-                            break;
-                        }
-                    }
+            }
+        }
 
-                    if(cameraEntity){
-                        // The target position is the player's position + the offset
-                        glm::vec3 targetPosition = entity->localTransform.position + aladdin->cameraOffset;
-                        
-                        // Apply smoothing (Simple linear interpolation/lerp)
-                        if(aladdin->cameraSmoothing > 0.0f){
-                            // factor = 1 - e^(-smoothing * dt) is a common way to do framerate-independent smoothing
-                            float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * deltaTime);
-                            cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
-                        } else {
-                            // Instant follow
-                            cameraEntity->localTransform.position = targetPosition;
-                        }
+        /**
+         * @brief After MovementSystem integration: snap player to floor and update follow camera.
+         */
+        void lateUpdate(World* world, float deltaTime) {
+            for(auto entity : world->getEntities()){
+                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
+                if(!aladdin || aladdin->lives <= 0) continue;
 
-                        // Optional: Make camera look at Aladdin
-                        // The game description mentions a free-roaming camera in open 3D spaces.
-                        // We might need to add logic to adjust the camera's orientation here.
+                MovementComponent* movement = entity->getComponent<MovementComponent>();
+                auto* rb = entity->getComponent<RigidBodyComponent>();
+                const bool physicsMovesBody = rb && rb->type == RigidBodyType::Dynamic;
+                if(movement && !physicsMovesBody) {
+                    if(entity->localTransform.position.y <= 0.0f) {
+                        entity->localTransform.position.y = 0.0f;
+                        aladdin->velocity.y = 0.0f;
+                        movement->linearVelocity.y = 0.0f;
+                        aladdin->isGrounded = true;
+                    } else {
+                        aladdin->isGrounded = false;
                     }
+                }
+
+            }
+        }
+
+        /**
+         * @brief Positions the gameplay camera from Aladdin's transform (call after physics so dynamic bodies match visuals).
+         */
+        void updateFollowCamera(World* world, float deltaTime) {
+            if(!world) return;
+
+            for(auto entity : world->getEntities()){
+                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
+                if(!aladdin || aladdin->lives <= 0 || !aladdin->enableCameraFollow) continue;
+
+                Entity* cameraEntity = nullptr;
+                for(auto e : world->getEntities()) {
+                    if(e->getComponent<CameraComponent>()) {
+                        cameraEntity = e;
+                        break;
+                    }
+                }
+                if(!cameraEntity) continue;
+
+                if(app && app->getMouse().isEnabled()) {
+                    auto& mouse = app->getMouse();
+                    const int btn = aladdin->mouseLookButton;
+                    GLFWwindow* win = app->getWindow();
+                    if(mouse.isPressed(btn)) {
+                        if(!aladdin->followCamMouseLocked) {
+                            Mouse::lockMouse(win);
+                            aladdin->followCamMouseLocked = true;
+                            aladdin->followCamSkipNextLookDelta = true;
+                        }
+                        glm::vec2 d = mouse.getMouseDelta();
+                        if(aladdin->followCamSkipNextLookDelta) {
+                            aladdin->followCamSkipNextLookDelta = false;
+                            d = glm::vec2(0.0f);
+                        }
+                        aladdin->cameraYawOffset += d.x * aladdin->mouseLookSensitivity;
+                        aladdin->cameraPitchOffset += d.y * aladdin->mouseLookSensitivity;
+                        while(aladdin->cameraYawOffset > glm::pi<float>()) aladdin->cameraYawOffset -= 2.0f * glm::pi<float>();
+                        while(aladdin->cameraYawOffset < -glm::pi<float>()) aladdin->cameraYawOffset += 2.0f * glm::pi<float>();
+                        const float basePitch = (aladdin->cameraMode == AladdinCameraMode::FirstPerson)
+                            ? aladdin->firstPersonPitch : aladdin->thirdPersonPitch;
+                        float totalPitch = basePitch + aladdin->cameraPitchOffset;
+                        totalPitch = glm::clamp(totalPitch, glm::radians(-80.0f), glm::radians(18.0f));
+                        aladdin->cameraPitchOffset = totalPitch - basePitch;
+                    } else if(aladdin->followCamMouseLocked) {
+                        Mouse::unlockMouse(win);
+                        aladdin->followCamMouseLocked = false;
+                        aladdin->followCamSkipNextLookDelta = false;
+                    }
+                } else if(aladdin->followCamMouseLocked && app) {
+                    Mouse::unlockMouse(app->getWindow());
+                    aladdin->followCamMouseLocked = false;
+                    aladdin->followCamSkipNextLookDelta = false;
+                }
+
+                const glm::vec3& pos = entity->localTransform.position;
+                const float yaw = aladdin->facingYaw + aladdin->cameraYawOffset;
+                // Match Transform::toMat4 + view forward: local -Z becomes this world direction on XZ
+                glm::vec3 forward(-glm::sin(yaw), 0.0f, -glm::cos(yaw));
+                if(glm::dot(forward, forward) > 1e-8f) forward = glm::normalize(forward);
+                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+                const glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+                glm::vec3 targetPosition;
+                glm::vec3 targetRotationEuler;
+
+                if(aladdin->cameraMode == AladdinCameraMode::ThirdPerson) {
+                    const glm::vec3& o = aladdin->cameraOffset;
+                    targetPosition = pos - forward * o.z + right * o.x + up * o.y;
+                    targetRotationEuler = {aladdin->thirdPersonPitch + aladdin->cameraPitchOffset, yaw, 0.0f};
+                } else {
+                    targetPosition = pos + right * aladdin->firstPersonCameraOffset.x + up * aladdin->firstPersonCameraOffset.y
+                        + forward * aladdin->firstPersonCameraOffset.z;
+                    targetRotationEuler = {aladdin->firstPersonPitch + aladdin->cameraPitchOffset, yaw, 0.0f};
+                }
+
+                if(aladdin->cameraSmoothing > 0.0f) {
+                    // Clamp dt so a hitch (e.g. console I/O) does not apply a huge blend in one frame.
+                    const float camDt = glm::min(deltaTime, 0.05f);
+                    const float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * camDt);
+                    cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
+                    glm::vec3& r = cameraEntity->localTransform.rotation;
+                    const float yawCur = r.y;
+                    const float yawTgt = targetRotationEuler.y;
+                    float dy = yawTgt - yawCur;
+                    while(dy > glm::pi<float>()) dy -= 2.0f * glm::pi<float>();
+                    while(dy < -glm::pi<float>()) dy += 2.0f * glm::pi<float>();
+                    // Snap pitch/roll: initial scene camera pitch (-32° in level) was being slowly lerped toward
+                    // third-person pitch, so any frame spike looked like a sudden "twist". Yaw stays smoothed.
+                    r.x = targetRotationEuler.x;
+                    r.y = yawCur + dy * factor;
+                    r.z = targetRotationEuler.z;
+                } else {
+                    cameraEntity->localTransform.position = targetPosition;
+                    cameraEntity->localTransform.rotation = targetRotationEuler;
+                }
+
+                entity->localTransform.rotation.x = 0.0f;
+                entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                entity->localTransform.rotation.z = 0.0f;
+
+                if(auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
+                    meshRenderer->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
+                }
+
+                if(auto* rb = entity->getComponent<RigidBodyComponent>(); rb && rb->type == RigidBodyType::Dynamic) {
+                    aladdin->isGrounded = std::abs(rb->velocity.y) < 0.25f;
+                    aladdin->velocity.y = rb->velocity.y;
                 }
             }
         }
@@ -371,17 +555,33 @@ namespace our {
             ImGui::Separator();
             ImGui::Text("Camera Follow:");
             ImGui::Checkbox("Enable Follow", &aladdin->enableCameraFollow);
-            ImGui::DragFloat3("Camera Offset", &aladdin->cameraOffset[0], 0.1f);
+            int mode = (aladdin->cameraMode == AladdinCameraMode::FirstPerson) ? 1 : 0;
+            if(ImGui::Combo("Camera mode", &mode, "Third person\0First person\0")){
+                aladdin->cameraMode = mode ? AladdinCameraMode::FirstPerson : AladdinCameraMode::ThirdPerson;
+            }
+            ImGui::DragFloat3("Third offset (x=side,y=up,z=back)", &aladdin->cameraOffset[0], 0.1f);
+            ImGui::DragFloat3("First-person offset", &aladdin->firstPersonCameraOffset[0], 0.05f);
+            ImGui::DragFloat("First-person pitch (rad)", &aladdin->firstPersonPitch, 0.01f, -1.2f, 1.2f);
+            ImGui::DragFloat("Third-person pitch (rad)", &aladdin->thirdPersonPitch, 0.01f, -0.8f, 0.3f);
             ImGui::DragFloat("Camera Smoothing", &aladdin->cameraSmoothing, 0.1f, 0.0f, 20.0f);
 
             ImGui::Separator();
             ImGui::Text("Physics State:");
             ImGui::DragFloat3("Velocity", &aladdin->velocity[0], 0.1f);
-            
-            // Allow manual teleport/reset for testing
+            if(Entity* owner = aladdin->getOwner()) {
+                if(auto* mov = owner->getComponent<MovementComponent>()) {
+                    ImGui::DragFloat3("Movement linearVelocity", &mov->linearVelocity[0], 0.1f);
+                }
+            }
+
             if(ImGui::Button("Reset Position")) {
-                aladdin->getOwner()->localTransform.position = {0, 0, 0};
-                aladdin->velocity = {0, 0, 0};
+                if(Entity* owner = aladdin->getOwner()) {
+                    owner->localTransform.position = {0, 0, 0};
+                    aladdin->velocity = {0, 0, 0};
+                    if(auto* mov = owner->getComponent<MovementComponent>()) {
+                        mov->linearVelocity = {0, 0, 0};
+                    }
+                }
             }
 
             ImGui::End();

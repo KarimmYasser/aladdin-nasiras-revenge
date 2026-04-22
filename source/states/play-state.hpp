@@ -3,6 +3,8 @@
 #include <application.hpp>
 
 #include <ecs/world.hpp>
+#include <components/aladdin-controller.hpp>
+#include <components/enemy.hpp>
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
@@ -12,17 +14,20 @@
 #include <systems/enemy.hpp>
 #include <systems/checkpoint.hpp>
 #include <systems/level-exit.hpp>
+#include <systems/room-portal.hpp>
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 
 #include <imgui.h>
+#include <algorithm>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <texture/texture2d.hpp>
 #include <texture/texture-utils.hpp>
+#include <glm/glm.hpp>
 
-// This state manages the main gameplay: loads the Agrabah maze level,
-// runs all ECS systems, and renders the HUD overlay with scoring.
+// Main gameplay: loads scene from app config, runs ECS systems, ImGui HUD.
 class Playstate: public our::State {
 
     our::World world;
@@ -37,6 +42,7 @@ class Playstate: public our::State {
     our::EnemySystem enemySystem;
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
+    our::RoomPortalSystem roomPortalSystem;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -45,10 +51,7 @@ class Playstate: public our::State {
     int totalEnemies = 0;
     float elapsedTime = 0.0f;
 
-    // -- Health & Lives --
-    int currentHealth = 3;
-    int maxHealth = 3;
-    int lives = 3;
+    static constexpr int kDefaultMaxHealth = 100;
 
     // Star rating time thresholds (seconds)
     int time3Star = 60;
@@ -90,12 +93,10 @@ class Playstate: public our::State {
             time1Star = game.value("time_1star", 120);
         }
 
-        // Reset gameplay state
-        coinsCollected = 0;
-        enemiesKilled = 0;
         elapsedTime = 0.0f;
-        currentHealth = maxHealth;
-        lives = 3;
+        if(auto* aladdin = findAladdin()) {
+            aladdin->enemyCount = 0;
+        }
 
         // Load UI icons
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
@@ -103,23 +104,44 @@ class Playstate: public our::State {
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
     }
 
-    void onDraw(double deltaTime) override {
-        // Update elapsed time
-        elapsedTime += (float)deltaTime;
-        // Initialize physics system and abort this state if initialization fails
-        physicsInitialized = physicsSystem.initialize();
-        if(!physicsInitialized){
-            getApp()->changeState("menu");
-            return;
+    our::AladdinControllerComponent* findAladdin() {
+        for(auto entity : world.getEntities()){
+            auto* aladdin = entity->getComponent<our::AladdinControllerComponent>();
+            if(aladdin) return aladdin;
         }
+        return nullptr;
+    }
+
+    int countEnemiesDefeated() {
+        auto* aladdin = findAladdin();
+        if(!aladdin) return 0;
+        return aladdin->enemyCount;
     }
 
     void onDraw(double deltaTime) override {
-        if(!physicsInitialized) {
-            return;
+        elapsedTime += (float)deltaTime;
+
+        if(!physicsInitialized){
+            physicsInitialized = physicsSystem.initialize();
+            if(!physicsInitialized){
+                getApp()->changeState("menu");
+                return;
+            }
         }
 
-        // Check for level transition
+        // Victory / other application-state transitions from LevelExit
+        {
+            std::string nextAppState = levelExitSystem.getNextApplicationState();
+            if(!nextAppState.empty()){
+                levelExitSystem.clearNextApplicationState();
+                if(nextAppState == "victory"){
+                    getApp()->changeState("victory");
+                    return;
+                }
+            }
+        }
+
+        // Check for level transition (load another JSON scene)
         std::string nextScene = levelExitSystem.getNextScene();
         if(!nextScene.empty()){
             levelExitSystem.clearNextScene();
@@ -128,27 +150,47 @@ class Playstate: public our::State {
             if(file_in){
                 nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
                 file_in.close();
-                // Update the app config with the new scene
-                getApp()->getConfig()["scene"] = new_config["scene"];
-                // Reload the play state
+                if(new_config.contains("scene")){
+                    getApp()->getConfig()["scene"] = new_config["scene"];
+                }
+                if(new_config.contains("game")){
+                    getApp()->getConfig()["game"] = new_config["game"];
+                }
                 getApp()->changeState("play");
                 return;
-            } else {
-                std::cerr << "Failed to load next scene: " << nextScene << std::endl;
             }
+            std::cerr << "Failed to load next scene: " << nextScene << std::endl;
         }
 
-        // Here, we just run a bunch of systems to control the world logic
-        movementSystem.update(&world, (float)deltaTime);
-        physicsSystem.update(&world, (float)deltaTime);
-        cameraController.update(&world, (float)deltaTime);
+        roomPortalSystem.update(&world, (float)deltaTime);
+        if(roomPortalSystem.inBlackout()){
+            our::RoomPortalSystem::renderBlackFrame(getApp()->getFrameBufferSize());
+            world.deleteMarkedEntities();
+            return;
+        }
+
+        // Aladdin sets MovementComponent velocities; MovementSystem integrates; lateUpdate snaps floor + camera.
         aladdinController.update(&world, (float)deltaTime);
+        movementSystem.update(&world, (float)deltaTime);
+        aladdinController.lateUpdate(&world, (float)deltaTime);
+        physicsSystem.update(&world, (float)deltaTime);
+        aladdinController.updateFollowCamera(&world, (float)deltaTime);
+        {
+            bool followCameraGameplay = false;
+            for(auto e : world.getEntities()){
+                if(auto* a = e->getComponent<our::AladdinControllerComponent>()){
+                    if(a->enableCameraFollow) { followCameraGameplay = true; break; }
+                }
+            }
+            if(!followCameraGameplay) {
+                cameraController.update(&world, (float)deltaTime);
+            }
+        }
         collectibleSystem.update(&world, (float)deltaTime);
         hazardSystem.update(&world, (float)deltaTime);
         enemySystem.update(&world, (float)deltaTime);
         checkpointSystem.update(&world);
         levelExitSystem.update(&world);
-        // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
         // Remove entities marked for deletion at the end of the frame
@@ -162,48 +204,69 @@ class Playstate: public our::State {
             getApp()->changeState("menu");
         }
 
+        if(keyboard.justPressed(GLFW_KEY_V)){
+            if(auto* a = findAladdin()){
+                aladdinController.unlockFollowCameraMouse(&world);
+                a->cameraYawOffset = 0.0f;
+                a->cameraPitchOffset = 0.0f;
+                a->cameraMode = (a->cameraMode == our::AladdinCameraMode::ThirdPerson)
+                    ? our::AladdinCameraMode::FirstPerson
+                    : our::AladdinCameraMode::ThirdPerson;
+            }
+        }
+
+        auto* aladdin = findAladdin();
+        if(aladdin && aladdin->lives <= 0){
+            getApp()->changeState("gameover");
+        }
+
 #if !defined(NDEBUG)
-        // Debug shortcuts (enabled only in non-release builds)
         if(keyboard.justPressed(GLFW_KEY_G)){
             getApp()->changeState("gameover");
         }
-        if(keyboard.justPressed(GLFW_KEY_V)){
+        if(keyboard.justPressed(GLFW_KEY_F9)){
             getApp()->changeState("victory");
         }
-        if(keyboard.justPressed(GLFW_KEY_C)){
-            if(coinsCollected < totalCoins) coinsCollected++;
+        if(keyboard.justPressed(GLFW_KEY_C) && aladdin && totalCoins > 0){
+            aladdin->coinCount = std::min(aladdin->coinCount + 1, totalCoins);
         }
         if(keyboard.justPressed(GLFW_KEY_K)){
-            if(enemiesKilled < totalEnemies) enemiesKilled++;
+            for(auto entity : world.getEntities()){
+                auto* enemy = entity->getComponent<our::EnemyComponent>();
+                if(enemy && enemy->currentState != our::EnemyComponent::State::DEAD){
+                    enemy->health = 0;
+                    enemy->currentState = our::EnemyComponent::State::DEAD;
+                    if(aladdin) {
+                        aladdin->enemyCount += 1;
+                    }
+                    break;
+                }
+            }
         }
-        if(keyboard.justPressed(GLFW_KEY_H)){
-            currentHealth--;
-            if(currentHealth <= 0){
-                lives--;
-                if(lives <= 0){
-                    getApp()->changeState("gameover");
-                } else {
-                    currentHealth = maxHealth; // respawn with full health
+        if(keyboard.justPressed(GLFW_KEY_H) && aladdin){
+            aladdin->health -= 25;
+            if(aladdin->health <= 0){
+                aladdin->lives--;
+                if(aladdin->lives > 0){
+                    aladdin->health = kDefaultMaxHealth;
                 }
             }
         }
 #endif
     }
 
-    // Helper to calculate star rating
-    int calculateStars() const {
-        // Stars based on time
+    int calculateStars() {
         int timeStars = 0;
         if (elapsedTime <= time3Star) timeStars = 3;
         else if (elapsedTime <= time2Star) timeStars = 2;
         else if (elapsedTime <= time1Star) timeStars = 1;
 
-        // Bonus: all coins = +1 potential, all enemies = +1 potential
-        // Final rating = min(time-based stars, 3) with bonuses
-        float coinRatio = totalCoins > 0 ? (float)coinsCollected / totalCoins : 1.0f;
-        float enemyRatio = totalEnemies > 0 ? (float)enemiesKilled / totalEnemies : 1.0f;
+        auto* aladdin = findAladdin();
+        int coins = aladdin ? aladdin->coinCount : 0;
+        int defeated = countEnemiesDefeated();
+        float coinRatio = totalCoins > 0 ? (float)coins / totalCoins : 1.0f;
+        float enemyRatio = totalEnemies > 0 ? (float)defeated / totalEnemies : 1.0f;
 
-        // If you didn't collect enough or kill enough, cap the stars
         if (coinRatio < 0.5f) timeStars = std::min(timeStars, 1);
         if (coinRatio < 0.8f) timeStars = std::min(timeStars, 2);
         if (enemyRatio < 0.5f) timeStars = std::min(timeStars, 2);
@@ -225,6 +288,14 @@ class Playstate: public our::State {
         ImGuiIO& io = ImGui::GetIO();
         float screenWidth = io.DisplaySize.x;
         float screenHeight = io.DisplaySize.y;
+
+        auto* aladdin = findAladdin();
+        const int coins = aladdin ? aladdin->coinCount : 0;
+        const int defeated = countEnemiesDefeated();
+        const int hp = aladdin ? aladdin->health : 0;
+        const int livesCount = aladdin ? aladdin->lives : 0;
+        const int apples = aladdin ? aladdin->appleCount : 0;
+        const float hpFrac = aladdin ? glm::clamp((float)aladdin->health / (float)kDefaultMaxHealth, 0.0f, 1.0f) : 0.0f;
 
         // Helper for consistent panel styling
         auto beginPanel = [](const char* id, ImVec2 pos, ImVec2 size) {
@@ -258,12 +329,13 @@ class Playstate: public our::State {
         ImGui::Text("GOLD COINS");
         ImGui::PopStyleColor();
         
-        float progress = totalCoins > 0 ? (float)coinsCollected / totalCoins : 1.0f;
+        float progress = totalCoins > 0 ? (float)coins / totalCoins : 1.0f;
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 0.8f, 0.0f, 0.9f));
         ImGui::ProgressBar(progress, ImVec2(200, 15), ""); 
         ImGui::PopStyleColor();
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::Text("%d / %d Collected", coinsCollected, totalCoins);
+        ImGui::Text("%d / %d Collected", coins, totalCoins);
+        ImGui::Text("Apples: %d", apples);
         ImGui::EndGroup();
         endPanel();
 
@@ -311,34 +383,35 @@ class Playstate: public our::State {
         ImGui::Text("NASIRA'S GUARDS");
         ImGui::PopStyleColor();
 
-        float enemyProgress = totalEnemies > 0 ? (float)enemiesKilled / totalEnemies : 1.0f;
+        float enemyProgress = totalEnemies > 0 ? (float)defeated / totalEnemies : 1.0f;
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.8f, 0.1f, 0.1f, 0.9f));
         ImGui::ProgressBar(enemyProgress, ImVec2(200, 15), "");
         ImGui::PopStyleColor();
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::Text("%d / %d Defeated", enemiesKilled, totalEnemies);
+        ImGui::Text("%d / %d Defeated", defeated, totalEnemies);
         ImGui::EndGroup();
         endPanel();
 
         // ═══════════════════════════════════════════════════════
         //  BOTTOM-LEFT: Lives & Health
         // ═══════════════════════════════════════════════════════
-        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 110), ImVec2(220, 0));
-        ImGui::SetWindowFontScale(1.4f);
-        ImGui::Text("LIVES: %d", lives);
-        
+        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 130), ImVec2(280, 0));
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::Text("LIVES: %d", livesCount);
+        ImGui::Spacing();
+        ImGui::Text("HEALTH");
+        ImVec4 healthColor = ImVec4(1.0f - hpFrac, hpFrac, 0.15f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, healthColor);
+        ImGui::ProgressBar(hpFrac, ImVec2(220, 14), "");
+        ImGui::PopStyleColor();
+        ImGui::Text("%d / %d", hp, kDefaultMaxHealth);
         ImGui::Spacing();
         if (heartIcon) {
-            for (int i = 0; i < maxHealth; i++) {
-                if (i > 0) ImGui::SameLine(0, 8);
-                ImVec4 tint = (i < currentHealth) ? ImVec4(1, 1, 1, 1) : ImVec4(0.2f, 0.2f, 0.2f, 0.4f);
-                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(30, 30), ImVec2(0,0), ImVec2(1,1), tint);
-            }
-        } else {
-            for (int i = 0; i < maxHealth; i++) {
+            ImGui::Text(" ");
+            ImGui::SameLine();
+            for (int i = 0; i < livesCount && i < 8; i++) {
                 if (i > 0) ImGui::SameLine(0, 6);
-                if (i < currentHealth) ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "<3");
-                else ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 0.4f), "<3");
+                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(26, 26));
             }
         }
         endPanel();
@@ -346,29 +419,32 @@ class Playstate: public our::State {
         // ═══════════════════════════════════════════════════════
         //  BOTTOM-CENTER: Controls
         // ═══════════════════════════════════════════════════════
-        ImGui::SetNextWindowPos(ImVec2(screenWidth / 2.0f - 250, screenHeight - 45));
+        ImGui::SetNextWindowPos(ImVec2(screenWidth / 2.0f - 280, screenHeight - 45));
         ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::SetWindowFontScale(1.1f);
+        ImGui::SetWindowFontScale(1.05f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-        ImGui::Text("WASD: Move | Mouse: Look | C: Coin | K: Kill | H: Damage | ESC: Menu");
+#if !defined(NDEBUG)
+        ImGui::Text("WASD Move | Space Jump | F Sword | R Apple | Hold RMB look | V Camera | ESC Menu | dbg: C+coin K+kill H+dmg G over F9 win");
+#else
+        ImGui::Text("WASD Move | Space Jump | F Sword | R Apple | Hold RMB look | V Camera | ESC Menu");
+#endif
         ImGui::PopStyleColor();
         ImGui::End();
-    }
 
-    // For Debugging only
-    // TODO - Remove or disable in production builds
-    void onImmediateGui() override {
+#if !defined(NDEBUG)
         aladdinController.onImmediateGui(&world);
+#endif
     }
-    //////////////////////////////////////////////
 
     void onDestroy() override {
         // Shutdown physics system and clear its bodies
         if(physicsInitialized){
             physicsSystem.shutdown(&world);
+            physicsInitialized = false; // same Playstate instance is reused; must init again on next enter
         }
         // Don't forget to destroy the renderer
         renderer.destroy();
+        aladdinController.unlockFollowCameraMouse(&world);
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         // Clear the world

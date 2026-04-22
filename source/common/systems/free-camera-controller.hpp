@@ -34,9 +34,13 @@ namespace our
             CameraComponent* camera = nullptr;
             FreeCameraControllerComponent *controller = nullptr;
             for(auto entity : world->getEntities()){
-                camera = entity->getComponent<CameraComponent>();
-                controller = entity->getComponent<FreeCameraControllerComponent>();
-                if(camera && controller) break;
+                auto* cam = entity->getComponent<CameraComponent>();
+                auto* ctrl = entity->getComponent<FreeCameraControllerComponent>();
+                if(cam && ctrl) {
+                    camera = cam;
+                    controller = ctrl;
+                    break;
+                }
             }
             // If there is no entity with both a CameraComponent and a FreeCameraControllerComponent, we can do nothing so we return
             if(!(camera && controller)) return;
