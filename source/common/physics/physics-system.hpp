@@ -81,6 +81,8 @@ namespace our {
             for (auto entity : ecsWorld->getEntities()) {
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 auto* mov = entity->getComponent<MovementComponent>();
+                // Aladdin (and similar) set linear velocity in gameplay code each frame; do not overwrite with Movement.
+                if (entity->getComponent<AladdinControllerComponent>()) continue;
                 if (rbComp && rbComp->bodyHandle && mov && rbComp->type == RigidBodyType::Dynamic) {
                     physicsWorld.setLinearVelocity(entity, mov->linearVelocity);
                 }

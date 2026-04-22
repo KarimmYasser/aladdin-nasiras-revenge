@@ -351,14 +351,13 @@
                     { "type": "Mesh Renderer", "mesh": "aladdin_mesh", "material": "lit-aladdin" },
                     { "type": "Aladdin Controller", "speed": 11.0, "jumpForce": 11.0, "rotationSpeed": 10.0,
                       "enableCameraFollow": true,
-                      "mouseLookSensitivity": 0.0025,
-                      "cameraOffset": [0.45, 4.0, 9.5],
+                      "cameraMode": "third",
+                      "cameraOffset": [0.0, 4.45, 6.0],
+                      "cameraSmoothing": 8.0,
                       "firstPersonCameraOffset": [0.0, 1.38, 0.22],
-                      "firstPersonPitchDegrees": -2.0,
-                      "thirdPersonPitchDegrees": -8.0,
-                      "cameraSmoothing": 7.0,
+                      "firstPersonPitchDegrees": 0.0,
+                      "thirdPersonPitchDegrees": -10.0,
                       "health": 100, "lives": 3, "respawnPosition": [0, 2.0, 0] },
-                    { "type": "Movement", "linearVelocity": [0, 0, 0], "angularVelocity": [0, 0, 0] },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
                 ]
@@ -367,17 +366,23 @@
             { "name": "pot-a", "position": [-6, 0, -5], "scale": [1.0, 1.0, 1.0],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
-                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] }
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
                 ] },
             { "name": "pot-b", "position": [5, 0, 6], "scale": [1.0, 1.0, 1.0],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
-                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }] }
+                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
                 ] },
             { "name": "pot-c", "position": [-4, 0, 7], "scale": [1.0, 1.0, 1.0],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
-                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] }
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
                 ] },
 
             { "name": "c1", "position": [-7, 0.65, 2], "rotation": [0, 20, 0], "scale": [4.6, 4.6, 4.6],
@@ -429,7 +434,7 @@
 
             {
                 "name": "enemy-place2-slime",
-                "position": [80, 0, 4],
+                "position": [80, 0.9, 4],
                 "rotation": [0, 0, 0],
                 "scale": [0.017, 0.017, 0.017],
                 "components": [
@@ -443,8 +448,10 @@
                         "health": 45,
                         "damage": 12,
                         "attackCooldown": 1.6,
-                        "waypoints": [[74, 0, 4], [84, 0, 4], [84, 0, -4], [74, 0, -4]]
-                    }
+                        "waypoints": [[74, 0.9, 4], [84, 0.9, 4], [84, 0.9, -4], [74, 0.9, -4]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 42.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.55, "height": 1.25, "friction": 0.65 }
                 ]
             },
 
@@ -485,7 +492,9 @@
                         "damage": 10,
                         "attackCooldown": 1.5,
                         "waypoints": [[86, 1.0, -98], [100, 1.0, -98], [100, 1.0, -88], [86, 1.0, -88]]
-                    }
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
                 ]
             },
             {
@@ -505,7 +514,9 @@
                         "damage": 10,
                         "attackCooldown": 1.5,
                         "waypoints": [[102, 1.0, -108], [116, 1.0, -108], [116, 1.0, -94], [102, 1.0, -94]]
-                    }
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
                 ]
             }
         ]

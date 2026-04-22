@@ -3,6 +3,7 @@
 #include <application.hpp>
 
 #include <ecs/world.hpp>
+#include <components/aladdin-controller.hpp>
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
@@ -105,6 +106,13 @@ class Playstate: public our::State {
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
     }
 
+    our::AladdinControllerComponent* findAladdin() {
+        for (auto entity : world.getEntities()) {
+            if (auto* a = entity->getComponent<our::AladdinControllerComponent>()) return a;
+        }
+        return nullptr;
+    }
+
     void onDraw(double deltaTime) override {
         elapsedTime += (float)deltaTime;
         if(!physicsInitialized){
@@ -161,6 +169,7 @@ class Playstate: public our::State {
         aladdinController.update(&world, &physicsSystem, (float)deltaTime);
         enemySystem.update(&world, &physicsSystem, (float)deltaTime);
         physicsSystem.update(&world, (float)deltaTime);
+        aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
         hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
@@ -180,12 +189,20 @@ class Playstate: public our::State {
             getApp()->changeState("menu");
         }
 
+        if (keyboard.justPressed(GLFW_KEY_V)) {
+            if (auto* a = findAladdin()) {
+                a->cameraMode = (a->cameraMode == our::AladdinCameraMode::ThirdPerson)
+                    ? our::AladdinCameraMode::FirstPerson
+                    : our::AladdinCameraMode::ThirdPerson;
+            }
+        }
+
 #if !defined(NDEBUG)
         // Debug shortcuts (enabled only in non-release builds)
         if(keyboard.justPressed(GLFW_KEY_G)){
             getApp()->changeState("gameover");
         }
-        if(keyboard.justPressed(GLFW_KEY_V)){
+        if(keyboard.justPressed(GLFW_KEY_F10)){
             getApp()->changeState("victory");
         }
         if(keyboard.justPressed(GLFW_KEY_C)){
@@ -368,7 +385,7 @@ class Playstate: public our::State {
         ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-        ImGui::Text("WASD: Move | Mouse: Look | C: Coin | K: Kill | H: Damage | ESC: Menu");
+        ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
 
@@ -381,9 +398,10 @@ class Playstate: public our::State {
         if(physicsInitialized){
             physicsSystem.shutdown(&world);
         }
+        physicsInitialized = false;
         // Don't forget to destroy the renderer
         renderer.destroy();
-        // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
+        // Free-camera may have locked the cursor; exit restores normal cursor mode.
         cameraController.exit();
         // Clear the world
         world.clear();
