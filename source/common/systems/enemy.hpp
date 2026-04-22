@@ -3,14 +3,17 @@
 #include "../ecs/world.hpp"
 #include "../components/enemy.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../components/rigid-body.hpp"
+#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
+#include <cfloat>
 #include <iostream>
 
 namespace our {
 
     class EnemySystem {
     public:
-        void update(World* world, float deltaTime) {
+        void update(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
             // Find Aladdin (Player)
             Entity* playerEntity = nullptr;
             AladdinControllerComponent* playerController = nullptr;
@@ -29,6 +32,14 @@ namespace our {
                 if(!enemy) continue;
 
                 if(enemy->currentState == EnemyComponent::State::DEAD) {
+                    auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                    if (physicsSystem && rbComp && rbComp->bodyHandle) {
+                        glm::vec3 velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                        velocity.x = 0.0f;
+                        velocity.z = 0.0f;
+                        physicsSystem->getPhysicsWorld().setLinearVelocity(entity, velocity);
+                    }
+
                     enemy->deathTimer += deltaTime;
                     if(enemy->deathTimer > 2.0f) world->markForRemoval(entity);
                     continue;
@@ -44,9 +55,15 @@ namespace our {
 
                 glm::vec3 enemyPos = entity->localTransform.position;
                 float distToPlayer = playerEntity ? glm::distance(enemyPos, playerEntity->localTransform.position) : FLT_MAX;
+                bool touchingPlayer = false;
+                if (physicsSystem) {
+                    touchingPlayer = physicsSystem->getPhysicsWorld().hasAnyInteraction(entity, playerEntity, false);
+                }
 
                 // State Transitions
-                if(distToPlayer < enemy->attackRange) {
+                // NOTE: detection and waypoint distances are AI navigation logic,
+                // not collision/hit detection.
+                if(touchingPlayer || distToPlayer < enemy->attackRange) {
                     enemy->currentState = EnemyComponent::State::ATTACK;
                 } else if(distToPlayer < enemy->detectionRange) {
                     enemy->currentState = EnemyComponent::State::CHASE;
@@ -61,18 +78,60 @@ namespace our {
                         if(glm::distance(enemyPos, target) < 0.5f) {
                             enemy->currentWaypointIndex = (enemy->currentWaypointIndex + 1) % enemy->waypoints.size();
                         }
-                        glm::vec3 moveDir = glm::normalize(target - enemyPos);
-                        entity->localTransform.position += moveDir * enemy->patrolSpeed * deltaTime;
+                        glm::vec3 moveDir = target - enemyPos;
+                        if (glm::length(moveDir) > 0.0001f) {
+                            moveDir = glm::normalize(moveDir);
+                        } else {
+                            moveDir = glm::vec3(0.0f);
+                        }
+
+                        auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                        if (physicsSystem && rbComp && rbComp->bodyHandle) {
+                            glm::vec3 velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                            velocity.x = moveDir.x * enemy->patrolSpeed;
+                            velocity.z = moveDir.z * enemy->patrolSpeed;
+                            physicsSystem->getPhysicsWorld().setLinearVelocity(entity, velocity);
+                        } else {
+                            entity->localTransform.position += moveDir * enemy->patrolSpeed * deltaTime;
+                        }
+
                         // Rotate to face movement
-                        entity->localTransform.rotation.y = glm::atan(moveDir.x, moveDir.z);
+                        if (glm::length(moveDir) > 0.0001f) {
+                            entity->localTransform.rotation.y = glm::atan(moveDir.x, moveDir.z);
+                        }
                     }
                 } 
                 else if(enemy->currentState == EnemyComponent::State::CHASE && playerEntity) {
-                    glm::vec3 moveDir = glm::normalize(playerEntity->localTransform.position - enemyPos);
-                    entity->localTransform.position += moveDir * enemy->chaseSpeed * deltaTime;
-                    entity->localTransform.rotation.y = glm::atan(moveDir.x, moveDir.z);
+                    glm::vec3 moveDir = playerEntity->localTransform.position - enemyPos;
+                    if (glm::length(moveDir) > 0.0001f) {
+                        moveDir = glm::normalize(moveDir);
+                    } else {
+                        moveDir = glm::vec3(0.0f);
+                    }
+
+                    auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                    if (physicsSystem && rbComp && rbComp->bodyHandle) {
+                        glm::vec3 velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                        velocity.x = moveDir.x * enemy->chaseSpeed;
+                        velocity.z = moveDir.z * enemy->chaseSpeed;
+                        physicsSystem->getPhysicsWorld().setLinearVelocity(entity, velocity);
+                    } else {
+                        entity->localTransform.position += moveDir * enemy->chaseSpeed * deltaTime;
+                    }
+
+                    if (glm::length(moveDir) > 0.0001f) {
+                        entity->localTransform.rotation.y = glm::atan(moveDir.x, moveDir.z);
+                    }
                 } 
                 else if(enemy->currentState == EnemyComponent::State::ATTACK && playerEntity) {
+                    auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                    if (physicsSystem && rbComp && rbComp->bodyHandle) {
+                        glm::vec3 velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                        velocity.x = 0.0f;
+                        velocity.z = 0.0f;
+                        physicsSystem->getPhysicsWorld().setLinearVelocity(entity, velocity);
+                    }
+
                     enemy->currentAttackTimer -= deltaTime;
                     if(enemy->currentAttackTimer <= 0.0f) {
                         // Perform Attack
@@ -88,6 +147,19 @@ namespace our {
                                 if(playerController->lives > 0){
                                     playerController->health = 100;
                                     playerEntity->localTransform.position = playerController->respawnPosition;
+
+                                    if (auto* rbComp = playerEntity->getComponent<RigidBodyComponent>(); rbComp && rbComp->bodyHandle) {
+                                        reactphysics3d::Transform respawnTransform = rbComp->bodyHandle->getTransform();
+                                        respawnTransform.setPosition(reactphysics3d::Vector3(
+                                            playerController->respawnPosition.x,
+                                            playerController->respawnPosition.y,
+                                            playerController->respawnPosition.z
+                                        ));
+                                        rbComp->bodyHandle->setTransform(respawnTransform);
+                                        rbComp->bodyHandle->setLinearVelocity(reactphysics3d::Vector3(0, 0, 0));
+                                        rbComp->velocity = glm::vec3(0.0f);
+                                    }
+
                                     std::cout << "[EnemySystem] Respawning at " << playerController->respawnPosition.x << ", " << playerController->respawnPosition.y << ", " << playerController->respawnPosition.z << std::endl;
                                 } else {
                                     std::cout << "[EnemySystem] GAME OVER! No more lives." << std::endl;
@@ -99,8 +171,11 @@ namespace our {
                         enemy->idleTimer = enemy->idleAfterAttackDuration;
                     }
                     // Face player while attacking
-                    glm::vec3 lookDir = glm::normalize(playerEntity->localTransform.position - enemyPos);
-                    entity->localTransform.rotation.y = glm::atan(lookDir.x, lookDir.z);
+                    glm::vec3 lookDir = playerEntity->localTransform.position - enemyPos;
+                    if (glm::length(lookDir) > 0.0001f) {
+                        lookDir = glm::normalize(lookDir);
+                        entity->localTransform.rotation.y = glm::atan(lookDir.x, lookDir.z);
+                    }
                 }
             }
         }

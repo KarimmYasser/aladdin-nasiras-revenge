@@ -89,9 +89,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "plane",
                         "material": "floor_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [50, 0.5, 50],
+                        "friction": 0.8,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0],
+                "position": [0, -0.5, 0],
                 "scale": [100, 1, 100]
             },
             {
@@ -109,9 +122,24 @@
                         "enableCameraFollow": true,
                         "cameraOffset": [0, 5, 15],
                         "cameraSmoothing": 5.0
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, 0],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Target 1",
@@ -120,9 +148,21 @@
                         "type": "Mesh Renderer",
                         "mesh": "cube",
                         "material": "target_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.5, 0.5, 0.5],
+                        "isTrigger": true
                     }
                 ],
-                "position": [5, 0, 0]
+                "position": [5, 1, 0]
             },
             {
                 "name": "Target 2",
@@ -131,9 +171,21 @@
                         "type": "Mesh Renderer",
                         "mesh": "cube",
                         "material": "target_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.5, 0.5, 0.5],
+                        "isTrigger": true
                     }
                 ],
-                "position": [-5, 0, 5]
+                "position": [-5, 1, 5]
             }
         ]
     }

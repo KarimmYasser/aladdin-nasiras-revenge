@@ -30,16 +30,8 @@ namespace our {
             player->localTransform.position = pos;
             if(setYaw){
                 player->localTransform.rotation.x = 0.0f;
-                player->localTransform.rotation.y = yawYRadians + AladdinControllerComponent::meshYawVisualOffset;
+                player->localTransform.rotation.y = yawYRadians;
                 player->localTransform.rotation.z = 0.0f;
-            }
-            if(auto* aladdin = player->getComponent<AladdinControllerComponent>()){
-                aladdin->velocity = {0.0f, 0.0f, 0.0f};
-                if(setYaw) {
-                    aladdin->facingYaw = yawYRadians;
-                    aladdin->cameraYawOffset = 0.0f;
-                    aladdin->cameraPitchOffset = 0.0f;
-                }
             }
             if(auto* mov = player->getComponent<MovementComponent>()){
                 mov->linearVelocity = {0.0f, 0.0f, 0.0f};

@@ -4,9 +4,14 @@
 #pragma once
 #include "glm/vec3.hpp"
 #include <physics/physics-types.hpp>
+#include <vector>
 
 #include "ecs/entity.hpp"
 #include "reactphysics3d/engine/PhysicsCommon.h"
+
+namespace reactphysics3d {
+    class EventListener;
+}
 
 namespace our {
     /**
@@ -20,6 +25,26 @@ namespace our {
         float distance = 0.0f;     ///< The distance from the ray's origin to the hit point.
     };
 
+    enum class PhysicsEventType {
+        Trigger,
+        Contact
+    };
+
+    enum class PhysicsEventPhase {
+        Begin,
+        Stay,
+        End
+    };
+
+    struct PhysicsEvent {
+        PhysicsEventType type = PhysicsEventType::Contact;
+        PhysicsEventPhase phase = PhysicsEventPhase::Begin;
+        Entity* entityA = nullptr;
+        Entity* entityB = nullptr;
+        glm::vec3 normal{0.0f};
+        float penetrationDepth = 0.0f;
+    };
+
     class Entity;
 
     /**
@@ -31,10 +56,16 @@ namespace our {
      */
     class PhysicsWorld {
     private:
+        friend class PhysicsWorldEventListener;
+
         bool initialized = false; ///< Indicates whether the physics world has been initialized.
 
         reactphysics3d::PhysicsCommon physicsCommon; ///< Manages memory and resources for the physics engine.
         reactphysics3d::PhysicsWorld* physicsWorld{nullptr}; ///< Pointer to the physics world instance.
+        reactphysics3d::EventListener* eventListener{nullptr};
+
+        std::vector<PhysicsEvent> contactEvents;
+        std::vector<PhysicsEvent> triggerEvents;
 
     public:
         /**
@@ -97,6 +128,21 @@ namespace our {
          * @return A RaycastHit structure containing the result of the raycast.
          */
         [[nodiscard]] RaycastHit raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance) const;
+
+        void clearFrameEvents();
+
+        [[nodiscard]] const std::vector<PhysicsEvent>& getContactEvents() const {
+            return contactEvents;
+        }
+
+        [[nodiscard]] const std::vector<PhysicsEvent>& getTriggerEvents() const {
+            return triggerEvents;
+        }
+
+        [[nodiscard]] bool hasContactEvent(Entity* a, Entity* b, bool includeStay = true) const;
+        [[nodiscard]] bool hasTriggerEvent(Entity* a, Entity* b, bool includeStay = true) const;
+        [[nodiscard]] bool hasAnyInteraction(Entity* a, Entity* b, bool includeStay = true) const;
+        [[nodiscard]] bool isGrounded(Entity* entity, float minUpDot = 0.5f) const;
     };
 
 }

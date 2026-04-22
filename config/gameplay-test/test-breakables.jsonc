@@ -98,9 +98,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "plane",
                         "material": "floor_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [50, 0.5, 50],
+                        "friction": 0.8,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0],
+                "position": [0, -0.5, 0],
                 "scale": [100, 1, 100]
             },
             {
@@ -120,10 +133,25 @@
                         "cameraSmoothing": 5.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [0, 0, 0]
+                        "respawnPosition": [0, 2, 0]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, 0],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Clay Pot 1 (Multi Loot)",
@@ -140,9 +168,21 @@
                             { "type": "gem", "value": 1 },
                             { "type": "apple", "value": 3 }
                         ]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.6, 0.8, 0.6],
+                        "isTrigger": true
                     }
                 ],
-                "position": [-3, 0, -5],
+                "position": [-3, 1, -5],
                 "scale": [1, 1.5, 1]
             },
             {
@@ -157,9 +197,21 @@
                         "type": "Breakable",
                         "lootType": "gem",
                         "lootValue": 1
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.6, 0.8, 0.6],
+                        "isTrigger": true
                     }
                 ],
-                "position": [3, 0, -5],
+                "position": [3, 1, -5],
                 "scale": [1, 1.5, 1]
             },
             {
@@ -174,9 +226,21 @@
                         "type": "Breakable",
                         "lootType": "apple",
                         "lootValue": 5
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.6, 0.8, 0.6],
+                        "isTrigger": true
                     }
                 ],
-                "position": [0, 0, -10],
+                "position": [0, 1, -10],
                 "scale": [1, 1.5, 1]
             }
         ]

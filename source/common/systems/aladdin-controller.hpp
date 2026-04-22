@@ -6,18 +6,20 @@
 #include "../components/enemy.hpp"
 #include "../components/breakable.hpp"
 #include "../components/collectible.hpp"
-#include "../components/mesh-renderer.hpp"
-#include "../components/movement.hpp"
 #include "../components/rigid-body.hpp"
+#include "../components/collider.hpp"
+#include "../components/mesh-renderer.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
-#include "../input/mouse.hpp"
+#include "../physics/physics-system.hpp"
 #include <imgui.h>
-#include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 
 namespace our {
 
@@ -29,6 +31,7 @@ namespace our {
      */
     class AladdinControllerSystem {
         Application* app; // Pointer to the application for input handling
+        std::unordered_map<Entity*, Entity*> swordHitboxes;
 
     public:
         // Initialize with the application pointer
@@ -36,19 +39,46 @@ namespace our {
             this->app = app;
         }
 
-        /// Unlock cursor if follow-cam mouse look had it captured (call from Playstate onDestroy / scene change).
-        void unlockFollowCameraMouse(World* world) {
-            if(!app || !world) return;
-            GLFWwindow* win = app->getWindow();
-            for(auto entity : world->getEntities()){
-                if(auto* a = entity->getComponent<AladdinControllerComponent>()) {
-                    if(a->followCamMouseLocked) {
-                        Mouse::unlockMouse(win);
-                        a->followCamMouseLocked = false;
-                        a->followCamSkipNextLookDelta = false;
-                    }
-                }
+        static bool wasHitInCurrentAttack(AladdinControllerComponent* aladdin, Entity* target) {
+            return std::find(aladdin->hitEntities.begin(), aladdin->hitEntities.end(), target) != aladdin->hitEntities.end();
+        }
+
+        static void markHitInCurrentAttack(AladdinControllerComponent* aladdin, Entity* target) {
+            aladdin->hitEntities.push_back(target);
+        }
+
+        Entity* getOrCreateSwordHitbox(World* world, Entity* player) {
+            auto it = swordHitboxes.find(player);
+            if (it != swordHitboxes.end() && it->second) {
+                return it->second;
             }
+
+            Entity* hitbox = world->add();
+            hitbox->name = player->name + "_SwordHitbox";
+
+            auto* rb = hitbox->addComponent<RigidBodyComponent>();
+            rb->type = RigidBodyType::Kinematic;
+            rb->mass = 0.0f;
+            rb->useGravity = false;
+            rb->lockRotation = true;
+
+            auto* collider = hitbox->addComponent<ColliderComponent>();
+            collider->shape = ColliderShape::Box;
+            collider->halfExtents = glm::vec3(0.5f, 0.6f, 0.9f);
+            collider->isTrigger = true;
+
+            swordHitboxes[player] = hitbox;
+            return hitbox;
+        }
+
+        static void updateSwordHitboxTransform(Entity* player, Entity* swordHitbox) {
+            const float yaw = player->localTransform.rotation.y;
+            const glm::vec3 forward = glm::normalize(glm::vec3(glm::sin(yaw), 0.0f, glm::cos(yaw)));
+            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.9f, 0.0f);
+
+            swordHitbox->localTransform.position = player->localTransform.position + offset;
+            swordHitbox->localTransform.rotation = glm::vec3(0.0f, yaw, 0.0f);
+            swordHitbox->localTransform.scale = glm::vec3(1.0f);
         }
 
         /**
@@ -57,8 +87,16 @@ namespace our {
          * @param world The scene world containing entities.
          * @param deltaTime The time elapsed since the last frame.
          */
-        void update(World* world, float deltaTime) {
-            for(auto entity : world->getEntities()){
+        void update(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
+            std::vector<Entity*> players;
+            players.reserve(world->getEntities().size());
+            for (auto candidate : world->getEntities()) {
+                if (candidate->getComponent<AladdinControllerComponent>()) {
+                    players.push_back(candidate);
+                }
+            }
+
+            for(auto entity : players){
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if(!aladdin) continue;
 
@@ -73,80 +111,66 @@ namespace our {
                 if(keyboard.isPressed(GLFW_KEY_A)) moveDir.x -= 1.0f; // Left
                 if(keyboard.isPressed(GLFW_KEY_D)) moveDir.x += 1.0f; // Right
 
-                MovementComponent* movement = entity->getComponent<MovementComponent>();
-                const bool useMovementSystem = movement != nullptr;
+                const bool hasMoveInput = glm::length(moveDir) > 0.001f;
+                if(hasMoveInput) {
+                    moveDir = glm::normalize(moveDir);
 
-                const float gravity = -20.0f;
-                aladdin->velocity.y += gravity * deltaTime;
+                    // Rotate entity to face the movement direction
+                    float targetYaw = glm::atan(moveDir.x, moveDir.z);
+                    entity->localTransform.rotation.y = targetYaw;
+                }
 
-                if(useMovementSystem) {
-                    glm::vec3 horizVel(0.0f);
-                    if(glm::length(moveDir) > 0.001f) {
-                        moveDir = glm::normalize(moveDir);
-                        // Local WASD in character space (W = model -Z) rotated into world by facing yaw
-                        const float yf = aladdin->facingYaw;
-                        const float c = glm::cos(yf);
-                        const float s = glm::sin(yf);
-                        const glm::vec3 worldDir(
-                            moveDir.x * c + moveDir.z * s,
-                            0.0f,
-                            -moveDir.x * s + moveDir.z * c
-                        );
-                        horizVel = worldDir * aladdin->speed;
-                        // Pure strafe (A/D only): move sideways without spinning facing or the follow camera.
-                        if(std::abs(moveDir.z) > 0.001f) {
-                            const float targetYaw = std::atan2(worldDir.x, worldDir.z);
-                            float currentYaw = aladdin->facingYaw;
-                            float diff = targetYaw - currentYaw;
-                            while(diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
-                            while(diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
-                            aladdin->facingYaw = currentYaw + diff * aladdin->rotationSpeed * deltaTime;
+                auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
+
+                Entity* swordHitbox = getOrCreateSwordHitbox(world, entity);
+                updateSwordHitboxTransform(entity, swordHitbox);
+
+                // 3. Handle gravity, movement and jumping via real physics (if body exists)
+                if (hasPhysicsBody) {
+                    auto& physicsWorld = physicsSystem->getPhysicsWorld();
+
+                    bool groundedFromContacts = physicsWorld.isGrounded(entity, 0.5f);
+                    bool groundedFromRaycast = false;
+                    if (!groundedFromContacts) {
+                        float probeDistance = 1.15f;
+                        if (auto* collider = entity->getComponent<ColliderComponent>()) {
+                            switch (collider->shape) {
+                                case ColliderShape::Box:
+                                    probeDistance = collider->halfExtents.y + 0.25f;
+                                    break;
+                                case ColliderShape::Sphere:
+                                    probeDistance = collider->radius + 0.25f;
+                                    break;
+                                case ColliderShape::Capsule:
+                                    probeDistance = (collider->height * 0.5f) + collider->radius + 0.25f;
+                                    break;
+                            }
                         }
-                        entity->localTransform.rotation.x = 0.0f;
-                        entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
-                        entity->localTransform.rotation.z = 0.0f;
+
+                        const glm::vec3 origin = entity->localTransform.position + glm::vec3(0.0f, 0.05f, 0.0f);
+                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), probeDistance);
+                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && groundHit.entity != entity && groundHit.normal.y >= 0.5f;
                     }
-                    movement->linearVelocity = glm::vec3(horizVel.x, aladdin->velocity.y, horizVel.z);
+
+                    aladdin->isGrounded = groundedFromContacts || groundedFromRaycast;
+
+                    glm::vec3 currentVelocity = physicsWorld.getLinearVelocity(entity);
+                    glm::vec3 targetVelocity = currentVelocity;
+                    targetVelocity.x = hasMoveInput ? moveDir.x * aladdin->speed : 0.0f;
+                    targetVelocity.z = hasMoveInput ? moveDir.z * aladdin->speed : 0.0f;
+
                     if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
-                        aladdin->velocity.y = aladdin->jumpForce;
+                        targetVelocity.y = aladdin->jumpForce;
                         aladdin->isGrounded = false;
-                        movement->linearVelocity.y = aladdin->velocity.y;
                     }
+
+                    physicsWorld.setLinearVelocity(entity, targetVelocity);
+                    aladdin->velocity = targetVelocity;
                 } else {
-                    if(glm::length(moveDir) > 0.001f) {
-                        moveDir = glm::normalize(moveDir);
-                        const float yf = aladdin->facingYaw;
-                        const float c = glm::cos(yf);
-                        const float s = glm::sin(yf);
-                        const glm::vec3 worldDir(
-                            moveDir.x * c + moveDir.z * s,
-                            0.0f,
-                            -moveDir.x * s + moveDir.z * c
-                        );
-                        entity->localTransform.position += worldDir * aladdin->speed * deltaTime;
-                        if(std::abs(moveDir.z) > 0.001f) {
-                            const float targetYaw = std::atan2(worldDir.x, worldDir.z);
-                            float currentYaw = aladdin->facingYaw;
-                            float diff = targetYaw - currentYaw;
-                            while(diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
-                            while(diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
-                            aladdin->facingYaw = currentYaw + diff * aladdin->rotationSpeed * deltaTime;
-                        }
-                        entity->localTransform.rotation.x = 0.0f;
-                        entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
-                        entity->localTransform.rotation.z = 0.0f;
-                    }
-                    entity->localTransform.position.y += aladdin->velocity.y * deltaTime;
-                    if(entity->localTransform.position.y <= 0.0f) {
-                        entity->localTransform.position.y = 0.0f;
-                        aladdin->velocity.y = 0.0f;
-                        aladdin->isGrounded = true;
-                    } else {
-                        aladdin->isGrounded = false;
-                    }
-                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
-                        aladdin->velocity.y = aladdin->jumpForce;
-                        aladdin->isGrounded = false;
+                    // Fallback for scenes that still do not have a rigid body setup yet
+                    if(hasMoveInput) {
+                        entity->localTransform.position += moveDir * aladdin->speed * deltaTime;
                     }
                 }
 
@@ -171,130 +195,93 @@ namespace our {
                     }
                     // Visual effect placeholder: slightly shake or tilt model
                     
-                    // Simple Combat Test: Check for nearby "Target" or "Enemy" entities
-                    // TODO (Physics): Replace this distance-based check with the PhysicsSystem's
-                    // collision detection between the sword's hitbox collider and enemy colliders.
-                    // Damage should only be applied at a specific frame of the animation.
+                    // Simple Combat Test: consume physics interactions for sword hits.
+                    // This assumes entities that can be hit have colliders configured.
                     for(auto other : world->getEntities()){
-                        if(other == entity) continue;
+                        if(other == entity || other == swordHitbox) continue;
+
+                        bool swordOverlap = false;
+                        if (physicsSystem) {
+                            auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                            swordOverlap = physicsWorld.hasAnyInteraction(swordHitbox, other, false);
+                        }
+                        if(!swordOverlap) continue;
 
                         // Check for Target objects (from original mock)
                         if(other->name.find("Target") != std::string::npos){
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.0f){
-                                // "Hit" the target - for now just log and maybe move it
-                                std::cout << "Sword Hit: " << other->name << "!" << std::endl;
-                                // Shift it slightly to show impact
-                                glm::vec3 dir = glm::normalize(other->localTransform.position - entity->localTransform.position);
-                                other->localTransform.position += dir * 0.1f;
+                            if (wasHitInCurrentAttack(aladdin, other)) continue;
+
+                            markHitInCurrentAttack(aladdin, other);
+                            std::cout << "Sword Hit: " << other->name << "!" << std::endl;
+                            glm::vec3 dir = other->localTransform.position - entity->localTransform.position;
+                            if(glm::length(dir) > 0.0001f) {
+                                other->localTransform.position += glm::normalize(dir) * 0.1f;
                             }
                         }
 
                         // Check for Real Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
-                            // Check if this enemy was already hit during the current attack
-                            bool alreadyHit = false;
-                            for(auto e : aladdin->hitEntities) {
-                                if(e == other) {
-                                    alreadyHit = true;
-                                    break;
-                                }
-                            }
-                            if(alreadyHit) continue;
+                            if(wasHitInCurrentAttack(aladdin, other)) continue;
 
-                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
-                            // collision detection once the ColliderComponent is ready.
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.5f) { // Slightly larger range for Aladdin's sword
-                                enemy->health -= 25; // Aladdin deals 25 damage per hit
-                                aladdin->hitEntities.push_back(other); // Mark this enemy as hit
-                                std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
-                                
-                                if(enemy->health <= 0) {
-                                    enemy->currentState = EnemyComponent::State::DEAD;
-                                    aladdin->enemyCount += 1;
-                                    std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
-                                }
-                                // To prevent hitting multiple times in one frame, we could break or add a hit cooldown
-                                // But since this is a simple system, we'll just allow it for now.
+                            enemy->health -= 25; // Aladdin deals 25 damage per hit
+                            markHitInCurrentAttack(aladdin, other); // Mark this enemy as hit
+                            std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
+
+                            if(enemy->health <= 0) {
+                                enemy->currentState = EnemyComponent::State::DEAD;
+                                std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
                             }
                         }
 
                         // Check for Breakable Props (Pots)
                         BreakableComponent* breakable = other->getComponent<BreakableComponent>();
                         if(breakable) {
-                            // Check if this breakable was already hit during the current attack
-                            bool alreadyHit = false;
-                            for(auto e : aladdin->hitEntities) {
-                                if(e == other) {
-                                    alreadyHit = true;
-                                    break;
-                                }
-                            }
-                            if(alreadyHit) continue;
+                            if(wasHitInCurrentAttack(aladdin, other)) continue;
 
-                            // TODO (Member 2): Replace this distance-based check with the PhysicsSystem's
-                            // collision detection once the ColliderComponent is ready.
-                            float dist = glm::distance(entity->localTransform.position, other->localTransform.position);
-                            if(dist < 2.0f) {
-                                aladdin->hitEntities.push_back(other); // Mark this breakable as hit
-                                std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
-                                
-                                // Spawn multiple loot items if defined
-                                for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
-                                    const auto& lootEntry = breakable->lootItems[i];
-                                    
-                                    Entity* loot = world->add();
-                                    loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
-                                    
-                                    // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
-                                    float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
-                                    float radius = 3.5f; // Increased distance from the center for more scattering
-                                    glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
-                                    
-                                    loot->localTransform.position = other->localTransform.position + scatterOffset;
+                            markHitInCurrentAttack(aladdin, other); // Mark this breakable as hit
+                            std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
 
-                                    Mesh* lootMesh = nullptr;
-                                    Material* lootMat = nullptr;
-                                    glm::vec3 lootScale(1.0f);
-                                    float lootRotSpeed = 2.0f;
-                                    float lootBob = 0.15f;
-                                    if(lootEntry.type == "coin") {
-                                        lootMesh = AssetLoader<Mesh>::get("coin_mesh");
-                                        lootMat = AssetLoader<Material>::get("coin-mat");
-                                        lootScale = glm::vec3(4.6f);
-                                        lootRotSpeed = 3.0f;
-                                        lootBob = 0.15f;
-                                    } else if(lootEntry.type == "apple") {
-                                        lootMesh = AssetLoader<Mesh>::get("apple_mesh");
-                                        lootMat = AssetLoader<Material>::get("lit-apple");
-                                        lootScale = glm::vec3(1.3f);
-                                        lootRotSpeed = 2.0f;
-                                        lootBob = 0.12f;
-                                    } else {
-                                        lootMesh = AssetLoader<Mesh>::get("coin_mesh");
-                                        lootMat = AssetLoader<Material>::get("coin-mat");
-                                        lootScale = glm::vec3(4.6f);
-                                    }
-                                    loot->localTransform.scale = lootScale;
+                            // Spawn multiple loot items if defined
+                            for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
+                                const auto& lootEntry = breakable->lootItems[i];
 
-                                    auto mr = loot->addComponent<MeshRendererComponent>();
-                                    mr->mesh = lootMesh ? lootMesh : AssetLoader<Mesh>::get("cube");
-                                    mr->material = lootMat ? lootMat : AssetLoader<Material>::get("coin-mat");
+                                Entity* loot = world->add();
+                                loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
 
+                                // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
+                                float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
+                                float radius = 3.5f; // Increased distance from the center for more scattering
+                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
+
+                                loot->localTransform.position = other->localTransform.position + scatterOffset;
+
+                                // Add MeshRenderer for loot
+                                auto mr = loot->addComponent<MeshRendererComponent>();
+                                mr->mesh = AssetLoader<Mesh>::get("cube");
+                                mr->material = AssetLoader<Material>::get("loot_mat");
+
+                                    // Add Collectible component
                                     auto coll = loot->addComponent<CollectibleComponent>();
                                     if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
                                     else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
                                     else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
                                     coll->value = lootEntry.value;
-                                    coll->rotationSpeed = lootRotSpeed;
-                                    coll->bobbingHeight = lootBob;
+
+                                    // Add physics trigger so collectible system can detect pickup
+                                    auto rb = loot->addComponent<RigidBodyComponent>();
+                                    rb->type = RigidBodyType::Static;
+                                    rb->mass = 0.0f;
+                                    rb->useGravity = false;
+
+                                    auto lootCollider = loot->addComponent<ColliderComponent>();
+                                    lootCollider->shape = ColliderShape::Sphere;
+                                    lootCollider->radius = 0.5f;
+                                    lootCollider->isTrigger = true;
                                 }
 
-                                // Mark the pot for removal
-                                world->markForRemoval(other);
-                            }
+                            // Mark the pot for removal
+                            world->markForRemoval(other);
                         }
                     }
                 }
@@ -320,141 +307,35 @@ namespace our {
                     // will handle its own collision with enemies independently.
                 }
 
-            }
-        }
-
-        /**
-         * @brief After MovementSystem integration: snap player to floor and update follow camera.
-         */
-        void lateUpdate(World* world, float deltaTime) {
-            for(auto entity : world->getEntities()){
-                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
-                if(!aladdin || aladdin->lives <= 0) continue;
-
-                MovementComponent* movement = entity->getComponent<MovementComponent>();
-                auto* rb = entity->getComponent<RigidBodyComponent>();
-                const bool physicsMovesBody = rb && rb->type == RigidBodyType::Dynamic;
-                if(movement && !physicsMovesBody) {
-                    if(entity->localTransform.position.y <= 0.0f) {
-                        entity->localTransform.position.y = 0.0f;
-                        aladdin->velocity.y = 0.0f;
-                        movement->linearVelocity.y = 0.0f;
-                        aladdin->isGrounded = true;
-                    } else {
-                        aladdin->isGrounded = false;
-                    }
-                }
-
-            }
-        }
-
-        /**
-         * @brief Positions the gameplay camera from Aladdin's transform (call after physics so dynamic bodies match visuals).
-         */
-        void updateFollowCamera(World* world, float deltaTime) {
-            if(!world) return;
-
-            for(auto entity : world->getEntities()){
-                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
-                if(!aladdin || aladdin->lives <= 0 || !aladdin->enableCameraFollow) continue;
-
-                Entity* cameraEntity = nullptr;
-                for(auto e : world->getEntities()) {
-                    if(e->getComponent<CameraComponent>()) {
-                        cameraEntity = e;
-                        break;
-                    }
-                }
-                if(!cameraEntity) continue;
-
-                if(app && app->getMouse().isEnabled()) {
-                    auto& mouse = app->getMouse();
-                    const int btn = aladdin->mouseLookButton;
-                    GLFWwindow* win = app->getWindow();
-                    if(mouse.isPressed(btn)) {
-                        if(!aladdin->followCamMouseLocked) {
-                            Mouse::lockMouse(win);
-                            aladdin->followCamMouseLocked = true;
-                            aladdin->followCamSkipNextLookDelta = true;
+                // 6. Handle Camera Follow
+                if(aladdin->enableCameraFollow){
+                    // Search for a camera entity
+                    Entity* cameraEntity = nullptr;
+                    for(auto e : world->getEntities()){
+                        if(e->getComponent<CameraComponent>()){
+                            cameraEntity = e;
+                            break;
                         }
-                        glm::vec2 d = mouse.getMouseDelta();
-                        if(aladdin->followCamSkipNextLookDelta) {
-                            aladdin->followCamSkipNextLookDelta = false;
-                            d = glm::vec2(0.0f);
-                        }
-                        aladdin->cameraYawOffset += d.x * aladdin->mouseLookSensitivity;
-                        aladdin->cameraPitchOffset += d.y * aladdin->mouseLookSensitivity;
-                        while(aladdin->cameraYawOffset > glm::pi<float>()) aladdin->cameraYawOffset -= 2.0f * glm::pi<float>();
-                        while(aladdin->cameraYawOffset < -glm::pi<float>()) aladdin->cameraYawOffset += 2.0f * glm::pi<float>();
-                        const float basePitch = (aladdin->cameraMode == AladdinCameraMode::FirstPerson)
-                            ? aladdin->firstPersonPitch : aladdin->thirdPersonPitch;
-                        float totalPitch = basePitch + aladdin->cameraPitchOffset;
-                        totalPitch = glm::clamp(totalPitch, glm::radians(-80.0f), glm::radians(18.0f));
-                        aladdin->cameraPitchOffset = totalPitch - basePitch;
-                    } else if(aladdin->followCamMouseLocked) {
-                        Mouse::unlockMouse(win);
-                        aladdin->followCamMouseLocked = false;
-                        aladdin->followCamSkipNextLookDelta = false;
                     }
-                } else if(aladdin->followCamMouseLocked && app) {
-                    Mouse::unlockMouse(app->getWindow());
-                    aladdin->followCamMouseLocked = false;
-                    aladdin->followCamSkipNextLookDelta = false;
-                }
 
-                const glm::vec3& pos = entity->localTransform.position;
-                const float yaw = aladdin->facingYaw + aladdin->cameraYawOffset;
-                // Match Transform::toMat4 + view forward: local -Z becomes this world direction on XZ
-                glm::vec3 forward(-glm::sin(yaw), 0.0f, -glm::cos(yaw));
-                if(glm::dot(forward, forward) > 1e-8f) forward = glm::normalize(forward);
-                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-                const glm::vec3 up(0.0f, 1.0f, 0.0f);
+                    if(cameraEntity){
+                        // The target position is the player's position + the offset
+                        glm::vec3 targetPosition = entity->localTransform.position + aladdin->cameraOffset;
+                        
+                        // Apply smoothing (Simple linear interpolation/lerp)
+                        if(aladdin->cameraSmoothing > 0.0f){
+                            // factor = 1 - e^(-smoothing * dt) is a common way to do framerate-independent smoothing
+                            float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * deltaTime);
+                            cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
+                        } else {
+                            // Instant follow
+                            cameraEntity->localTransform.position = targetPosition;
+                        }
 
-                glm::vec3 targetPosition;
-                glm::vec3 targetRotationEuler;
-
-                if(aladdin->cameraMode == AladdinCameraMode::ThirdPerson) {
-                    const glm::vec3& o = aladdin->cameraOffset;
-                    targetPosition = pos - forward * o.z + right * o.x + up * o.y;
-                    targetRotationEuler = {aladdin->thirdPersonPitch + aladdin->cameraPitchOffset, yaw, 0.0f};
-                } else {
-                    targetPosition = pos + right * aladdin->firstPersonCameraOffset.x + up * aladdin->firstPersonCameraOffset.y
-                        + forward * aladdin->firstPersonCameraOffset.z;
-                    targetRotationEuler = {aladdin->firstPersonPitch + aladdin->cameraPitchOffset, yaw, 0.0f};
-                }
-
-                if(aladdin->cameraSmoothing > 0.0f) {
-                    // Clamp dt so a hitch (e.g. console I/O) does not apply a huge blend in one frame.
-                    const float camDt = glm::min(deltaTime, 0.05f);
-                    const float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * camDt);
-                    cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
-                    glm::vec3& r = cameraEntity->localTransform.rotation;
-                    const float yawCur = r.y;
-                    const float yawTgt = targetRotationEuler.y;
-                    float dy = yawTgt - yawCur;
-                    while(dy > glm::pi<float>()) dy -= 2.0f * glm::pi<float>();
-                    while(dy < -glm::pi<float>()) dy += 2.0f * glm::pi<float>();
-                    // Snap pitch/roll: initial scene camera pitch (-32° in level) was being slowly lerped toward
-                    // third-person pitch, so any frame spike looked like a sudden "twist". Yaw stays smoothed.
-                    r.x = targetRotationEuler.x;
-                    r.y = yawCur + dy * factor;
-                    r.z = targetRotationEuler.z;
-                } else {
-                    cameraEntity->localTransform.position = targetPosition;
-                    cameraEntity->localTransform.rotation = targetRotationEuler;
-                }
-
-                entity->localTransform.rotation.x = 0.0f;
-                entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
-                entity->localTransform.rotation.z = 0.0f;
-
-                if(auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
-                    meshRenderer->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
-                }
-
-                if(auto* rb = entity->getComponent<RigidBodyComponent>(); rb && rb->type == RigidBodyType::Dynamic) {
-                    aladdin->isGrounded = std::abs(rb->velocity.y) < 0.25f;
-                    aladdin->velocity.y = rb->velocity.y;
+                        // Optional: Make camera look at Aladdin
+                        // The game description mentions a free-roaming camera in open 3D spaces.
+                        // We might need to add logic to adjust the camera's orientation here.
+                    }
                 }
             }
         }
@@ -555,33 +436,17 @@ namespace our {
             ImGui::Separator();
             ImGui::Text("Camera Follow:");
             ImGui::Checkbox("Enable Follow", &aladdin->enableCameraFollow);
-            int mode = (aladdin->cameraMode == AladdinCameraMode::FirstPerson) ? 1 : 0;
-            if(ImGui::Combo("Camera mode", &mode, "Third person\0First person\0")){
-                aladdin->cameraMode = mode ? AladdinCameraMode::FirstPerson : AladdinCameraMode::ThirdPerson;
-            }
-            ImGui::DragFloat3("Third offset (x=side,y=up,z=back)", &aladdin->cameraOffset[0], 0.1f);
-            ImGui::DragFloat3("First-person offset", &aladdin->firstPersonCameraOffset[0], 0.05f);
-            ImGui::DragFloat("First-person pitch (rad)", &aladdin->firstPersonPitch, 0.01f, -1.2f, 1.2f);
-            ImGui::DragFloat("Third-person pitch (rad)", &aladdin->thirdPersonPitch, 0.01f, -0.8f, 0.3f);
+            ImGui::DragFloat3("Camera Offset", &aladdin->cameraOffset[0], 0.1f);
             ImGui::DragFloat("Camera Smoothing", &aladdin->cameraSmoothing, 0.1f, 0.0f, 20.0f);
 
             ImGui::Separator();
             ImGui::Text("Physics State:");
             ImGui::DragFloat3("Velocity", &aladdin->velocity[0], 0.1f);
-            if(Entity* owner = aladdin->getOwner()) {
-                if(auto* mov = owner->getComponent<MovementComponent>()) {
-                    ImGui::DragFloat3("Movement linearVelocity", &mov->linearVelocity[0], 0.1f);
-                }
-            }
-
+            
+            // Allow manual teleport/reset for testing
             if(ImGui::Button("Reset Position")) {
-                if(Entity* owner = aladdin->getOwner()) {
-                    owner->localTransform.position = {0, 0, 0};
-                    aladdin->velocity = {0, 0, 0};
-                    if(auto* mov = owner->getComponent<MovementComponent>()) {
-                        mov->linearVelocity = {0, 0, 0};
-                    }
-                }
+                aladdin->getOwner()->localTransform.position = {0, 0, 0};
+                aladdin->velocity = {0, 0, 0};
             }
 
             ImGui::End();

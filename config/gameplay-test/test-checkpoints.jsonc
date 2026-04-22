@@ -98,9 +98,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "plane",
                         "material": "floor_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [50, 0.5, 50],
+                        "friction": 0.8,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0],
+                "position": [0, -0.5, 0],
                 "scale": [100, 1, 100]
             },
             {
@@ -120,10 +133,25 @@
                         "cameraSmoothing": 5.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [0, 0, 0]
+                        "respawnPosition": [0, 2, 0]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, 0],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Checkpoint 1",
@@ -137,6 +165,18 @@
                         "type": "Checkpoint",
                         "radius": 3.0,
                         "activeColor": [0, 1, 0]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [1.0, 2.0, 1.0],
+                        "isTrigger": true
                     }
                 ],
                 "position": [0, 0, -10],
@@ -154,6 +194,18 @@
                         "type": "Hazard",
                         "damage": 100,
                         "radius": 2.5
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [2, 0.2, 2],
+                        "isTrigger": true
                     }
                 ],
                 "position": [0, 0, -20],
@@ -171,6 +223,18 @@
                         "type": "Checkpoint",
                         "radius": 3.0,
                         "activeColor": [0, 1, 0]
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [1.0, 2.0, 1.0],
+                        "isTrigger": true
                     }
                 ],
                 "position": [0, 0, -30],
@@ -188,6 +252,18 @@
                         "type": "Hazard",
                         "instakill": true,
                         "radius": 2.5
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [2, 0.2, 2],
+                        "isTrigger": true
                     }
                 ],
                 "position": [0, 0, -40],

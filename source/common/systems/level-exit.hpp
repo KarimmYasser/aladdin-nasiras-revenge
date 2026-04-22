@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/level-exit.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -23,7 +24,7 @@ namespace our {
          * 
          * @param world The world containing entities and components.
          */
-        void update(World* world) {
+        void update(World* world, const PhysicsSystem* physicsSystem) {
             
             Entity* aladdinEntity = nullptr;
             AladdinControllerComponent* aladdin = nullptr;

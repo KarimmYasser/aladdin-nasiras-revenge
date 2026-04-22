@@ -85,9 +85,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "plane",
                         "material": "floor_mat"
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [50, 0.5, 50],
+                        "friction": 0.8,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, -0.01, 0],
+                "position": [0, -0.5, 0],
                 "scale": [100, 1, 100]
             },
             {
@@ -105,9 +118,24 @@
                         "enableCameraFollow": true,
                         "cameraOffset": [0, 5, 15],
                         "cameraSmoothing": 5.0
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "dynamic",
+                        "mass": 1.0,
+                        "useGravity": true,
+                        "lockRotation": true
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [0.45, 0.9, 0.45],
+                        "friction": 0.6,
+                        "restitution": 0.0
                     }
                 ],
-                "position": [0, 0, 0]
+                "position": [0, 2, 0],
+                "scale": [1, 2, 1]
             },
             {
                 "name": "Golden Key",
@@ -122,6 +150,18 @@
                         "collectibleType": "key",
                         "rotationSpeed": 3.0,
                         "bobbingHeight": 0.3
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "sphere",
+                        "radius": 0.5,
+                        "isTrigger": true
                     }
                 ],
                 "position": [10, 1, 0],
@@ -139,6 +179,18 @@
                         "type": "LevelExit",
                         "nextScene": "config/gameplay-test/test-aladdin.jsonc",
                         "radius": 3.0
+                    },
+                    {
+                        "type": "RigidBody",
+                        "bodyType": "static",
+                        "mass": 0,
+                        "useGravity": false
+                    },
+                    {
+                        "type": "Collider",
+                        "shape": "box",
+                        "halfExtents": [2, 3, 1],
+                        "isTrigger": true
                     }
                 ],
                 "position": [0, 1.5, -10],
