@@ -7,6 +7,8 @@
 #include "physics-world.hpp"
 #include "components/rigid-body.hpp"
 #include "components/collider.hpp"
+#include "components/aladdin-controller.hpp"
+#include "components/movement.hpp"
 #include "ecs/world.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -71,6 +73,17 @@ namespace our {
             }
 
             // ====================================================================
+            // PHASE 2.5: Desired velocity from Movement -> dynamic bodies (before step)
+            // ====================================================================
+            for (auto entity : ecsWorld->getEntities()) {
+                auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                auto* mov = entity->getComponent<MovementComponent>();
+                if (rbComp && rbComp->bodyHandle && mov && rbComp->type == RigidBodyType::Dynamic) {
+                    physicsWorld.setLinearVelocity(entity, mov->linearVelocity);
+                }
+            }
+
+            // ====================================================================
             // PHASE 3: STEP THE PHYSICS SIMULATION
             // ====================================================================
             constexpr int maxPhysicsStepsPerFrame = 5;
@@ -126,6 +139,11 @@ namespace our {
 
                     // Keep Transform rotation in radians (engine convention)
                     transform->rotation = glm::eulerAngles(glmQuat);
+                    if(auto* aladdin = entity->getComponent<AladdinControllerComponent>()) {
+                        transform->rotation.x = 0.0f;
+                        transform->rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                        transform->rotation.z = 0.0f;
+                    }
 
                     // 3. Sync Linear Velocity
                     rbComp->velocity = physicsWorld.getLinearVelocity(entity);

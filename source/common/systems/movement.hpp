@@ -2,6 +2,7 @@
 
 #include "../ecs/world.hpp"
 #include "../components/movement.hpp"
+#include "../components/rigid-body.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -25,8 +26,12 @@ namespace our
                 MovementComponent* movement = entity->getComponent<MovementComponent>();
                 // If the movement component exists
                 if(movement){
-                    // Change the position and rotation based on the linear & angular velocity and delta time.
-                    entity->localTransform.position += deltaTime * movement->linearVelocity;
+                    // Dynamic rigid bodies are moved by the physics engine; linearVelocity is only the desired velocity.
+                    auto* rb = entity->getComponent<RigidBodyComponent>();
+                    const bool physicsMovesPosition = rb && rb->type == RigidBodyType::Dynamic;
+                    if(!physicsMovesPosition){
+                        entity->localTransform.position += deltaTime * movement->linearVelocity;
+                    }
                     entity->localTransform.rotation += deltaTime * movement->angularVelocity;
                 }
             }
