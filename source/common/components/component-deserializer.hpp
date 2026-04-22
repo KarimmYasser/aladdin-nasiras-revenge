@@ -14,6 +14,7 @@
 #include "breakable.hpp"
 #include "checkpoint.hpp"
 #include "level-exit.hpp"
+#include "room-portal.hpp"
 #include "light.hpp"
 
 namespace our {
@@ -50,6 +51,8 @@ namespace our {
             component = entity->addComponent<CheckpointComponent>();
         } else if (type == LevelExitComponent::getID()) {
             component = entity->addComponent<LevelExitComponent>();
+        } else if (type == RoomPortalComponent::getID()) {
+            component = entity->addComponent<RoomPortalComponent>();
         } else if (type == LightComponent::getID()) {
             component = entity->addComponent<LightComponent>();
         }
