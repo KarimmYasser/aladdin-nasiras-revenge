@@ -1,0 +1,20 @@
+Asset test scene (renderer-test state)
+=======================================
+
+From the project root:
+
+  bin\GAME_APPLICATION.exe -c config/assets-test/app.jsonc
+
+Free camera (same as lighting tests):
+  - Hold LEFT MOUSE BUTTON and move the mouse to look around.
+  - WASD = move, Q/E = down/up, Shift = faster, mouse wheel = FOV.
+
+The renderer-test state now runs the free-camera system every frame (rebuild required).
+
+Scene: brighter materials + two fill point lights + stronger sun; no vignette postprocess so edges stay clear.
+Includes Aladdin + three enemies + coin, apple, pot, sword, Jasmine poster.
+
+Enemy meshes are authored very large in model space; in this small courtyard they use scale ~0.017
+(Plaza level uses ~0.5 because coordinates span hundreds of units.) Coin uses a large scale so it is visible.
+
+Sword OBJ: mtllib renamed to MagicianSword.mtl (no space) so TinyOBJ can find materials.
