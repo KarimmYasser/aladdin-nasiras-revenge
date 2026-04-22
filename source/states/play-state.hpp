@@ -48,11 +48,8 @@ class Playstate: public our::State {
     int totalEnemies = 0;
     float elapsedTime = 0.0f;
 
-    // -- Health & Lives --
+    // -- Health --
     static constexpr int kDefaultMaxHealth = 100;
-    int currentHealth = kDefaultMaxHealth;
-    int maxHealth = kDefaultMaxHealth;
-    int lives = 3;
 
     // Star rating time thresholds (seconds)
     int time3Star = 60;
@@ -98,7 +95,6 @@ class Playstate: public our::State {
         coinsCollected = 0;
         enemiesKilled = 0;
         elapsedTime = 0.0f;
-        currentHealth = kDefaultMaxHealth;
 
         // Load UI icons
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
@@ -211,17 +207,6 @@ class Playstate: public our::State {
         if(keyboard.justPressed(GLFW_KEY_K)){
             if(enemiesKilled < totalEnemies) enemiesKilled++;
         }
-        if(keyboard.justPressed(GLFW_KEY_H)){
-            currentHealth--;
-            if(currentHealth <= 0){
-                lives--;
-                if(lives <= 0){
-                    getApp()->changeState("gameover");
-                } else {
-                    currentHealth = maxHealth; // respawn with full health
-                }
-            }
-        }
 #endif
     }
 
@@ -260,6 +245,11 @@ class Playstate: public our::State {
         ImGuiIO& io = ImGui::GetIO();
         float screenWidth = io.DisplaySize.x;
         float screenHeight = io.DisplaySize.y;
+        our::AladdinControllerComponent* aladdin = findAladdin();
+
+        const int hp = aladdin ? aladdin->health : 0;
+        const int livesCount = aladdin ? aladdin->lives : 0;
+        const float hpFrac = aladdin ? glm::clamp((float)aladdin->health / (float)kDefaultMaxHealth, 0.0f, 1.0f) : 0.0f;
 
         // Helper for consistent panel styling
         auto beginPanel = [](const char* id, ImVec2 pos, ImVec2 size) {
@@ -358,22 +348,23 @@ class Playstate: public our::State {
         // ═══════════════════════════════════════════════════════
         //  BOTTOM-LEFT: Lives & Health
         // ═══════════════════════════════════════════════════════
-        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 110), ImVec2(220, 0));
-        ImGui::SetWindowFontScale(1.4f);
-        ImGui::Text("LIVES: %d", lives);
-        
+        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 130), ImVec2(280, 0));
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::Text("LIVES: %d", livesCount);
+        ImGui::Spacing();
+        ImGui::Text("HEALTH");
+        ImVec4 healthColor = ImVec4(1.0f - hpFrac, hpFrac, 0.15f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, healthColor);
+        ImGui::ProgressBar(hpFrac, ImVec2(220, 14), "");
+        ImGui::PopStyleColor();
+        ImGui::Text("%d / %d", hp, kDefaultMaxHealth);
         ImGui::Spacing();
         if (heartIcon) {
-            for (int i = 0; i < maxHealth; i++) {
-                if (i > 0) ImGui::SameLine(0, 8);
-                ImVec4 tint = (i < currentHealth) ? ImVec4(1, 1, 1, 1) : ImVec4(0.2f, 0.2f, 0.2f, 0.4f);
-                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(30, 30), ImVec2(0,0), ImVec2(1,1), tint);
-            }
-        } else {
-            for (int i = 0; i < maxHealth; i++) {
+            ImGui::Text(" ");
+            ImGui::SameLine();
+            for (int i = 0; i < livesCount && i < 8; i++) {
                 if (i > 0) ImGui::SameLine(0, 6);
-                if (i < currentHealth) ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "<3");
-                else ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 0.4f), "<3");
+                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(26, 26));
             }
         }
         endPanel();

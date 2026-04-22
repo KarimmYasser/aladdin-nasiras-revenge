@@ -39,7 +39,13 @@ namespace our
                     }
                 }
             }
-            if (followCameraGameplay) return;
+            if (followCameraGameplay) {
+                if (mouse_locked) {
+                    app->getMouse().unlockMouse(app->getWindow());
+                    mouse_locked = false;
+                }
+                return;
+            }
 
             // First of all, we search for an entity containing both a CameraComponent and a FreeCameraControllerComponent
             // As soon as we find one, we break
