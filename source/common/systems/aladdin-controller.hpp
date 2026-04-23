@@ -103,32 +103,51 @@ namespace our {
                 if(aladdin->lives <= 0) continue;
 
                 auto& keyboard = app->getKeyboard();
+                auto& mouse = app->getMouse();
 
-                // 1. Get movement direction from keyboard input
-                glm::vec3 moveDir = {0, 0, 0};
-                if(keyboard.isPressed(GLFW_KEY_W)) moveDir.z -= 1.0f; // Forward
-                if(keyboard.isPressed(GLFW_KEY_S)) moveDir.z += 1.0f; // Backward
-                if(keyboard.isPressed(GLFW_KEY_A)) moveDir.x -= 1.0f; // Left
-                if(keyboard.isPressed(GLFW_KEY_D)) moveDir.x += 1.0f; // Right
+                // ─── 0. Mouse orbit: update camera orbit yaw/pitch ───
+                if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+                    glm::vec2 delta = mouse.getMouseDelta();
+                    aladdin->cameraOrbitYaw   -= delta.x * aladdin->mouseSensitivity;
+                    aladdin->cameraOrbitPitch -= delta.y * aladdin->mouseSensitivity;
+                    // Clamp pitch to avoid flipping
+                    aladdin->cameraOrbitPitch = glm::clamp(
+                        aladdin->cameraOrbitPitch,
+                        -glm::half_pi<float>() * 0.85f,
+                         glm::half_pi<float>() * 0.35f);
+                }
 
+                // ─── 1. Camera-relative movement from WASD ───
+                // Movement is relative to the camera's orbit yaw (horizontal facing)
+                float inputFwd = 0.0f, inputRight = 0.0f;
+                if(keyboard.isPressed(GLFW_KEY_W)) inputFwd   += 1.0f;
+                if(keyboard.isPressed(GLFW_KEY_S)) inputFwd   -= 1.0f;
+                if(keyboard.isPressed(GLFW_KEY_A)) inputRight -= 1.0f;
+                if(keyboard.isPressed(GLFW_KEY_D)) inputRight += 1.0f;
+
+                // Camera forward/right on XZ plane (from orbit yaw, NOT from character yaw)
+                const float orbYaw = aladdin->cameraOrbitYaw;
+                const glm::vec3 camFwd   = glm::vec3(-glm::sin(orbYaw), 0.0f, -glm::cos(orbYaw));
+                const glm::vec3 camRight = glm::vec3( glm::cos(orbYaw), 0.0f, -glm::sin(orbYaw));
+
+                glm::vec3 moveDir = camFwd * inputFwd + camRight * inputRight;
                 const bool hasMoveInput = glm::length(moveDir) > 0.001f;
                 if (hasMoveInput) {
                     moveDir = glm::normalize(moveDir);
-                    const float targetFacing = glm::atan(moveDir.x, moveDir.z);
-                    if (std::abs(moveDir.z) > 0.001f) {
-                        float diff = targetFacing - aladdin->facingYaw;
-                        while (diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
-                        while (diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
-                        aladdin->facingYaw += diff * glm::min(1.0f, aladdin->rotationSpeed * deltaTime);
-                    }
-                    entity->localTransform.rotation.x = 0.0f;
-                    entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
-                    entity->localTransform.rotation.z = 0.0f;
-                } else {
-                    aladdin->facingYaw = entity->localTransform.rotation.y - AladdinControllerComponent::meshYawVisualOffset;
-                    while (aladdin->facingYaw > glm::pi<float>()) aladdin->facingYaw -= 2.0f * glm::pi<float>();
+                    // Smoothly rotate character to face the movement direction (exponential smoothing)
+                    const float targetYaw = glm::atan(moveDir.x, moveDir.z);
+                    float diff = targetYaw - aladdin->facingYaw;
+                    while (diff >  glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
+                    while (diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
+                    const float smoothFactor = 1.0f - glm::exp(-aladdin->rotationSpeed * deltaTime);
+                    aladdin->facingYaw += diff * smoothFactor;
+                    while (aladdin->facingYaw >  glm::pi<float>()) aladdin->facingYaw -= 2.0f * glm::pi<float>();
                     while (aladdin->facingYaw < -glm::pi<float>()) aladdin->facingYaw += 2.0f * glm::pi<float>();
                 }
+                // Apply visual rotation — facingYaw directly, no 180° offset
+                entity->localTransform.rotation.x = 0.0f;
+                entity->localTransform.rotation.y = aladdin->facingYaw;
+                entity->localTransform.rotation.z = 0.0f;
 
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
@@ -332,14 +351,21 @@ namespace our {
                 }
 
             }
-            updateFollowCamera(world, deltaTime);
+            updateFollowCamera(world, physicsSystem, deltaTime);
         }
 
         /**
-         * Follow camera: behind / at eye using facingYaw, exp smoothing.
-         * Call after physics so the player transform matches the simulation.
+         * @brief Spring-arm style third-person camera (like UE4's Camera Boom).
+         *
+         * The camera orbits behind the player based on the character's facing yaw.
+         * A raycast from the focus point (player + height offset) toward the desired
+         * camera position detects walls. If a wall is hit, the arm shortens so the
+         * camera sits just in front of the wall surface. When no wall is blocking,
+         * the arm smoothly recovers to its full configured length.
+         *
+         * Position and rotation are exponentially smoothed for a cinematic feel.
          */
-        void updateFollowCamera(World* world, float deltaTime) {
+        void updateFollowCamera(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
             if (!world || !app) return;
 
             for (auto entity : world->getEntities()) {
@@ -355,46 +381,91 @@ namespace our {
                 }
                 if (!cameraEntity) continue;
 
-                const glm::vec3& pos = entity->localTransform.position;
-                const float yaw = aladdin->facingYaw;
-                glm::vec3 forward(-glm::sin(yaw), 0.0f, -glm::cos(yaw));
-                if (glm::dot(forward, forward) > 1e-8f) forward = glm::normalize(forward);
-                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-                const glm::vec3 up(0.0f, 1.0f, 0.0f);
-
-                glm::vec3 targetPosition;
-                glm::vec3 targetRotationEuler;
+                // ── Focus point: the point the camera looks at ──
+                const glm::vec3& playerPos = entity->localTransform.position;
+                const glm::vec3 focusPoint = playerPos + glm::vec3(0.0f, aladdin->cameraFocusHeight, 0.0f);
 
                 if (aladdin->cameraMode == AladdinCameraMode::ThirdPerson) {
-                    const glm::vec3& o = aladdin->cameraOffset;
-                    targetPosition = pos - forward * o.z + right * o.x + up * o.y;
-                    targetRotationEuler = {aladdin->thirdPersonPitch, yaw, 0.0f};
-                } else {
-                    targetPosition = pos + right * aladdin->firstPersonCameraOffset.x + up * aladdin->firstPersonCameraOffset.y
-                        + forward * aladdin->firstPersonCameraOffset.z;
-                    targetRotationEuler = {aladdin->firstPersonPitch, yaw, 0.0f};
-                }
+                    // ── Orbit camera using mouse-driven yaw/pitch ──
+                    const float orbYaw   = aladdin->cameraOrbitYaw;
+                    const float orbPitch = aladdin->cameraOrbitPitch;
 
-                if (aladdin->cameraSmoothing > 0.0f) {
-                    const float camDt = glm::min(deltaTime, 0.05f);
-                    const float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * camDt);
-                    cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
-                    glm::vec3& r = cameraEntity->localTransform.rotation;
-                    const float yawCur = r.y;
-                    const float yawTgt = targetRotationEuler.y;
-                    float dy = yawTgt - yawCur;
-                    while (dy > glm::pi<float>()) dy -= 2.0f * glm::pi<float>();
-                    while (dy < -glm::pi<float>()) dy += 2.0f * glm::pi<float>();
-                    r.x = targetRotationEuler.x;
-                    r.y = yawCur + dy * factor;
-                    r.z = targetRotationEuler.z;
+                    // Spherical-to-cartesian: arm direction from focus point to camera
+                    const glm::vec3 armDir = glm::normalize(glm::vec3(
+                        glm::cos(orbPitch) *  glm::sin(orbYaw),
+                        -glm::sin(orbPitch),
+                        glm::cos(orbPitch) *  glm::cos(orbYaw)));
+
+                    float desiredDist = aladdin->cameraArmLength;
+
+                    // ── Wall collision via raycast ──
+                    if (physicsSystem) {
+                        RaycastHit hit = physicsSystem->getPhysicsWorld().raycast(
+                            focusPoint, armDir, desiredDist + 0.5f);
+
+                        if (hit.hasHit && hit.entity && hit.entity != entity) {
+                            float wallDist = glm::max(
+                                hit.distance - aladdin->cameraWallOffset,
+                                aladdin->cameraArmMinDist);
+                            desiredDist = glm::min(desiredDist, wallDist);
+                        }
+                    }
+
+                    // ── Smooth arm distance: snap in, ease out ──
+                    if (desiredDist < aladdin->currentArmDist) {
+                        aladdin->currentArmDist = desiredDist;
+                    } else {
+                        aladdin->currentArmDist += (desiredDist - aladdin->currentArmDist)
+                            * glm::min(1.0f, aladdin->cameraArmRecoverSpeed * deltaTime);
+                    }
+
+                    // ── Final camera position ──
+                    const glm::vec3 targetPosition = focusPoint + armDir * aladdin->currentArmDist;
+
+                    // ── Camera rotation: look from camera toward focus ──
+                    const glm::vec3 lookDir = glm::normalize(focusPoint - targetPosition);
+                    const float targetPitch = glm::asin(glm::clamp(lookDir.y, -1.0f, 1.0f));
+                    const float targetYaw = glm::atan(-lookDir.x, -lookDir.z);
+                    const glm::vec3 targetRotation = {targetPitch, targetYaw, 0.0f};
+
+                    // ── Exponential smoothing ──
+                    if (aladdin->cameraSmoothing > 0.0f) {
+                        const float camDt = glm::min(deltaTime, 0.05f);
+                        const float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * camDt);
+
+                        cameraEntity->localTransform.position = glm::mix(
+                            cameraEntity->localTransform.position, targetPosition, factor);
+
+                        glm::vec3& r = cameraEntity->localTransform.rotation;
+                        r.x += (targetRotation.x - r.x) * factor;
+                        float dyaw = targetRotation.y - r.y;
+                        while (dyaw >  glm::pi<float>()) dyaw -= 2.0f * glm::pi<float>();
+                        while (dyaw < -glm::pi<float>()) dyaw += 2.0f * glm::pi<float>();
+                        r.y += dyaw * factor;
+                        r.z = 0.0f;
+                    } else {
+                        cameraEntity->localTransform.position = targetPosition;
+                        cameraEntity->localTransform.rotation = targetRotation;
+                    }
                 } else {
+                    // ── First-person mode ──
+                    const float fpYaw = aladdin->facingYaw;
+                    const glm::vec3 fpForward = glm::normalize(glm::vec3(-glm::sin(fpYaw), 0.0f, -glm::cos(fpYaw)));
+                    const glm::vec3 fpRight   = glm::normalize(glm::cross(fpForward, glm::vec3(0.0f, 1.0f, 0.0f)));
+                    const glm::vec3 fpUp(0.0f, 1.0f, 0.0f);
+                    const glm::vec3 targetPosition = playerPos
+                        + fpRight   * aladdin->firstPersonCameraOffset.x
+                        + fpUp      * aladdin->firstPersonCameraOffset.y
+                        + fpForward * aladdin->firstPersonCameraOffset.z;
+                    const glm::vec3 targetRotation = {aladdin->firstPersonPitch, fpYaw, 0.0f};
+
                     cameraEntity->localTransform.position = targetPosition;
-                    cameraEntity->localTransform.rotation = targetRotationEuler;
+                    cameraEntity->localTransform.rotation = targetRotation;
                 }
 
+                // Keep mesh rotation clean
                 entity->localTransform.rotation.x = 0.0f;
-                entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                entity->localTransform.rotation.y = aladdin->facingYaw;
                 entity->localTransform.rotation.z = 0.0f;
 
                 if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
@@ -503,11 +574,20 @@ namespace our {
             if (ImGui::Combo("Camera mode", &camMode, "Third person\0First person\0")) {
                 aladdin->cameraMode = camMode ? AladdinCameraMode::FirstPerson : AladdinCameraMode::ThirdPerson;
             }
-            ImGui::DragFloat3("Third offset (x=side,y=up,z=back)", &aladdin->cameraOffset[0], 0.05f);
             ImGui::DragFloat3("First-person offset", &aladdin->firstPersonCameraOffset[0], 0.02f);
             ImGui::DragFloat("First-person pitch (rad)", &aladdin->firstPersonPitch, 0.01f, -1.2f, 1.2f);
-            ImGui::DragFloat("Third-person pitch (rad)", &aladdin->thirdPersonPitch, 0.01f, -0.8f, 0.3f);
             ImGui::DragFloat("Camera Smoothing (0=snap)", &aladdin->cameraSmoothing, 0.1f, 0.0f, 20.0f);
+            ImGui::Text("Orbit Camera (Right-click drag):");
+            ImGui::DragFloat("Mouse Sensitivity", &aladdin->mouseSensitivity, 0.0005f, 0.001f, 0.02f);
+            ImGui::Value("Orbit Yaw", aladdin->cameraOrbitYaw);
+            ImGui::Value("Orbit Pitch", aladdin->cameraOrbitPitch);
+            ImGui::Text("Spring Arm:");
+            ImGui::DragFloat("Arm Length", &aladdin->cameraArmLength, 0.1f, 1.0f, 20.0f);
+            ImGui::DragFloat("Arm Min Dist", &aladdin->cameraArmMinDist, 0.05f, 0.2f, 5.0f);
+            ImGui::DragFloat("Wall Offset", &aladdin->cameraWallOffset, 0.05f, 0.0f, 2.0f);
+            ImGui::DragFloat("Recover Speed", &aladdin->cameraArmRecoverSpeed, 0.1f, 0.5f, 20.0f);
+            ImGui::DragFloat("Focus Height", &aladdin->cameraFocusHeight, 0.05f, 0.0f, 5.0f);
+            ImGui::Value("Current Arm Dist", aladdin->currentArmDist);
 
             ImGui::Separator();
             ImGui::Text("Physics State:");
