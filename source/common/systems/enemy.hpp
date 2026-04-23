@@ -57,7 +57,7 @@ namespace our {
                 float distToPlayer = playerEntity ? glm::distance(enemyPos, playerEntity->localTransform.position) : FLT_MAX;
                 bool touchingPlayer = false;
                 if (physicsSystem) {
-                    touchingPlayer = physicsSystem->getPhysicsWorld().hasAnyInteraction(entity, playerEntity, false);
+                    touchingPlayer = physicsSystem->getPhysicsWorld().hasAnyInteraction(entity, playerEntity, true);
                 }
 
                 // State Transitions

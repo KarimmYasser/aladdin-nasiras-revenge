@@ -3,6 +3,7 @@
 #include <application.hpp>
 
 #include <ecs/world.hpp>
+#include <components/aladdin-controller.hpp>
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
@@ -14,6 +15,7 @@
 #include <systems/level-exit.hpp>
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
+#include <systems/room-portal.hpp>
 
 #include <imgui.h>
 #include <sstream>
@@ -37,6 +39,7 @@ class Playstate: public our::State {
     our::EnemySystem enemySystem;
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
+    our::RoomPortalSystem roomPortalSystem;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -45,10 +48,8 @@ class Playstate: public our::State {
     int totalEnemies = 0;
     float elapsedTime = 0.0f;
 
-    // -- Health & Lives --
-    int currentHealth = 3;
-    int maxHealth = 3;
-    int lives = 3;
+    // -- Health --
+    static constexpr int kDefaultMaxHealth = 100;
 
     // Star rating time thresholds (seconds)
     int time3Star = 60;
@@ -61,6 +62,9 @@ class Playstate: public our::State {
     our::Texture2D* enemyIcon = nullptr;
 
     void onInitialize() override {
+        // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
+        roomPortalSystem.reset();
+
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
@@ -94,8 +98,6 @@ class Playstate: public our::State {
         coinsCollected = 0;
         enemiesKilled = 0;
         elapsedTime = 0.0f;
-        currentHealth = maxHealth;
-        lives = 3;
 
         // Load UI icons
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
@@ -103,20 +105,33 @@ class Playstate: public our::State {
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
     }
 
-    void onDraw(double deltaTime) override {
-        // Update elapsed time
-        elapsedTime += (float)deltaTime;
-        // Initialize physics system and abort this state if initialization fails
-        physicsInitialized = physicsSystem.initialize();
-        if(!physicsInitialized){
-            getApp()->changeState("menu");
-            return;
+    our::AladdinControllerComponent* findAladdin() {
+        for (auto entity : world.getEntities()) {
+            if (auto* a = entity->getComponent<our::AladdinControllerComponent>()) return a;
         }
+        return nullptr;
     }
 
     void onDraw(double deltaTime) override {
-        if(!physicsInitialized) {
-            return;
+        elapsedTime += (float)deltaTime;
+        if(!physicsInitialized){
+            physicsInitialized = physicsSystem.initialize();
+            if(!physicsInitialized){
+                getApp()->changeState("menu");
+                return;
+            }
+        }
+
+        // Victory / other application-state transitions from LevelExit
+        {
+            std::string nextAppState = levelExitSystem.getNextApplicationState();
+            if(!nextAppState.empty()){
+                levelExitSystem.clearNextApplicationState();
+                if(nextAppState == "victory"){
+                    getApp()->changeState("victory");
+                    return;
+                }
+            }
         }
 
         // Check for level transition
@@ -128,9 +143,12 @@ class Playstate: public our::State {
             if(file_in){
                 nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
                 file_in.close();
-                // Update the app config with the new scene
-                getApp()->getConfig()["scene"] = new_config["scene"];
-                // Reload the play state
+                if(new_config.contains("scene")){
+                    getApp()->getConfig()["scene"] = new_config["scene"];
+                }
+                if(new_config.contains("game")){
+                    getApp()->getConfig()["game"] = new_config["game"];
+                }
                 getApp()->changeState("play");
                 return;
             } else {
@@ -138,16 +156,24 @@ class Playstate: public our::State {
             }
         }
 
+        roomPortalSystem.update(&world, (float)deltaTime);
+        if(roomPortalSystem.inBlackout()){
+            our::RoomPortalSystem::renderBlackFrame(getApp()->getFrameBufferSize());
+            world.deleteMarkedEntities();
+            return;
+        }
+
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         aladdinController.update(&world, &physicsSystem, (float)deltaTime);
         enemySystem.update(&world, &physicsSystem, (float)deltaTime);
         physicsSystem.update(&world, (float)deltaTime);
+        aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
         hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
         checkpointSystem.update(&world, &physicsSystem);
-        levelExitSystem.update(&world, &physicsSystem);
+        levelExitSystem.update(&world);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
@@ -162,12 +188,20 @@ class Playstate: public our::State {
             getApp()->changeState("menu");
         }
 
+        if (keyboard.justPressed(GLFW_KEY_V)) {
+            if (auto* a = findAladdin()) {
+                a->cameraMode = (a->cameraMode == our::AladdinCameraMode::ThirdPerson)
+                    ? our::AladdinCameraMode::FirstPerson
+                    : our::AladdinCameraMode::ThirdPerson;
+            }
+        }
+
 #if !defined(NDEBUG)
         // Debug shortcuts (enabled only in non-release builds)
         if(keyboard.justPressed(GLFW_KEY_G)){
             getApp()->changeState("gameover");
         }
-        if(keyboard.justPressed(GLFW_KEY_V)){
+        if(keyboard.justPressed(GLFW_KEY_F10)){
             getApp()->changeState("victory");
         }
         if(keyboard.justPressed(GLFW_KEY_C)){
@@ -175,17 +209,6 @@ class Playstate: public our::State {
         }
         if(keyboard.justPressed(GLFW_KEY_K)){
             if(enemiesKilled < totalEnemies) enemiesKilled++;
-        }
-        if(keyboard.justPressed(GLFW_KEY_H)){
-            currentHealth--;
-            if(currentHealth <= 0){
-                lives--;
-                if(lives <= 0){
-                    getApp()->changeState("gameover");
-                } else {
-                    currentHealth = maxHealth; // respawn with full health
-                }
-            }
         }
 #endif
     }
@@ -225,6 +248,11 @@ class Playstate: public our::State {
         ImGuiIO& io = ImGui::GetIO();
         float screenWidth = io.DisplaySize.x;
         float screenHeight = io.DisplaySize.y;
+        our::AladdinControllerComponent* aladdin = findAladdin();
+
+        const int hp = aladdin ? aladdin->health : 0;
+        const int livesCount = aladdin ? aladdin->lives : 0;
+        const float hpFrac = aladdin ? glm::clamp((float)aladdin->health / (float)kDefaultMaxHealth, 0.0f, 1.0f) : 0.0f;
 
         // Helper for consistent panel styling
         auto beginPanel = [](const char* id, ImVec2 pos, ImVec2 size) {
@@ -323,22 +351,23 @@ class Playstate: public our::State {
         // ═══════════════════════════════════════════════════════
         //  BOTTOM-LEFT: Lives & Health
         // ═══════════════════════════════════════════════════════
-        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 110), ImVec2(220, 0));
-        ImGui::SetWindowFontScale(1.4f);
-        ImGui::Text("LIVES: %d", lives);
-        
+        beginPanel("##HealthPanel", ImVec2(20, screenHeight - 130), ImVec2(280, 0));
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::Text("LIVES: %d", livesCount);
+        ImGui::Spacing();
+        ImGui::Text("HEALTH");
+        ImVec4 healthColor = ImVec4(1.0f - hpFrac, hpFrac, 0.15f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, healthColor);
+        ImGui::ProgressBar(hpFrac, ImVec2(220, 14), "");
+        ImGui::PopStyleColor();
+        ImGui::Text("%d / %d", hp, kDefaultMaxHealth);
         ImGui::Spacing();
         if (heartIcon) {
-            for (int i = 0; i < maxHealth; i++) {
-                if (i > 0) ImGui::SameLine(0, 8);
-                ImVec4 tint = (i < currentHealth) ? ImVec4(1, 1, 1, 1) : ImVec4(0.2f, 0.2f, 0.2f, 0.4f);
-                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(30, 30), ImVec2(0,0), ImVec2(1,1), tint);
-            }
-        } else {
-            for (int i = 0; i < maxHealth; i++) {
+            ImGui::Text(" ");
+            ImGui::SameLine();
+            for (int i = 0; i < livesCount && i < 8; i++) {
                 if (i > 0) ImGui::SameLine(0, 6);
-                if (i < currentHealth) ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "<3");
-                else ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 0.4f), "<3");
+                ImGui::Image((void*)(intptr_t)heartIcon->getOpenGLName(), ImVec2(26, 26));
             }
         }
         endPanel();
@@ -350,27 +379,25 @@ class Playstate: public our::State {
         ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-        ImGui::Text("WASD: Move | Mouse: Look | C: Coin | K: Kill | H: Damage | ESC: Menu");
+        ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
-    }
 
-    // For Debugging only
-    // TODO - Remove or disable in production builds
-    void onImmediateGui() override {
+        // For debugging only (TODO: remove or disable in production builds)
         aladdinController.onImmediateGui(&world);
     }
-    //////////////////////////////////////////////
 
     void onDestroy() override {
         // Shutdown physics system and clear its bodies
         if(physicsInitialized){
             physicsSystem.shutdown(&world);
         }
+        physicsInitialized = false;
         // Don't forget to destroy the renderer
         renderer.destroy();
-        // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
+        // Free-camera may have locked the cursor; exit restores normal cursor mode.
         cameraController.exit();
+        roomPortalSystem.reset();
         // Clear the world
         world.clear();
         // Delete UI icons

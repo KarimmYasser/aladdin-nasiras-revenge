@@ -7,6 +7,10 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 
+#include <fstream>
+#include <iostream>
+#include <json/json.hpp>
+
 // This state shows how to use some of the abstractions we created to make a menu.
 class Menustate: public our::State {
 
@@ -18,6 +22,26 @@ class Menustate: public our::State {
     float time;
     // Selection marker icon
     our::Texture2D* markerIcon = nullptr;
+
+    void goToPlayLevel() {
+        auto& cfg = getApp()->getConfig();
+        if(cfg.contains("play-level-config") && cfg["play-level-config"].is_string()){
+            std::string path = cfg["play-level-config"].get<std::string>();
+            std::ifstream f(path);
+            if(f){
+                try {
+                    nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
+                    if(level.contains("scene")) cfg["scene"] = level["scene"];
+                    if(level.contains("game")) cfg["game"] = level["game"];
+                } catch(const std::exception& e) {
+                    std::cerr << "Failed to parse play-level-config " << path << ": " << e.what() << std::endl;
+                }
+            } else {
+                std::cerr << "Could not open play-level-config: " << path << std::endl;
+            }
+        }
+        getApp()->changeState("play");
+    }
 
     void onInitialize() override {
         // First, we create a material for the menu's background
@@ -56,8 +80,7 @@ class Menustate: public our::State {
         auto& keyboard = getApp()->getKeyboard();
 
         if(keyboard.justPressed(GLFW_KEY_SPACE)){
-            // If the space key is pressed in this frame, go to the play state
-            getApp()->changeState("play");
+            goToPlayLevel();
         } else if(keyboard.justPressed(GLFW_KEY_ESCAPE)) {
             // If the escape key is pressed in this frame, exit the game
             getApp()->close();
@@ -136,7 +159,7 @@ class Menustate: public our::State {
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
         if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH))) {
-            getApp()->changeState("play");
+            goToPlayLevel();
         }
         if (ImGui::IsItemHovered() && markerIcon) {
             ImVec2 min = ImGui::GetItemRectMin();

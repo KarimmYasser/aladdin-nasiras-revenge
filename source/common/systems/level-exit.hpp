@@ -3,7 +3,6 @@
 #include "../ecs/world.hpp"
 #include "../components/level-exit.hpp"
 #include "../components/aladdin-controller.hpp"
-#include "../physics/physics-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -16,14 +15,18 @@ namespace our {
      */
     class LevelExitSystem {
         std::string nextScene = "";
+        std::string nextApplicationState = "";
     public:
 
         /**
-         * @brief Updates level exit checks.
-         * 
+         * @brief Updates level exit checks (distance to exit vs radius).
+         *
+         * Trigger/collision-based exits can pass a physics/trigger layer here later;
+         * the current implementation only uses entity transforms.
+         *
          * @param world The world containing entities and components.
          */
-        void update(World* world, const PhysicsSystem* physicsSystem) {
+        void update(World* world) {
             
             Entity* aladdinEntity = nullptr;
             AladdinControllerComponent* aladdin = nullptr;
@@ -44,18 +47,23 @@ namespace our {
                 LevelExitComponent* exit = entity->getComponent<LevelExitComponent>();
                 if(!exit || exit->activated) continue;
 
-                bool isAtExit = false;
-                if (physicsSystem) {
-                    const auto& physicsWorld = physicsSystem->getPhysicsWorld();
-                    isAtExit = physicsWorld.hasTriggerEvent(aladdinEntity, entity) ||
-                               physicsWorld.hasContactEvent(aladdinEntity, entity);
-                }
+                // Distance check (Mock Physics)
+                // TODO (Member 2): Replace with trigger collision
+                glm::vec3 aladdinPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+                glm::vec3 exitPos = glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
-                if(isAtExit){
-                    if(aladdin->hasKey){
+                float distance = glm::distance(aladdinPos, exitPos);
+
+                if(distance < exit->radius){
+                    if(!exit->requiresKey || aladdin->hasKey){
                         exit->activated = true;
-                        std::cout << "[LevelExitSystem] Level Complete! Moving to: " << exit->nextScene << std::endl;
-                        nextScene = exit->nextScene;
+                        if(!exit->nextState.empty()){
+                            std::cout << "[LevelExitSystem] Exit triggered. nextState=" << exit->nextState << std::endl;
+                            nextApplicationState = exit->nextState;
+                        } else if(!exit->nextScene.empty()){
+                            std::cout << "[LevelExitSystem] Level Complete! Moving to: " << exit->nextScene << std::endl;
+                            nextScene = exit->nextScene;
+                        }
                     } else {
                         // Optional: Show a hint that a key is needed
                         static float hintTimer = 0.0f;
@@ -71,6 +79,9 @@ namespace our {
 
         std::string getNextScene() { return nextScene; }
         void clearNextScene() { nextScene = ""; }
+
+        std::string getNextApplicationState() { return nextApplicationState; }
+        void clearNextApplicationState() { nextApplicationState = ""; }
     };
 
 }

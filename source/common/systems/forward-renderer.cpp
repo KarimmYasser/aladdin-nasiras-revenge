@@ -183,7 +183,7 @@ namespace our {
                 lights.push_back(lightComp);
             }
             // If this entity has a mesh renderer component
-            if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer){
+            if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer && meshRenderer->visible){
                 // We construct a command from it
                 RenderCommand command;
                 command.localToWorld = meshRenderer->getOwner()->getLocalToWorldMatrix();

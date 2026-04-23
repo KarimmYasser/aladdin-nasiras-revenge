@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/camera.hpp"
 #include "../components/free-camera-controller.hpp"
+#include "../components/aladdin-controller.hpp"
 
 #include "../application.hpp"
 
@@ -29,14 +30,35 @@ namespace our
 
         // This should be called every frame to update all entities containing a FreeCameraControllerComponent 
         void update(World* world, float deltaTime) {
+            bool followCameraGameplay = false;
+            for (auto e : world->getEntities()) {
+                if (auto* a = e->getComponent<AladdinControllerComponent>()) {
+                    if (a->enableCameraFollow) {
+                        followCameraGameplay = true;
+                        break;
+                    }
+                }
+            }
+            if (followCameraGameplay) {
+                if (mouse_locked) {
+                    app->getMouse().unlockMouse(app->getWindow());
+                    mouse_locked = false;
+                }
+                return;
+            }
+
             // First of all, we search for an entity containing both a CameraComponent and a FreeCameraControllerComponent
             // As soon as we find one, we break
             CameraComponent* camera = nullptr;
             FreeCameraControllerComponent *controller = nullptr;
             for(auto entity : world->getEntities()){
-                camera = entity->getComponent<CameraComponent>();
-                controller = entity->getComponent<FreeCameraControllerComponent>();
-                if(camera && controller) break;
+                auto* cam = entity->getComponent<CameraComponent>();
+                auto* ctrl = entity->getComponent<FreeCameraControllerComponent>();
+                if(cam && ctrl) {
+                    camera = cam;
+                    controller = ctrl;
+                    break;
+                }
             }
             // If there is no entity with both a CameraComponent and a FreeCameraControllerComponent, we can do nothing so we return
             if(!(camera && controller)) return;
@@ -88,14 +110,10 @@ namespace our
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= controller->speedupFactor;
 
-            // We change the camera position based on the keys WASD/QE
-            // S & W moves the player back and forth
             if(app->getKeyboard().isPressed(GLFW_KEY_W)) position += front * (deltaTime * current_sensitivity.z);
             if(app->getKeyboard().isPressed(GLFW_KEY_S)) position -= front * (deltaTime * current_sensitivity.z);
-            // Q & E moves the player up and down
             if(app->getKeyboard().isPressed(GLFW_KEY_Q)) position += up * (deltaTime * current_sensitivity.y);
             if(app->getKeyboard().isPressed(GLFW_KEY_E)) position -= up * (deltaTime * current_sensitivity.y);
-            // A & D moves the player left or right 
             if(app->getKeyboard().isPressed(GLFW_KEY_D)) position += right * (deltaTime * current_sensitivity.x);
             if(app->getKeyboard().isPressed(GLFW_KEY_A)) position -= right * (deltaTime * current_sensitivity.x);
         }

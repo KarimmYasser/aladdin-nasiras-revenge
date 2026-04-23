@@ -7,6 +7,8 @@
 #include "physics-world.hpp"
 #include "components/rigid-body.hpp"
 #include "components/collider.hpp"
+#include "components/aladdin-controller.hpp"
+#include "components/movement.hpp"
 #include "ecs/world.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -70,6 +72,19 @@ namespace our {
                     rp3dTransform.setOrientation(reactphysics3d::Quaternion(q.x, q.y, q.z, q.w));
 
                     rbComp->bodyHandle->setTransform(rp3dTransform);
+                }
+            }
+
+            // ====================================================================
+            // PHASE 2.5: Desired velocity from Movement -> dynamic bodies (before step)
+            // ====================================================================
+            for (auto entity : ecsWorld->getEntities()) {
+                auto* rbComp = entity->getComponent<RigidBodyComponent>();
+                auto* mov = entity->getComponent<MovementComponent>();
+                // Aladdin (and similar) set linear velocity in gameplay code each frame; do not overwrite with Movement.
+                if (entity->getComponent<AladdinControllerComponent>()) continue;
+                if (rbComp && rbComp->bodyHandle && mov && rbComp->type == RigidBodyType::Dynamic) {
+                    physicsWorld.setLinearVelocity(entity, mov->linearVelocity);
                 }
             }
 

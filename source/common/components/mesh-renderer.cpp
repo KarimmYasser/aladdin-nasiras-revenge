@@ -10,5 +10,6 @@ namespace our {
         // which are defined with the keys "mesh" and "material" in data.
         mesh     = AssetLoader<Mesh>::get(data["mesh"].get<std::string>());
         material = AssetLoader<Material>::get(data["material"].get<std::string>());
+        visible = data.value("visible", visible);
     }
 }

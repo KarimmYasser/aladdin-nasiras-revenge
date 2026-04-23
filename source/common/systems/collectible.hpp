@@ -62,13 +62,21 @@ namespace our {
                 float verticalOffset = glm::sin(collectible->animationTimer * collectible->bobbingFrequency) * collectible->bobbingHeight;
                 entity->localTransform.position.y = collectible->initialY + verticalOffset;
 
-                // 2. Collection Logic: Physics trigger/contact check
+                // 2. Collection Logic: physics overlap when present, else distance (coins often have no RigidBody).
                 if(aladdinEntity){
                     bool collected = false;
                     if (physicsSystem) {
                         const auto& physicsWorld = physicsSystem->getPhysicsWorld();
-                        collected = physicsWorld.hasTriggerEvent(aladdinEntity, entity) ||
-                                    physicsWorld.hasContactEvent(aladdinEntity, entity);
+                        collected = physicsWorld.hasTriggerEvent(aladdinEntity, entity, true) ||
+                                    physicsWorld.hasContactEvent(aladdinEntity, entity, true);
+                    }
+                    if (!collected) {
+                        const glm::vec3 d = aladdinEntity->localTransform.position - entity->localTransform.position;
+                        const glm::vec3& sc = entity->localTransform.scale;
+                        const float scaleMax = glm::max(glm::max(sc.x, sc.y), sc.z);
+                        const float scaleBoost = glm::max(0.0f, 0.38f * scaleMax);
+                        const float reach = collectible->collectionRadius + scaleBoost + 0.55f;
+                        collected = glm::dot(d, d) <= reach * reach;
                     }
 
                     if(collected){

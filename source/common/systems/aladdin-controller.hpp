@@ -112,12 +112,22 @@ namespace our {
                 if(keyboard.isPressed(GLFW_KEY_D)) moveDir.x += 1.0f; // Right
 
                 const bool hasMoveInput = glm::length(moveDir) > 0.001f;
-                if(hasMoveInput) {
+                if (hasMoveInput) {
                     moveDir = glm::normalize(moveDir);
-
-                    // Rotate entity to face the movement direction
-                    float targetYaw = glm::atan(moveDir.x, moveDir.z);
-                    entity->localTransform.rotation.y = targetYaw;
+                    const float targetFacing = glm::atan(moveDir.x, moveDir.z);
+                    if (std::abs(moveDir.z) > 0.001f) {
+                        float diff = targetFacing - aladdin->facingYaw;
+                        while (diff > glm::pi<float>()) diff -= 2.0f * glm::pi<float>();
+                        while (diff < -glm::pi<float>()) diff += 2.0f * glm::pi<float>();
+                        aladdin->facingYaw += diff * glm::min(1.0f, aladdin->rotationSpeed * deltaTime);
+                    }
+                    entity->localTransform.rotation.x = 0.0f;
+                    entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                    entity->localTransform.rotation.z = 0.0f;
+                } else {
+                    aladdin->facingYaw = entity->localTransform.rotation.y - AladdinControllerComponent::meshYawVisualOffset;
+                    while (aladdin->facingYaw > glm::pi<float>()) aladdin->facingYaw -= 2.0f * glm::pi<float>();
+                    while (aladdin->facingYaw < -glm::pi<float>()) aladdin->facingYaw += 2.0f * glm::pi<float>();
                 }
 
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
@@ -193,17 +203,52 @@ namespace our {
                     if(aladdin->attackTimer <= 0.0f) {
                         aladdin->isAttacking = false;
                     }
-                    // Visual effect placeholder: slightly shake or tilt model
+                }
+
+                // 5. Handle Ranged Attack (Apple Throw)
+                if(keyboard.justPressed(GLFW_KEY_R) && !aladdin->isThrowing && aladdin->appleCount > 0) {
+                    aladdin->isThrowing = true;
+                    aladdin->throwTimer = 0.3f; // Throw animation for 0.3 seconds
+                    aladdin->appleCount--;
+                    // TODO (Animation): Trigger the "Throw" animation (Member 1)
+                    // TODO (Gameplay): Implement an actual Projectile System (Member 3 - future phase).
+                    // This should spawn a new entity with an Apple mesh, Collider, and Velocity.
+                }
+
+                if(aladdin->isThrowing) {
+                    aladdin->throwTimer -= deltaTime;
+                    if(aladdin->throwTimer <= 0.0f) {
+                        aladdin->isThrowing = false;
+                    }
                     
-                    // Simple Combat Test: consume physics interactions for sword hits.
-                    // This assumes entities that can be hit have colliders configured.
-                    for(auto other : world->getEntities()){
-                        if(other == entity || other == swordHitbox) continue;
+                    // Simple Throw Test: Log when an apple is "thrown" towards a target
+                    // TODO (Physics/Gameplay): In the real system, the spawned projectile
+                    // will handle its own collision with enemies independently.
+                }
+
+            }
+        }
+
+        /**
+         * Run after PhysicsSystem::update so overlap events and player position match the stepped world.
+         * Handles sword hits and third-person camera follow.
+         */
+        void postPhysicsUpdate(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
+            for (auto entity : world->getEntities()) {
+                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
+                if (!aladdin || aladdin->lives <= 0) continue;
+
+                Entity* swordHitbox = getOrCreateSwordHitbox(world, entity);
+                updateSwordHitboxTransform(entity, swordHitbox);
+
+                if (aladdin->isAttacking) {
+                    for (auto other : world->getEntities()) {
+                        if (other == entity || other == swordHitbox) continue;
 
                         bool swordOverlap = false;
                         if (physicsSystem) {
                             auto& physicsWorld = physicsSystem->getPhysicsWorld();
-                            swordOverlap = physicsWorld.hasAnyInteraction(swordHitbox, other, false);
+                            swordOverlap = physicsWorld.hasAnyInteraction(swordHitbox, other, true);
                         }
                         if(!swordOverlap) continue;
 
@@ -286,56 +331,74 @@ namespace our {
                     }
                 }
 
-                // 5. Handle Ranged Attack (Apple Throw)
-                if(keyboard.justPressed(GLFW_KEY_R) && !aladdin->isThrowing && aladdin->appleCount > 0) {
-                    aladdin->isThrowing = true;
-                    aladdin->throwTimer = 0.3f; // Throw animation for 0.3 seconds
-                    aladdin->appleCount--;
-                    // TODO (Animation): Trigger the "Throw" animation (Member 1)
-                    // TODO (Gameplay): Implement an actual Projectile System (Member 3 - future phase).
-                    // This should spawn a new entity with an Apple mesh, Collider, and Velocity.
+            }
+            updateFollowCamera(world, deltaTime);
+        }
+
+        /**
+         * Follow camera: behind / at eye using facingYaw, exp smoothing.
+         * Call after physics so the player transform matches the simulation.
+         */
+        void updateFollowCamera(World* world, float deltaTime) {
+            if (!world || !app) return;
+
+            for (auto entity : world->getEntities()) {
+                AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
+                if (!aladdin || aladdin->lives <= 0 || !aladdin->enableCameraFollow) continue;
+
+                Entity* cameraEntity = nullptr;
+                for (auto e : world->getEntities()) {
+                    if (e->getComponent<CameraComponent>()) {
+                        cameraEntity = e;
+                        break;
+                    }
+                }
+                if (!cameraEntity) continue;
+
+                const glm::vec3& pos = entity->localTransform.position;
+                const float yaw = aladdin->facingYaw;
+                glm::vec3 forward(-glm::sin(yaw), 0.0f, -glm::cos(yaw));
+                if (glm::dot(forward, forward) > 1e-8f) forward = glm::normalize(forward);
+                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+                const glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+                glm::vec3 targetPosition;
+                glm::vec3 targetRotationEuler;
+
+                if (aladdin->cameraMode == AladdinCameraMode::ThirdPerson) {
+                    const glm::vec3& o = aladdin->cameraOffset;
+                    targetPosition = pos - forward * o.z + right * o.x + up * o.y;
+                    targetRotationEuler = {aladdin->thirdPersonPitch, yaw, 0.0f};
+                } else {
+                    targetPosition = pos + right * aladdin->firstPersonCameraOffset.x + up * aladdin->firstPersonCameraOffset.y
+                        + forward * aladdin->firstPersonCameraOffset.z;
+                    targetRotationEuler = {aladdin->firstPersonPitch, yaw, 0.0f};
                 }
 
-                if(aladdin->isThrowing) {
-                    aladdin->throwTimer -= deltaTime;
-                    if(aladdin->throwTimer <= 0.0f) {
-                        aladdin->isThrowing = false;
-                    }
-                    
-                    // Simple Throw Test: Log when an apple is "thrown" towards a target
-                    // TODO (Physics/Gameplay): In the real system, the spawned projectile
-                    // will handle its own collision with enemies independently.
+                if (aladdin->cameraSmoothing > 0.0f) {
+                    const float camDt = glm::min(deltaTime, 0.05f);
+                    const float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * camDt);
+                    cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
+                    glm::vec3& r = cameraEntity->localTransform.rotation;
+                    const float yawCur = r.y;
+                    const float yawTgt = targetRotationEuler.y;
+                    float dy = yawTgt - yawCur;
+                    while (dy > glm::pi<float>()) dy -= 2.0f * glm::pi<float>();
+                    while (dy < -glm::pi<float>()) dy += 2.0f * glm::pi<float>();
+                    r.x = targetRotationEuler.x;
+                    r.y = yawCur + dy * factor;
+                    r.z = targetRotationEuler.z;
+                } else {
+                    cameraEntity->localTransform.position = targetPosition;
+                    cameraEntity->localTransform.rotation = targetRotationEuler;
                 }
 
-                // 6. Handle Camera Follow
-                if(aladdin->enableCameraFollow){
-                    // Search for a camera entity
-                    Entity* cameraEntity = nullptr;
-                    for(auto e : world->getEntities()){
-                        if(e->getComponent<CameraComponent>()){
-                            cameraEntity = e;
-                            break;
-                        }
-                    }
+                entity->localTransform.rotation.x = 0.0f;
+                entity->localTransform.rotation.y = aladdin->facingYaw + AladdinControllerComponent::meshYawVisualOffset;
+                entity->localTransform.rotation.z = 0.0f;
 
-                    if(cameraEntity){
-                        // The target position is the player's position + the offset
-                        glm::vec3 targetPosition = entity->localTransform.position + aladdin->cameraOffset;
-                        
-                        // Apply smoothing (Simple linear interpolation/lerp)
-                        if(aladdin->cameraSmoothing > 0.0f){
-                            // factor = 1 - e^(-smoothing * dt) is a common way to do framerate-independent smoothing
-                            float factor = 1.0f - glm::exp(-aladdin->cameraSmoothing * deltaTime);
-                            cameraEntity->localTransform.position = glm::mix(cameraEntity->localTransform.position, targetPosition, factor);
-                        } else {
-                            // Instant follow
-                            cameraEntity->localTransform.position = targetPosition;
-                        }
-
-                        // Optional: Make camera look at Aladdin
-                        // The game description mentions a free-roaming camera in open 3D spaces.
-                        // We might need to add logic to adjust the camera's orientation here.
-                    }
+                if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
+                    meshRenderer->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
                 }
             }
         }
@@ -436,8 +499,15 @@ namespace our {
             ImGui::Separator();
             ImGui::Text("Camera Follow:");
             ImGui::Checkbox("Enable Follow", &aladdin->enableCameraFollow);
-            ImGui::DragFloat3("Camera Offset", &aladdin->cameraOffset[0], 0.1f);
-            ImGui::DragFloat("Camera Smoothing", &aladdin->cameraSmoothing, 0.1f, 0.0f, 20.0f);
+            int camMode = (aladdin->cameraMode == AladdinCameraMode::FirstPerson) ? 1 : 0;
+            if (ImGui::Combo("Camera mode", &camMode, "Third person\0First person\0")) {
+                aladdin->cameraMode = camMode ? AladdinCameraMode::FirstPerson : AladdinCameraMode::ThirdPerson;
+            }
+            ImGui::DragFloat3("Third offset (x=side,y=up,z=back)", &aladdin->cameraOffset[0], 0.05f);
+            ImGui::DragFloat3("First-person offset", &aladdin->firstPersonCameraOffset[0], 0.02f);
+            ImGui::DragFloat("First-person pitch (rad)", &aladdin->firstPersonPitch, 0.01f, -1.2f, 1.2f);
+            ImGui::DragFloat("Third-person pitch (rad)", &aladdin->thirdPersonPitch, 0.01f, -0.8f, 0.3f);
+            ImGui::DragFloat("Camera Smoothing (0=snap)", &aladdin->cameraSmoothing, 0.1f, 0.0f, 20.0f);
 
             ImGui::Separator();
             ImGui::Text("Physics State:");
