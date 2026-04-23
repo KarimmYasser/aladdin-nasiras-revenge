@@ -27,19 +27,37 @@ namespace our {
         
         // Camera Follow configuration
         bool enableCameraFollow = false;
-        /// Third-person offset: x = shoulder (+right), y = height above feet, z = distance behind (positive = behind).
-        glm::vec3 cameraOffset = {0.0f, 1.5f, 5.0f};
-        float cameraSmoothing = 6.0f;
+        float cameraSmoothing = 8.0f;
         AladdinCameraMode cameraMode = AladdinCameraMode::ThirdPerson;
         /// First-person: eye offset in character space (x = right, y = up, z = forward along view).
         glm::vec3 firstPersonCameraOffset = {0.0f, 1.38f, 0.22f};
         float firstPersonPitch = 0.0f;
-        /// Third-person: downward pitch (radians) for the follow camera look direction.
-        float thirdPersonPitch = -0.14f;
-        /// Logical yaw used by follow camera (movement-facing, independent of mesh twist).
+        /// Logical yaw for character mesh facing (independent from camera).
         float facingYaw = 0.0f;
         /// Mesh is authored 180° from logical forward; added to `rotation.y` for rendering.
         static constexpr float meshYawVisualOffset = 3.14159265f;
+
+        // Mouse-controlled orbit camera (like Roblox / UE third-person)
+        /// Camera orbit yaw — controlled by mouse X movement.
+        float cameraOrbitYaw = 0.0f;
+        /// Camera orbit pitch — controlled by mouse Y movement (clamped).
+        float cameraOrbitPitch = -0.25f;
+        /// Mouse look sensitivity.
+        float mouseSensitivity = 0.003f;
+
+        // Spring-arm camera (like UE Camera Boom)
+        /// Maximum arm length (distance from focus point to camera).
+        float cameraArmLength = 8.0f;
+        /// Minimum distance the camera can be to the focus point (when pushed in by a wall).
+        float cameraArmMinDist = 1.0f;
+        /// Small offset to prevent camera from sitting exactly on a wall surface.
+        float cameraWallOffset = 0.3f;
+        /// How fast the camera arm recovers after being pushed in by a wall.
+        float cameraArmRecoverSpeed = 5.0f;
+        /// Current (smoothed) arm distance — may be shorter than armLength due to walls.
+        float currentArmDist = 8.0f;
+        /// Height of the focus/look-at target above the player's feet.
+        float cameraFocusHeight = 1.5f;
 
         glm::vec3 velocity = {0, 0, 0};
         bool isGrounded = false;
@@ -86,12 +104,6 @@ namespace our {
             invincibilityDuration = data.value("invincibilityDuration", invincibilityDuration);
 
             enableCameraFollow = data.value("enableCameraFollow", enableCameraFollow);
-            if (data.contains("cameraOffset")) {
-                auto& v = data["cameraOffset"];
-                if (v.is_array() && v.size() >= 3) {
-                    cameraOffset = {v[0].get<float>(), v[1].get<float>(), v[2].get<float>()};
-                }
-            }
             cameraSmoothing = data.value("cameraSmoothing", cameraSmoothing);
 
             if (data.contains("firstPersonCameraOffset")) {
@@ -101,7 +113,6 @@ namespace our {
                 }
             }
             firstPersonPitch = glm::radians(data.value("firstPersonPitchDegrees", glm::degrees(firstPersonPitch)));
-            thirdPersonPitch = glm::radians(data.value("thirdPersonPitchDegrees", glm::degrees(thirdPersonPitch)));
             if (data.contains("cameraMode")) {
                 const std::string mode = data.value("cameraMode", std::string("third"));
                 if (mode == "first" || mode == "firstPerson" || mode == "first_person") {
@@ -117,6 +128,18 @@ namespace our {
             if (data.contains("firstPersonPitch")) {
                 firstPersonPitch = data.value("firstPersonPitch", firstPersonPitch);
             }
+
+            // Orbit camera fields
+            mouseSensitivity = data.value("mouseSensitivity", mouseSensitivity);
+            cameraOrbitPitch = glm::radians(data.value("cameraOrbitPitchDegrees", glm::degrees(cameraOrbitPitch)));
+
+            // Spring-arm camera fields
+            cameraArmLength = data.value("cameraArmLength", cameraArmLength);
+            cameraArmMinDist = data.value("cameraArmMinDist", cameraArmMinDist);
+            cameraWallOffset = data.value("cameraWallOffset", cameraWallOffset);
+            cameraArmRecoverSpeed = data.value("cameraArmRecoverSpeed", cameraArmRecoverSpeed);
+            cameraFocusHeight = data.value("cameraFocusHeight", cameraFocusHeight);
+            currentArmDist = cameraArmLength; // init to full length
 
             if (Entity* e = getOwner()) {
                 facingYaw = e->localTransform.rotation.y - meshYawVisualOffset;
