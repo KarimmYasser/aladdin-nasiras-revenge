@@ -16,6 +16,7 @@
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
+#include <audio/audio-system.hpp>
 
 #include <imgui.h>
 #include <sstream>
@@ -103,6 +104,9 @@ class Playstate: public our::State {
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
         heartIcon = our::texture_utils::loadImage("assets/textures/heart_icon.png");
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
+
+        // Start background music
+        our::AudioSystem::instance().playMusic("assets/audio/bg.wav");
     }
 
     our::AladdinControllerComponent* findAladdin() {
@@ -393,6 +397,8 @@ class Playstate: public our::State {
             physicsSystem.shutdown(&world);
         }
         physicsInitialized = false;
+        // Stop the background music for this level
+        our::AudioSystem::instance().stopMusic();
         // Don't forget to destroy the renderer
         renderer.destroy();
         // Free-camera may have locked the cursor; exit restores normal cursor mode.

@@ -7,6 +7,8 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 
+#include <audio/audio-system.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <json/json.hpp>
@@ -22,6 +24,8 @@ class Menustate: public our::State {
     float time;
     // Selection marker icon
     our::Texture2D* markerIcon = nullptr;
+    bool showSettings = false;
+    int masterVolume = 100;
 
     void goToPlayLevel() {
         auto& cfg = getApp()->getConfig();
@@ -70,9 +74,14 @@ class Menustate: public our::State {
 
         // Reset the time elapsed since the state is entered.
         time = 0;
+        // Close settings panel when re-entering menu
+        showSettings = false;
 
         // Load marker icon
         markerIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
+
+        // Start menu background music
+        our::AudioSystem::instance().playMusic("assets/audio/menu.mp3");
     }
 
     void onDraw(double deltaTime) override {
@@ -172,6 +181,20 @@ class Menustate: public our::State {
         ImGui::Spacing();
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+        if (ImGui::Button(" SETTINGS ", ImVec2(btnW, btnH))) {
+            showSettings = !showSettings;
+        }
+        if (ImGui::IsItemHovered() && markerIcon) {
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 max = ImGui::GetItemRectMax();
+            float coinY = min.y + (btnH - 32.0f) * 0.5f;
+            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
+                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+        }
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
         if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
             getApp()->close();
         }
@@ -187,8 +210,64 @@ class Menustate: public our::State {
         ImGui::PopStyleColor(4);
         ImGui::End();
 
+        // ── Settings Panel ──
+        if (showSettings) {
+            float panelW = 360.0f;
+            float panelH = 180.0f;
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.82f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(panelW, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 14.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 16));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.02f, 0.12f, 0.88f));
+            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.8f, 0.2f, 0.5f));
+            ImGui::Begin("##SettingsPanel", nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+
+            // Title
+            ImGui::SetWindowFontScale(1.8f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.2f, 1.0f));
+            float titleW = ImGui::CalcTextSize("SETTINGS").x;
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - titleW) * 0.5f);
+            ImGui::Text("SETTINGS");
+            ImGui::PopStyleColor();
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // Sound section
+            ImGui::SetWindowFontScale(1.4f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+            ImGui::Text("Sound");
+            ImGui::PopStyleColor();
+
+            ImGui::Spacing();
+
+            // Volume slider
+            ImGui::SetWindowFontScale(1.2f);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.1f, 0.25f, 0.9f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.25f, 0.15f, 0.35f, 0.9f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1.0f, 0.9f, 0.4f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 6.0f);
+
+            ImGui::SetNextItemWidth(panelW - 40.0f);
+            if (ImGui::SliderInt("##Volume", &masterVolume, 0, 100, "Volume: %d%%")) {
+                our::AudioSystem::instance().setMasterVolume((float)masterVolume / 100.0f);
+            }
+
+            ImGui::PopStyleVar(2);
+            ImGui::PopStyleColor(4);
+
+            ImGui::End();
+            ImGui::PopStyleColor(2);
+            ImGui::PopStyleVar(2);
+        }
+
         // ── Controls hint ──
-        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.88f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        float hintY = showSettings ? h * 0.96f : h * 0.88f;
+        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, hintY), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
         ImGui::Begin("##Hint", nullptr,
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
@@ -201,6 +280,8 @@ class Menustate: public our::State {
     }
 
     void onDestroy() override {
+        // Stop menu music
+        our::AudioSystem::instance().stopMusic();
         // Delete all the allocated resources
         if(markerIcon) delete markerIcon;
         delete rectangle;

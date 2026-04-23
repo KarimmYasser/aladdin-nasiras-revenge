@@ -5,6 +5,7 @@
 #include "../components/aladdin-controller.hpp"
 #include "../components/rigid-body.hpp"
 #include "../physics/physics-system.hpp"
+#include "../audio/audio-system.hpp"
 #include <glm/glm.hpp>
 #include <cfloat>
 #include <iostream>
@@ -160,10 +161,15 @@ namespace our {
                                         rbComp->velocity = glm::vec3(0.0f);
                                     }
 
+                                    AudioSystem::instance().playSound("assets/audio/afterDeath.wav");
                                     std::cout << "[EnemySystem] Respawning at " << playerController->respawnPosition.x << ", " << playerController->respawnPosition.y << ", " << playerController->respawnPosition.z << std::endl;
                                 } else {
+                                    AudioSystem::instance().playSound("assets/audio/death.wav");
                                     std::cout << "[EnemySystem] GAME OVER! No more lives." << std::endl;
                                 }
+                            } else {
+                                // Non-lethal hit — play hit sound once
+                                AudioSystem::instance().playSound("assets/audio/hit.wav");
                             }
                         }
                         enemy->currentAttackTimer = enemy->attackCooldown;

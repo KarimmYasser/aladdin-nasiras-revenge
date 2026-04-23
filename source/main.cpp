@@ -4,6 +4,7 @@
 #include <json/json.hpp>
 
 #include <application.hpp>
+#include "../source/common/audio/audio-system.hpp"
 
 #include "states/menu-state.hpp"
 #include "states/play-state.hpp"
@@ -62,7 +63,15 @@ int main(int argc, char** argv) {
         app.changeState(app_config["start-scene"].get<std::string>());
     }
 
+    // Initialize the audio engine (once, before the game loop)
+    our::AudioSystem::instance().initialize();
+
     // Finally run the application
     // Here, the application loop will run till the terminatio condition is statisfied
-    return app.run(run_for_frames);
+    int result = app.run(run_for_frames);
+
+    // Shut down the audio engine
+    our::AudioSystem::instance().shutdown();
+
+    return result;
 }
