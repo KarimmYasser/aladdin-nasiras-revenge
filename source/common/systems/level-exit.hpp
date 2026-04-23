@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/level-exit.hpp"
 #include "../components/aladdin-controller.hpp"
+#include "../audio/audio-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -57,6 +58,7 @@ namespace our {
                 if(distance < exit->radius){
                     if(!exit->requiresKey || aladdin->hasKey){
                         exit->activated = true;
+                        AudioSystem::instance().playSound("assets/audio/levelExit.wav");
                         if(!exit->nextState.empty()){
                             std::cout << "[LevelExitSystem] Exit triggered. nextState=" << exit->nextState << std::endl;
                             nextApplicationState = exit->nextState;

@@ -4,6 +4,7 @@
 #include "../components/collectible.hpp"
 #include "../components/aladdin-controller.hpp"
 #include "../physics/physics-system.hpp"
+#include "../audio/audio-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -103,6 +104,9 @@ namespace our {
                                 std::cout << "[CollectibleSystem] Collected Key! Level Exit is now active." << std::endl;
                                 break;
                         }
+
+                        // Play collection sound effect
+                        AudioSystem::instance().playSound("assets/audio/coinCollected.wav");
 
                         // Mark the collectible for removal from the world
                         world->markForRemoval(entity);

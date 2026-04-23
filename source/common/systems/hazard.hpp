@@ -5,6 +5,7 @@
 #include "../components/aladdin-controller.hpp"
 #include "../components/rigid-body.hpp"
 #include "../physics/physics-system.hpp"
+#include "../audio/audio-system.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -84,14 +85,17 @@ namespace our {
                                 rbComp->bodyHandle->setLinearVelocity(reactphysics3d::Vector3(0, 0, 0));
                             }
 
+                            AudioSystem::instance().playSound("assets/audio/afterDeath.wav");
                             std::cout << "[HazardSystem] Respawning at " << playerController->respawnPosition.x << ", " << playerController->respawnPosition.y << ", " << playerController->respawnPosition.z << std::endl;
                         } else {
                             // Game Over
+                            AudioSystem::instance().playSound("assets/audio/death.wav");
                             std::cout << "[HazardSystem] GAME OVER! No more lives." << std::endl;
                             // TODO: Trigger transition to GameOverState or reset level
                         }
                     } else {
                         // Just a hit, trigger invincibility
+                        AudioSystem::instance().playSound("assets/audio/hit.wav");
                         playerController->invincibilityTimer = playerController->invincibilityDuration;
                     }
                 }

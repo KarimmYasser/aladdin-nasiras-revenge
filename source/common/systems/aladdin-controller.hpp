@@ -12,6 +12,7 @@
 #include "../asset-loader.hpp"
 #include "../application.hpp"
 #include "../physics/physics-system.hpp"
+#include "../audio/audio-system.hpp"
 #include <imgui.h>
 
 #include <glm/glm.hpp>
@@ -194,8 +195,7 @@ namespace our {
                     aladdin->isAttacking = true;
                     aladdin->attackTimer = 0.4f; // Attack for 0.4 seconds
                     aladdin->hitEntities.clear(); // Clear the list of entities hit in the previous attack
-                    // TODO (Graphics): Trigger sword "swoosh" sound (Member 1)
-                    // TODO (Animation): Trigger the "Sword Slash" animation (Member 1)
+                    AudioSystem::instance().playSound("assets/audio/attack.wav");
                 }
 
                 if(aladdin->isAttacking) {
@@ -276,6 +276,9 @@ namespace our {
                             if(enemy->health <= 0) {
                                 enemy->currentState = EnemyComponent::State::DEAD;
                                 std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
+                                AudioSystem::instance().playSound("assets/audio/death.wav");
+                            } else {
+                                AudioSystem::instance().playSound("assets/audio/hit.wav");
                             }
                         }
 

@@ -95,6 +95,9 @@ set(COMMON_SOURCES
         source/common/systems/movement.hpp
         source/common/systems/aladdin-controller.hpp
         source/common/systems/collectible.hpp
+
+        source/common/audio/audio-system.hpp
+        source/common/audio/audio-system.cpp
 )
 
 # Define the directories in which to search for the included headers
@@ -106,6 +109,7 @@ include_directories(
         vendor/imgui
         vendor/utils
         vendor/reactphysics3d/include
+        vendor/miniaudio
 )
 
 
