@@ -1,0 +1,50 @@
+# Blender MTL File: 'None'
+# Material Count: 4
+
+newmtl fou_01
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.627451 0.627451 0.627451
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd fou_01.png
+map_Ka fou_01.png
+map_d fou_01.png
+
+newmtl fou_01_3
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.627451 0.627451 0.627451
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd fou_01_3.png
+map_Ka fou_01_3.png
+map_d fou_01_3.png
+
+newmtl fou_02
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.627451 0.627451 0.627451
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd fou_02.png
+map_Ka fou_02.png
+map_d fou_02.png
+
+newmtl h_kage
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.627451 0.627451 0.627451
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd h_kage.png
+map_Ka h_kage.png
+map_d h_kage.png

@@ -294,8 +294,12 @@ namespace our {
             return;
         }
 
-        // Create the collider and store the handle
-        auto* collider = rbComp->bodyHandle->addCollider(shape, reactphysics3d::Transform::identity());
+        // Collider pose in rigid-body local space (offset aligns box with offset mesh pivots)
+        const reactphysics3d::Transform colliderLocal(
+            toRP3D(desc.centerOffset),
+            reactphysics3d::Quaternion::identity()
+        );
+        auto* collider = rbComp->bodyHandle->addCollider(shape, colliderLocal);
         if (!collider) {
             Logger::error("PhysicsWorld", "Failed to add collider to rigid body for entity '", entity->name, "'.");
             return;

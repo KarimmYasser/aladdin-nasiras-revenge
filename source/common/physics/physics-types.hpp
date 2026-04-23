@@ -39,6 +39,8 @@ namespace our {
     struct ColliderDesc {
         ColliderShape shape = ColliderShape::Box;
         glm::vec3 halfExtents{.5f}; // for box
+        /// Box/sphere/capsule center in rigid-body local space (matches mesh scale frame: T*R*S).
+        glm::vec3 centerOffset{0.0f};
         float radius = .5f;// for sphere/capsule
         float height = 1.8f; // for capsule
         bool isTrigger = false;// doesn't collide physically but detects overlaps

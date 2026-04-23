@@ -1,134 +1,194 @@
-// Asset showcase: Agrabah-style ground/walls, desert sky, door texture, gameplay props.
-// Enemy OBJs use ~100+ model units; this scene uses scale ~0.017 (level01 uses ~0.5 in a huge world).
-// Run from project root: bin\GAME_APPLICATION.exe -c config/assets-test/app.jsonc
-// Free camera: hold LMB to look; WASD move; Q/E up-down; Shift sprint; wheel FOV. ESC closes window.
 {
-    "start-scene": "renderer-test",
+    "start-scene": "play",
+    "game": {
+        "total_coins": 3,
+        "total_enemies": 0,
+        "time_3star": 9999,
+        "time_2star": 9999,
+        "time_1star": 9999
+    },
     "window": {
-        "title": "Aladdin — Asset test (props, walls, door, sky)",
+        "title": "Aladdin — Full model asset test (physics + scale)",
         "size": { "width": 1280, "height": 720 },
         "fullscreen": false
     },
     "scene": {
         "renderer": {
-            "sky": "assets/textures/sky_desert.png"
+            "sky": "assets/textures/sky_desert.png",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
         },
         "assets": {
             "shaders": {
-                "light": {
-                    "vs": "assets/shaders/light.vert",
-                    "fs": "assets/shaders/light.frag"
-                },
-                "textured": {
-                    "vs": "assets/shaders/textured.vert",
-                    "fs": "assets/shaders/textured.frag"
-                }
+                "light": { "vs": "assets/shaders/light.vert", "fs": "assets/shaders/light.frag" },
+                "textured": { "vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag" }
             },
             "textures": {
                 "agrabah_ground": "assets/textures/agrabah_ground.png",
-                "agrabah_wall": "assets/textures/agrabah_wall.png",
-                "tex_stone": "assets/textures/agrabah/09_stone01.png",
-                "door_tex": "assets/textures/Door.png",
+                "tex_desert_house_brick": "assets/models/Environment objects/Buildings/desert_house/Brick1_baseColor.jpg",
+                "tex_desert_shop_main": "assets/models/Environment objects/Buildings/desert_shop/HouseMain_baseColor.jpg",
+                "tex_poor_house": "assets/models/Environment objects/Buildings/poor_desert_house/House_Lil_baseColor.png",
+                "tex_kasbah": "assets/models/Environment objects/Buildings/stylized_kasbah/Material_001_baseColor.png",
+                "tex_fountain1": "assets/models/Environment objects/Fountains/Fountain 1/fou_01.png",
+                "tex_fountain2": "assets/models/Environment objects/Fountains/Fountain 2/Material__0.png",
+                "tex_agraba_shop": "assets/models/Environment objects/agraba_market_shop/material_baseColor.jpg",
+                "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
+                "aladdin_prince_skin": "assets/models/Aladdin/aladdin_prince_diff.png",
                 "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
                 "apple_tex": "assets/models/Apple/Handle1Tex.png",
                 "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
                 "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
                 "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
+                "pot_gerudo_tex": "assets/models/Pots/Pot 2/CmnTex_Etc_GerudoArticles_Vase_I_Alb.png",
+                "pot_sheikah_tex": "assets/models/Pots/Pots (Sheikah)/Sheikah Pots/CmnTex_Etc_SheikerPot_A_Alb.png",
+                "pot_small_tex": "assets/models/Pots/Pot 2/Txm_tsubo02.png",
+                "pot_aotubo_tex": "assets/models/Pots/Pot 3/D_aotubo00.png",
+                "key_tex": "assets/models/Key/KeySwitch.png",
                 "sword_tex": "assets/models/Swords/Aladdin Sword/Textures/Sword1.png",
-                "jasmine_tex": "assets/models/Jasmine/jasmine_diff.png",
-                "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png"
+                "genie_tex": "assets/models/Genie/genie_diff.png",
+                "portal_tex_0": "assets/models/Portal/0.png",
+                "portal_tex_1": "assets/models/Portal/1.png",
+                "carpet_tex": "assets/models/Carpet/magic_carpet_diff.png"
             },
             "meshes": {
                 "cube": "assets/models/cube.obj",
                 "plane": "assets/models/plane.obj",
+                "sphere": "assets/models/sphere.obj",
+                "monkey_mesh": "assets/models/monkey.obj",
                 "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
+                "aladdin_prince_mesh": "assets/models/Aladdin/aladdin_costume_prince.obj",
                 "coin_mesh": "assets/models/Coin/Coin.obj",
                 "apple_mesh": "assets/models/Apple/apple.obj",
+                "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
+                "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
+                "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj",
+                "key_mesh": "assets/models/Key/model.obj",
                 "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
                 "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
-                "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
-                "sword_mesh": "assets/models/Swords/Aladdin Sword/Magician Sword.obj"
+                "sword_mesh": "assets/models/Swords/Aladdin Sword/Magician Sword.obj",
+                "genie_mesh": "assets/models/Genie/genie.obj",
+                "portal_mtl15": "assets/models/Portal/mtl15.obj",
+                "portal_mtl21": "assets/models/Portal/mtl21.obj",
+                "portal_highelf": "assets/models/Portal/highelfportal.obj",
+                "env_desert_house": "assets/models/Environment objects/Buildings/desert_house/desert_house.obj",
+                "env_desert_shop": "assets/models/Environment objects/Buildings/desert_shop/desert_shop.obj",
+                "env_poor_desert_house": "assets/models/Environment objects/Buildings/poor_desert_house/poor_desert_house.obj",
+                "env_stylized_kasbah": "assets/models/Environment objects/Buildings/stylized_kasbah/stylized_kasbah__tier_i.obj",
+                "env_fountain_1": "assets/models/Environment objects/Fountains/Fountain 1/Fountain.obj",
+                "env_fountain_2": "assets/models/Environment objects/Fountains/Fountain 2/Fountain.obj",
+                "env_agraba_market_shop": "assets/models/Environment objects/agraba_market_shop/agraba_market_shop.obj",
+                "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj"
             },
             "samplers": {
                 "default": {},
-                "repeat": {
-                    "WRAP_S": "GL_REPEAT",
-                    "WRAP_T": "GL_REPEAT"
-                }
+                "repeat": { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" }
             },
             "materials": {
                 "lit-ground": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "agrabah_ground",
                     "sampler": "repeat",
-                    "shininess": 10.0,
-                    "ambient": 0.32,
-                    "uv_multiplier": [24, 24]
-                },
-                "lit-wall": {
-                    "type": "lit",
-                    "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": true },
-                        "depthTesting": { "enabled": true }
-                    },
-                    "albedo_map": "agrabah_wall",
-                    "sampler": "repeat",
-                    "shininess": 18.0,
+                    "shininess": 12.0,
                     "ambient": 0.3,
-                    "uv_multiplier": [3, 2]
+                    "uv_multiplier": [56, 80]
                 },
-                "lit-wall-stone": {
+                "lit-env-desert-house": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": true },
-                        "depthTesting": { "enabled": true }
-                    },
-                    "albedo_map": "tex_stone",
-                    "sampler": "repeat",
-                    "shininess": 22.0,
-                    "ambient": 0.28,
-                    "uv_multiplier": [4, 3]
-                },
-                "lit-door": {
-                    "type": "lit",
-                    "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
-                    "albedo_map": "door_tex",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_desert_house_brick",
                     "sampler": "default",
-                    "shininess": 28.0,
+                    "shininess": 22.0,
+                    "ambient": 0.32
+                },
+                "lit-env-desert-shop": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_desert_shop_main",
+                    "sampler": "default",
+                    "shininess": 24.0,
+                    "ambient": 0.32
+                },
+                "lit-env-poor-house": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_poor_house",
+                    "sampler": "default",
+                    "shininess": 20.0,
+                    "ambient": 0.32
+                },
+                "lit-env-kasbah": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_kasbah",
+                    "sampler": "default",
+                    "shininess": 26.0,
                     "ambient": 0.3
+                },
+                "lit-env-fountain1": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_fountain1",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.34
+                },
+                "lit-env-fountain2": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_fountain2",
+                    "sampler": "default",
+                    "shininess": 40.0,
+                    "ambient": 0.32
+                },
+                "lit-env-agraba-shop": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_agraba_shop",
+                    "sampler": "default",
+                    "shininess": 22.0,
+                    "ambient": 0.32
+                },
+                "lit-env-lamp": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 72.0,
+                    "ambient": 0.38,
+                    "albedo_tint": [0.92, 0.72, 0.28]
                 },
                 "lit-aladdin": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": true },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
                     "albedo_map": "aladdin_skin",
                     "sampler": "default",
                     "shininess": 32.0,
-                    "ambient": 0.3
+                    "ambient": 0.28
+                },
+                "lit-aladdin-prince": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "aladdin_prince_skin",
+                    "sampler": "default",
+                    "shininess": 32.0,
+                    "ambient": 0.28
                 },
                 "coin-mat": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "coin_tex",
                     "sampler": "default",
                     "shininess": 16.0,
@@ -137,10 +197,7 @@
                 "lit-apple": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": true },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
                     "albedo_map": "apple_tex",
                     "sampler": "default",
                     "shininess": 48.0,
@@ -149,22 +206,61 @@
                 "lit-pot": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": true },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
                     "albedo_map": "pot_tex",
                     "sampler": "default",
                     "shininess": 28.0,
                     "ambient": 0.32
                 },
+                "lit-pot-gerudo": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_gerudo_tex",
+                    "sampler": "default",
+                    "shininess": 26.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-sheikah": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_sheikah_tex",
+                    "sampler": "default",
+                    "shininess": 26.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-small": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_small_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-aotubo": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_aotubo_tex",
+                    "sampler": "default",
+                    "shininess": 30.0,
+                    "ambient": 0.32
+                },
+                "lit-key": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "key_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.3
+                },
                 "lit-enemy1": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy1_tex",
                     "sampler": "default",
                     "shininess": 20.0,
@@ -173,10 +269,7 @@
                 "lit-enemy2": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy2_tex",
                     "sampler": "default",
                     "shininess": 36.0,
@@ -185,10 +278,7 @@
                 "lit-enemy3": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy3_tex",
                     "sampler": "default",
                     "shininess": 18.0,
@@ -197,258 +287,451 @@
                 "lit-sword": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "sword_tex",
                     "sampler": "default",
                     "shininess": 64.0,
                     "ambient": 0.35
                 },
-                "lit-jasmine-poster": {
+                "lit-genie": {
                     "type": "lit",
                     "shader": "light",
-                    "pipelineState": {
-                        "faceCulling": { "enabled": false },
-                        "depthTesting": { "enabled": true }
-                    },
-                    "albedo_map": "jasmine_tex",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "genie_tex",
                     "sampler": "default",
-                    "shininess": 12.0,
+                    "shininess": 24.0,
+                    "ambient": 0.34
+                },
+                "lit-portal-0": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_0",
+                    "sampler": "default",
+                    "shininess": 40.0,
                     "ambient": 0.35
+                },
+                "lit-portal-1": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_1",
+                    "sampler": "default",
+                    "shininess": 40.0,
+                    "ambient": 0.35
+                },
+                "lit-carpet": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "carpet_tex",
+                    "sampler": "default",
+                    "shininess": 18.0,
+                    "ambient": 0.36,
+                    "uv_multiplier": [1.2, 1.2]
+                },
+                "lit-sphere-deco": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.35,
+                    "albedo_tint": [0.35, 0.75, 0.95]
                 }
             }
         },
         "world": [
             {
-                "name": "camera",
-                "position": [0, 3.2, 11],
-                "rotation": [-18, 0, 0],
+                "name": "Camera",
+                "position": [0, 16, 48],
+                "rotation": [-26, 0, 0],
                 "components": [
-                    {
-                        "type": "Camera",
-                        "cameraType": "perspective",
-                        "near": 0.1,
-                        "far": 200,
-                        "fovY": 62
-                    },
-                    { "type": "Free Camera Controller" }
+                    { "type": "Camera", "cameraType": "perspective", "near": 0.1, "far": 650, "fovY": 58 }
                 ]
             },
             {
                 "name": "sun",
-                "rotation": [-32, -125, 0],
+                "rotation": [-42, -118, 0],
                 "components": [
-                    {
-                        "type": "Light",
-                        "light_type": "directional",
-                        "color": [1.0, 0.95, 0.82],
-                        "intensity": 1.55
-                    }
+                    { "type": "Light", "light_type": "directional", "color": [1.0, 0.95, 0.82], "intensity": 1.5 }
                 ]
             },
             {
-                "name": "fill-warm",
-                "position": [0, 4.2, 6.5],
+                "name": "fill-a",
+                "position": [0, 14, -20],
                 "components": [
                     {
                         "type": "Light",
                         "light_type": "point",
-                        "color": [1.0, 0.88, 0.72],
-                        "intensity": 4.0,
-                        "attenuation": { "constant": 1.0, "linear": 0.12, "quadratic": 0.06 }
+                        "color": [1.0, 0.9, 0.78],
+                        "intensity": 3.4,
+                        "attenuation": { "constant": 1.0, "linear": 0.045, "quadratic": 0.012 }
                     }
                 ]
             },
             {
-                "name": "fill-cool",
-                "position": [-7, 2.8, 2],
+                "name": "fill-b",
+                "position": [0, 14, -140],
                 "components": [
                     {
                         "type": "Light",
                         "light_type": "point",
-                        "color": [0.75, 0.82, 1.0],
-                        "intensity": 2.2,
-                        "attenuation": { "constant": 1.0, "linear": 0.2, "quadratic": 0.08 }
+                        "color": [0.82, 0.9, 1.0],
+                        "intensity": 2.8,
+                        "attenuation": { "constant": 1.0, "linear": 0.05, "quadratic": 0.016 }
                     }
                 ]
             },
+
             {
                 "name": "ground",
-                "position": [0, 0, 0],
+                "position": [0, 0, -70],
                 "rotation": [-90, 0, 0],
-                "scale": [16, 16, 1],
+                "scale": [150, 280, 1],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "plane",
-                        "material": "lit-ground"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
                 ]
             },
             {
-                "name": "wall-back",
-                "position": [0, 3.2, -8],
-                "scale": [18, 6.5, 0.35],
+                "name": "floor-collider",
+                "position": [0, -2.5, -70],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "cube",
-                        "material": "lit-wall"
-                    }
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [150, 2.5, 200], "friction": 0.85, "restitution": 0.0 }
+                ]
+            },
+
+            {
+                "name": "prop-carpet",
+                "position": [0, 0.04, 26],
+                "rotation": [-90, 0, 0],
+                "scale": [7, 9, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-carpet" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.0, 0.0, 0.0], "friction": 0.75 }
+                ]
+            },
+
+            {
+                "name": "coin-a",
+                "position": [-7, 0.75, 32],
+                "rotation": [0, 0, 0],
+                "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
                 ]
             },
             {
-                "name": "wall-left",
-                "position": [-9, 3.2, 0],
-                "scale": [0.35, 6.5, 16],
+                "name": "coin-b",
+                "position": [0, 0.75, 32],
+                "rotation": [0, 40, 0],
+                "scale": [5.2, 5.2, 5.2],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "cube",
-                        "material": "lit-wall-stone"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
                 ]
             },
             {
-                "name": "wall-right",
-                "position": [9, 3.2, 0],
-                "scale": [0.35, 6.5, 16],
+                "name": "coin-c",
+                "position": [7, 0.75, 32],
+                "rotation": [0, -25, 0],
+                "scale": [5.2, 5.2, 5.2],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "cube",
-                        "material": "lit-wall-stone"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
                 ]
             },
             {
-                "name": "door-panel",
-                "position": [0, 2.15, -7.72],
-                "scale": [2.3, 3.5, 0.12],
+                "name": "apple-a",
+                "position": [-5, 0.55, 24],
+                "rotation": [0, 15, 0],
+                "scale": [1.35, 1.35, 1.35],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "cube",
-                        "material": "lit-door"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "apple_mesh", "material": "lit-apple" },
+                    { "type": "Collectible", "collectibleType": "apple", "value": 2, "rotationSpeed": 2.0, "bobbingHeight": 0.12 }
                 ]
             },
             {
-                "name": "prop-coin",
-                "position": [-5.5, 0.65, 5.8],
+                "name": "apple-b",
+                "position": [5, 0.55, 24],
+                "rotation": [0, -20, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "apple_mesh", "material": "lit-apple" },
+                    { "type": "Collectible", "collectibleType": "apple", "value": 2, "rotationSpeed": 2.0, "bobbingHeight": 0.12 }
+                ]
+            },
+
+            {
+                "name": "pot-1",
+                "position": [-10, 0, 16],
+                "rotation": [0, 22, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "pot-2",
+                "position": [0, 0, 16],
+                "rotation": [0, 0, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "pot-3",
+                "position": [10, 0, 16],
+                "rotation": [0, -18, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-key",
+                "position": [20, 1.1, 20],
                 "rotation": [0, 35, 0],
-                "scale": [6, 6, 6],
+                "scale": [0.008, 0.008, 0.008],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "coin_mesh",
-                        "material": "coin-mat"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "key_mesh", "material": "lit-key" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collectible", "shape": "box", "centerOffset": [0, 0.852, 0], "halfExtents": [0.648, 0.852, 0.139], "friction": 0.55 }
                 ]
             },
+
             {
-                "name": "prop-apple",
-                "position": [-3.0, 0.5, 5.8],
-                "rotation": [0, 20, 0],
-                "scale": [0.55, 0.55, 0.55],
-                "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "apple_mesh",
-                        "material": "lit-apple"
-                    }
-                ]
-            },
-            {
-                "name": "prop-pot",
-                "position": [-0.8, 0, 5.8],
-                "scale": [0.38, 0.38, 0.38],
-                "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "pot_mesh",
-                        "material": "lit-pot"
-                    }
-                ]
-            },
-            {
-                "name": "prop-aladdin",
-                "position": [1.0, 0, 5.8],
-                "rotation": [0, 198, 0],
-                "scale": [0.14, 0.14, 0.14],
-                "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "aladdin_mesh",
-                        "material": "lit-aladdin"
-                    }
-                ]
-            },
-            {
-                "name": "prop-enemy-brute",
-                "position": [-4.2, 0, 5.8],
+                "name": "monkey-mesh-asset",
+                "position": [-50, 1.4, 24],
                 "rotation": [0, 25, 0],
-                "scale": [0.017, 0.017, 0.017],
+                "scale": [1.35, 1.35, 1.35],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "enemy1_mesh",
-                        "material": "lit-enemy1"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "monkey_mesh", "material": "lit-sphere-deco" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.05, 1.35, 0.95], "friction": 0.55 }
+                ]
+            },
+
+            {
+                "name": "enemy-brute",
+                "position": [-22, 0.95, 8],
+                "rotation": [0, 30, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.4, 1.6, 1.4], "friction": 0.6 }
                 ]
             },
             {
-                "name": "prop-enemy-slime",
-                "position": [0.5, 0, 5.8],
-                "rotation": [0, -15, 0],
-                "scale": [0.017, 0.017, 0.017],
+                "name": "enemy-slime",
+                "position": [0, 0.95, 8],
+                "rotation": [0, 0, 0],
+                "scale": [0.028, 0.028, 0.028],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "enemy2_mesh",
-                        "material": "lit-enemy2"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.2, 1.35, 1.2], "friction": 0.6 }
                 ]
             },
             {
-                "name": "prop-enemy-trash",
-                "position": [5.0, 0, 5.8],
-                "rotation": [0, 195, 0],
-                "scale": [0.017, 0.017, 0.017],
+                "name": "enemy-trash",
+                "position": [22, 0.95, 8],
+                "rotation": [0, -200, 0],
+                "scale": [0.028, 0.028, 0.028],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "enemy3_mesh",
-                        "material": "lit-enemy3"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.35, 1.5, 1.35], "friction": 0.6 }
+                ]
+            },
+
+            {
+                "name": "sword-display",
+                "position": [32, 1.35, -2],
+                "rotation": [95, 55, 12],
+                "scale": [7.5, 7.5, 7.5],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "sword_mesh", "material": "lit-sword" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.45, 0.45, 1.8], "friction": 0.5 }
                 ]
             },
             {
-                "name": "prop-sword",
-                "position": [3.2, 1.15, 5.8],
-                "rotation": [90, 50, 15],
-                "scale": [5.5, 5.5, 5.5],
+                "name": "genie",
+                "position": [-34, 0, -6],
+                "rotation": [0, 28, 0],
+                "scale": [0.94, 0.94, 0.94],
                 "components": [
-                    {
-                        "type": "Mesh Renderer",
-                        "mesh": "sword_mesh",
-                        "material": "lit-sword"
-                    }
+                    { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.35, 2.4, 1.35], "friction": 0.5 }
                 ]
             },
             {
-                "name": "prop-jasmine-texture-board",
-                "position": [6.0, 1.5, 6.2],
-                "rotation": [0, -160, 0],
-                "scale": [0.12, 2.0, 1.35],
+                "name": "mannequin-prince",
+                "position": [-40, 0, 28],
+                "rotation": [0, 75, 0],
+                "scale": [0.21, 0.21, 0.21],
                 "components": [
+                    { "type": "Mesh Renderer", "mesh": "aladdin_prince_mesh", "material": "lit-aladdin-prince" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.55, 1.0, 0.45], "friction": 0.5 }
+                ]
+            },
+            {
+                "name": "portal-highelf",
+                "position": [0, 0, -28],
+                "rotation": [0, 0, 0],
+                "scale": [1.8, 1.8, 1.8],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-0" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [4.0, 9.5, 1.0], "friction": 0.5 }
+                ]
+            },
+            {
+                "name": "prop-desert-house",
+                "position": [-42, 0, -38],
+                "rotation": [0, 38, 0],
+                "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_house", "material": "lit-env-desert-house" }
+                ]
+            },
+            {
+                "name": "prop-desert-house-hit-a",
+                "position": [-42, 0, -38],
+                "rotation": [0, 38, 0],
+                "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.58, 10.93, -18.36], "halfExtents": [10.85, 11.25, 7.59], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-desert-house-hit-b",
+                "position": [-42, 0, -38],
+                "rotation": [0, 38, 0],
+                "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.20, 8.34, 1.29], "halfExtents": [10.94, 8.66, 6.49], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-desert-shop",
+                "position": [42, 0, -38],
+                "rotation": [0, -22, 0],
+                "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-poor-desert-house",
+                "position": [-55, 0, -100],
+                "rotation": [0, -12, 0],
+                "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-stylized-kasbah",
+                "position": [42, 0, -88],
+                "rotation": [0, 18, 0],
+                "scale": [60, 60, 60],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_stylized_kasbah", "material": "lit-env-kasbah" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 12.95, 0.16], "halfExtents": [30.6, 13.5, 29], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-fountain-1",
+                "position": [-42, 0, -138],
+                "rotation": [0, 0, 0],
+                "scale": [5.0, 5.0, 5.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_fountain_1", "material": "lit-env-fountain1" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [13.2, 14, 11.5], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-fountain-2",
+                "position": [42, 0, -138],
+                "rotation": [0, 40, 0],
+                "scale": [3.6, 3.6, 3.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_fountain_2", "material": "lit-env-fountain2" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [9.5, 11.5, 9.5], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-agraba-market-shop",
+                "position": [0, -0.07, -178],
+                "rotation": [0, 0, 0],
+                "scale": [2.3, 2.3, 2.3],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_agraba_market_shop", "material": "lit-env-agraba-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [8.5, 6.5, 8.5], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "prop-aladdin-lamp",
+                "position": [0, 0.45, -228],
+                "rotation": [0, 0, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 }
+                ]
+            },
+
+            {
+                "name": "aladdin",
+                "position": [0, 2.0, 38],
+                "rotation": [0, 180, 0],
+                "scale": [0.21, 0.21, 0.21],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "aladdin_mesh", "material": "lit-aladdin" },
                     {
-                        "type": "Mesh Renderer",
-                        "mesh": "cube",
-                        "material": "lit-jasmine-poster"
-                    }
+                        "type": "Aladdin Controller",
+                        "speed": 14.0,
+                        "jumpForce": 11.0,
+                        "rotationSpeed": 10.0,
+                        "enableCameraFollow": true,
+                        "cameraMode": "third",
+                        "cameraOffset": [0.0, 4.45, 6.0],
+                        "cameraSmoothing": 8.0,
+                        "firstPersonCameraOffset": [0.0, 1.38, 0.22],
+                        "firstPersonPitchDegrees": 0.0,
+                        "thirdPersonPitchDegrees": -10.0,
+                        "health": 100,
+                        "lives": 3,
+                        "respawnPosition": [0, 2.0, 38]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
                 ]
             }
         ]

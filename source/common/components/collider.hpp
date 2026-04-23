@@ -22,6 +22,7 @@ namespace our {
         ColliderShape shape = ColliderShape::Box;
 
         glm::vec3 halfExtents{0.5f};
+        glm::vec3 centerOffset{0.0f};
         float radius = 0.5f;
         float height = 1.8f;
 
@@ -51,6 +52,7 @@ namespace our {
             ColliderDesc desc;
             desc.shape = shape;
             desc.halfExtents = halfExtents;
+            desc.centerOffset = centerOffset;
             desc.radius = radius;
             desc.height = height;
             desc.isTrigger = isTrigger;
@@ -76,6 +78,10 @@ namespace our {
             if (data.contains("halfExtents")) {
                 auto& ext = data["halfExtents"];
                 halfExtents = glm::vec3(ext[0], ext[1], ext[2]);
+            }
+            if (data.contains("centerOffset")) {
+                auto& o = data["centerOffset"];
+                centerOffset = glm::vec3(o[0], o[1], o[2]);
             }
             if (data.contains("radius")) radius = data["radius"];
             if (data.contains("height")) height = data["height"];
