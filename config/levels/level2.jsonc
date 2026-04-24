@@ -1,0 +1,1034 @@
+{
+    // =====================================================================
+    //  Aladdin — Level 2 (4 Places, step 1 of 4: PLACE 1 built so far)
+    //
+    //  All buildings use the EXACT scales and collider halfExtents from
+    //  config/assets-test/app.jsonc (team-agreed sizes). Every building
+    //  now has a solid collider so you cannot walk through it.
+    //
+    //  Areas were enlarged to accommodate the larger building sizes:
+    //    - Area 1  : 120x120 interior (x ∈ [-60, 60], z ∈ [-60, 60])
+    //    - Corridor: length 100 (x ∈ [60, 160], width 16: z ∈ [-8, 8])
+    //    - Area 2  : 160x160 interior (center x=240, z ∈ [-80, 80])
+    //    - Portal at east end of Area 2 (x ≈ 306) — teleports to PLACEHOLDER
+    //      [430, 2, 0] until Place 2 is built.
+    //
+    //  Coordinate plan (birds-eye, +X right, -Z north / away from camera):
+    //
+    //            z=-80                                z=-80
+    //             +--------------+                   +------------------+
+    //             |   AREA 1     |                   |      AREA 2      |
+    //   x=-60  →  | (Aladdin,    |    corridor       |   3 enemies,     | ← x=320
+    //             |  fountain,   |   (temple wall)   |    kasbahs,      |
+    //             |  pots, coins)|===================|    portal to P2  |
+    //             |              |   z ∈ [-8,8]      |                  |
+    //             +--------------+                   +------------------+
+    //            z=+80         x=60              x=160               z=+80
+    // =====================================================================
+
+    "start-scene": "play",
+    "window": {
+        "title": "Aladdin — Level 2 · Place 1 (Two-Area Agrabah Square)",
+        "size": { "width": 1280, "height": 720 },
+        "fullscreen": false
+    },
+    "game": {
+        "total_coins": 14,
+        "total_enemies": 3,
+        "time_3star": 300,
+        "time_2star": 420,
+        "time_1star": 600
+    },
+
+    "scene": {
+        "renderer": {
+            "sky": "assets/textures/sky_desert.png",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+
+        "assets": {
+            "shaders": {
+                "tinted":   { "vs": "assets/shaders/tinted.vert",   "fs": "assets/shaders/tinted.frag"   },
+                "textured": { "vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag" },
+                "light":    { "vs": "assets/shaders/light.vert",    "fs": "assets/shaders/light.frag"    }
+            },
+            "textures": {
+                "agrabah_ground": "assets/textures/agrabah_ground.png",
+                "agrabah_wall":   "assets/textures/agrabah_wall.png",
+                "temple_wall":    "assets/models/Walls/stylized_temple_wall/lambert1_baseColor.png",
+
+                // Buildings
+                "tex_desert_house_brick": "assets/models/Environment objects/Buildings/desert_house/Brick1_baseColor.jpg",
+                "tex_desert_shop_main":   "assets/models/Environment objects/Buildings/desert_shop/HouseMain_baseColor.jpg",
+                "tex_poor_house":         "assets/models/Environment objects/Buildings/poor_desert_house/House_Lil_baseColor.png",
+                "tex_kasbah":             "assets/models/Environment objects/Buildings/stylized_kasbah/Material_001_baseColor.png",
+                "tex_agraba_shop":        "assets/models/Environment objects/agraba_market_shop/material_baseColor.jpg",
+
+                // Fountains
+                "tex_fountain1": "assets/models/Environment objects/Fountains/Fountain 1/fou_01.png",
+                "tex_fountain2": "assets/models/Environment objects/Fountains/Fountain 2/Material__0.png",
+
+                // Aladdin
+                "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
+
+                // Collectibles / decor
+                "coin_tex":  "assets/models/Coin/Item_Coin_Texture.png",
+                "apple_tex": "assets/models/Apple/Handle1Tex.png",
+
+                // Pots
+                "pot_tex":         "assets/models/Pots/Pot1/PotLight.0.png",
+                "pot_small_tex":   "assets/models/Pots/Pot 2/Txm_tsubo02.png",
+                "pot_aotubo_tex":  "assets/models/Pots/Pot 3/D_aotubo00.png",
+
+                // Enemies
+                "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
+                "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+
+                // Portal / carpet
+                "portal_tex_0": "assets/models/Portal/0.png",
+                "portal_tex_1": "assets/models/Portal/1.png",
+                "carpet_tex":   "assets/models/Carpet/magic_carpet_diff.png"
+            },
+            "meshes": {
+                "cube":   "assets/models/cube.obj",
+                "plane":  "assets/models/plane.obj",
+                "sphere": "assets/models/sphere.obj",
+
+                "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
+
+                "coin_mesh":       "assets/models/Coin/Coin.obj",
+                "apple_mesh":      "assets/models/Apple/apple.obj",
+                "pot_mesh":        "assets/models/Pots/Pot1/PotLight.obj",
+                "pot_small_mesh":  "assets/models/Pots/Pot 2/pot_small.obj",
+                "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj",
+
+                "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
+                "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+
+                "portal_highelf": "assets/models/Portal/highelfportal.obj",
+
+                "env_desert_house":       "assets/models/Environment objects/Buildings/desert_house/desert_house.obj",
+                "env_desert_shop":        "assets/models/Environment objects/Buildings/desert_shop/desert_shop.obj",
+                "env_poor_desert_house":  "assets/models/Environment objects/Buildings/poor_desert_house/poor_desert_house.obj",
+                "env_stylized_kasbah":    "assets/models/Environment objects/Buildings/stylized_kasbah/stylized_kasbah__tier_i.obj",
+                "env_agraba_market_shop": "assets/models/Environment objects/agraba_market_shop/agraba_market_shop.obj",
+
+                "env_fountain_1": "assets/models/Environment objects/Fountains/Fountain 1/Fountain.obj",
+                "env_fountain_2": "assets/models/Environment objects/Fountains/Fountain 2/Fountain.obj"
+            },
+            "samplers": {
+                "default": {},
+                "repeat":  { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" }
+            },
+            "materials": {
+                "lit-ground": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "agrabah_ground", "sampler": "repeat",
+                    "shininess": 12.0, "ambient": 0.3,
+                    "uv_multiplier": [60, 24]
+                },
+                "lit-wall": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "agrabah_wall", "sampler": "repeat",
+                    "shininess": 18.0, "ambient": 0.26,
+                    "uv_multiplier": [10, 2]
+                },
+                "lit-temple-wall": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "temple_wall", "sampler": "repeat",
+                    "shininess": 28.0, "ambient": 0.3,
+                    "uv_multiplier": [14, 2]
+                },
+
+                // Buildings (identical to assets-test)
+                "lit-env-desert-house": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_desert_house_brick", "sampler": "default",
+                    "shininess": 22.0, "ambient": 0.32
+                },
+                "lit-env-desert-shop": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_desert_shop_main", "sampler": "default",
+                    "shininess": 24.0, "ambient": 0.32
+                },
+                "lit-env-poor-house": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_poor_house", "sampler": "default",
+                    "shininess": 20.0, "ambient": 0.32
+                },
+                "lit-env-kasbah": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_kasbah", "sampler": "default",
+                    "shininess": 26.0, "ambient": 0.3
+                },
+                "lit-env-agraba-shop": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_agraba_shop", "sampler": "default",
+                    "shininess": 22.0, "ambient": 0.32
+                },
+
+                // Fountains
+                "lit-env-fountain1": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_fountain1", "sampler": "default",
+                    "shininess": 48.0, "ambient": 0.34
+                },
+                "lit-env-fountain2": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "tex_fountain2", "sampler": "default",
+                    "shininess": 40.0, "ambient": 0.32
+                },
+
+                // Hero
+                "lit-aladdin": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "aladdin_skin", "sampler": "default",
+                    "shininess": 32.0, "ambient": 0.28
+                },
+
+                // Pickups
+                "coin-mat": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "coin_tex", "sampler": "default",
+                    "shininess": 16.0, "ambient": 0.35
+                },
+                "lit-apple": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "apple_tex", "sampler": "default",
+                    "shininess": 48.0, "ambient": 0.32
+                },
+
+                // Pots
+                "lit-pot": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_tex", "sampler": "default",
+                    "shininess": 28.0, "ambient": 0.32
+                },
+                "lit-pot-small": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_small_tex", "sampler": "default",
+                    "shininess": 28.0, "ambient": 0.32
+                },
+                "lit-pot-aotubo": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_aotubo_tex", "sampler": "default",
+                    "shininess": 30.0, "ambient": 0.32
+                },
+
+                // Enemies
+                "lit-enemy1": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy1_tex", "sampler": "default",
+                    "shininess": 20.0, "ambient": 0.32
+                },
+                "lit-enemy2": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy2_tex", "sampler": "default",
+                    "shininess": 36.0, "ambient": 0.32
+                },
+                "lit-enemy3": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy3_tex", "sampler": "default",
+                    "shininess": 18.0, "ambient": 0.32
+                },
+
+                // Portal
+                "lit-portal-0": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_0", "sampler": "default",
+                    "shininess": 40.0, "ambient": 0.35
+                },
+                "lit-portal-1": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_1", "sampler": "default",
+                    "shininess": 40.0, "ambient": 0.35
+                },
+
+                // Carpet (spawn decoration)
+                "lit-carpet": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "carpet_tex", "sampler": "default",
+                    "shininess": 18.0, "ambient": 0.36,
+                    "uv_multiplier": [1.2, 1.2]
+                }
+            }
+        },
+
+        "world": [
+            // ============================================================
+            //  Camera & Lights
+            // ============================================================
+            {
+                "name": "Camera",
+                "position": [-45, 16, 24],
+                "rotation": [-28, 0, 0],
+                "components": [
+                    { "type": "Camera", "cameraType": "perspective", "near": 0.1, "far": 1100, "fovY": 58 }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [-44, -118, 0],
+                "components": [
+                    { "type": "Light", "light_type": "directional", "color": [1.0, 0.95, 0.82], "intensity": 1.55 }
+                ]
+            },
+            {
+                "name": "fill-area1",
+                "position": [0, 16, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [1.0, 0.9, 0.78], "intensity": 3.4,
+                      "attenuation": { "constant": 1.0, "linear": 0.04, "quadratic": 0.01 } }
+                ]
+            },
+            {
+                "name": "fill-corridor",
+                "position": [110, 10, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [1.0, 0.88, 0.72], "intensity": 2.5,
+                      "attenuation": { "constant": 1.0, "linear": 0.06, "quadratic": 0.018 } }
+                ]
+            },
+            {
+                "name": "fill-area2",
+                "position": [240, 16, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [1.0, 0.86, 0.72], "intensity": 3.6,
+                      "attenuation": { "constant": 1.0, "linear": 0.04, "quadratic": 0.01 } }
+                ]
+            },
+
+            // ============================================================
+            //  GROUND — covers everything (x ∈ [-80, 340], z ∈ [-100, 100])
+            // ============================================================
+            {
+                "name": "place1-ground",
+                "position": [130, 0, 0],
+                "rotation": [-90, 0, 0],
+                "scale": [420, 200, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
+                ]
+            },
+            {
+                "name": "place1-floor-collider",
+                "position": [130, -0.25, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [210, 0.3, 100], "friction": 0.85, "restitution": 0.0 }
+                ]
+            },
+
+            // ============================================================
+            //  AREA 1 — Invisible safety perimeter (physics only)
+            //    Interior walkable: x ∈ [-79, 79], z ∈ [-79, 79].
+            //    Corridor gap: z ∈ [-8, 8] at x = 80.
+            // ============================================================
+            { "name": "a1-bound-n",   "position": [0, 8, -80],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [80, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "a1-bound-s",   "position": [0, 8, 80],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [80, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "a1-bound-w",   "position": [-80, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 80], "friction": 0.8 }
+                ] },
+            // East side split around the corridor mouth (gap: z ∈ [-8, 8]).
+            // Area 1 half-extent = 80, corridor half-gap = 8  →  each piece spans 72,
+            // so half-extent in z = 36 and center z = (80+8)/2 = 44.
+            { "name": "a1-bound-e-n", "position": [80, 8, -44],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 36], "friction": 0.8 }
+                ] },
+            { "name": "a1-bound-e-s", "position": [80, 8, 44],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 36], "friction": 0.8 }
+                ] },
+
+            // ============================================================
+            //  AREA 1 — Buildings (test-app scales + colliders)
+            //
+            //  Layout per request:
+            //    NORTH ring : 4 × poor_desert_house (scale 6.0)
+            //    SOUTH ring : 4 × poor_desert_house
+            //    WEST  ring : 3 × poor_desert_house
+            //    EAST (outside corridor flanks): 2 × poor_desert_house
+            //    Inside, framing corridor mouth: 2 × agraba_market_shop
+            //    Sprinkled interior decoration : 2 × desert_house
+            //
+            //  poor_desert_house : scale 6.0,  halfExtents [14.5, 26, 18.5]
+            //  desert_house      : scale 1.6,  2 hit boxes (pivot-offset mesh)
+            //  agraba_market_shop: scale 2.3,  halfExtents [8.5, 6.5, 8.5]
+            // ============================================================
+
+            // ----- NORTH ring (z = -82, rotation 180° facing south) -----
+            { "name": "a1-n-poor-1", "position": [-45, 0, -82], "rotation": [0, 0, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-n-poor-2", "position": [-15, 0, -82], "rotation": [0, 0, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-n-poor-3", "position": [15, 0, -82], "rotation": [0, 0, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-n-poor-4", "position": [45, 0, -82], "rotation": [0, 0, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+
+            // ----- SOUTH ring (z = +82, rotation 0°) -----
+            { "name": "a1-s-poor-1", "position": [-45, 0, 82], "rotation": [0, 180, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-s-poor-2", "position": [-15, 0, 82], "rotation": [0, 180, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-s-poor-3", "position": [15, 0, 82], "rotation": [0, 180, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-s-poor-4", "position": [45, 0, 82], "rotation": [0, 180, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+
+            { "name": "a1-desert-house-w1", "position": [-82, 0, -40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_house", "material": "lit-env-desert-house" }
+                ] },
+            { "name": "a1-desert-house-w1-hit-a", "position": [-82, 0, -40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.58, 10.93, -18.36], "halfExtents": [10.85, 11.25, 7.59], "friction": 0.55 }
+                ] },
+            { "name": "a1-desert-house-w1-hit-b", "position": [-82, 0, -40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.20, 8.34, 1.29], "halfExtents": [10.94, 8.66, 6.49], "friction": 0.55 }
+                ] },
+
+
+                { "name": "a1-desert-house-w2", "position": [-82, 0, 0], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_house", "material": "lit-env-desert-house" }
+                ] },
+            { "name": "a1-desert-house-w2-hit-a", "position": [-82, 0, 0], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.58, 10.93, -18.36], "halfExtents": [10.85, 11.25, 7.59], "friction": 0.55 }
+                ] },
+            { "name": "a1-desert-house-w2-hit-b", "position": [-82, 0, 0], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.20, 8.34, 1.29], "halfExtents": [10.94, 8.66, 6.49], "friction": 0.55 }
+                ] },
+
+
+            { "name": "a1-desert-house-w3", "position": [-72, 0, 40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_house", "material": "lit-env-desert-house" }
+                ] },
+            { "name": "a1-desert-house-w3-hit-a", "position": [-72, 0, 40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.58, 10.93, -18.36], "halfExtents": [10.85, 11.25, 7.59], "friction": 0.55 }
+                ] },
+            { "name": "a1-desert-house-w3-hit-b", "position": [-72, 0, 40], "rotation": [0, 90, 0], "scale": [1.6, 1.6, 1.6],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [24.20, 8.34, 1.29], "halfExtents": [10.94, 8.66, 6.49], "friction": 0.55 }
+                ] },
+
+            // ----- EAST ring OUTSIDE (x = +82, rotation -90°, away from corridor) -----
+            { "name": "a1-e-poor-n", "position": [82, 0, -40], "rotation": [0, -90, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-e-poor-s", "position": [82, 0, 40], "rotation": [0, -90, 0], "scale": [6.0, 6.0, 6.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 }
+                ] },
+
+            // ----- Agraba market shops framing the corridor mouth (INSIDE area) -----
+            //       One just north of corridor, one just south — exactly as requested.
+            { "name": "a1-e-agraba-n", "position": [7, -0.01, -19], "rotation": [0, -90, 0], "scale": [4.3, 4.3, 4.3],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_agraba_market_shop", "material": "lit-env-agraba-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [10.5, 8.5, 10.5], "friction": 0.55 }
+                ] },
+            { "name": "a1-e-agraba-s", "position": [15, -0.01, 22], "rotation": [0, -90, 0], "scale": [2.3, 2.3, 2.3],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_agraba_market_shop", "material": "lit-env-agraba-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [8.5, 6.5, 8.5], "friction": 0.55 }
+                ] },
+
+            // ============================================================
+            //  AREA 1 — Fountain (sketch: blue circle, upper-middle-left)
+            //  Test-app scale 5.0 and halfExtents [13.2, 14, 11.5].
+            // ============================================================
+            {
+                "name": "a1-fountain",
+                "position": [-35, 0, -35],
+                "rotation": [0, 0, 0],
+                "scale": [5.0, 5.0, 5.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_fountain_1", "material": "lit-env-fountain1" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [13.2, 14, 11.5], "friction": 0.55 }
+                ]
+            },
+
+            // ============================================================
+            //  AREA 1 — Hero spawn
+            // ============================================================
+            {
+                "name": "aladdin",
+                "position": [-50, 2.0, 10],
+                "rotation": [0, 270, 0],
+                "scale": [0.21, 0.21, 0.21],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "aladdin_mesh", "material": "lit-aladdin" },
+                    {
+                        "type": "Aladdin Controller",
+                        "speed": 14.0,
+                        "jumpForce": 11.0,
+                        "rotationSpeed": 10.0,
+                        "enableCameraFollow": true,
+                        "cameraMode": "third",
+                        "cameraOffset": [0.0, 4.45, 6.0],
+                        "cameraSmoothing": 8.0,
+                        "firstPersonCameraOffset": [0.0, 1.38, 0.22],
+                        "firstPersonPitchDegrees": 0.0,
+                        "thirdPersonPitchDegrees": -10.0,
+                        "cameraOrbitYawDegrees": 270.0,
+                        "health": 100,
+                        "lives": 3,
+                        "respawnPosition": [-50, 2.0, 10]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a1-spawn-carpet",
+                "position": [-50, 0.04, 14],
+                "rotation": [-90, 15, 0],
+                "scale": [5, 7, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-carpet" }
+                ]
+            },
+
+            // ============================================================
+            //  AREA 1 — Pots (test-app scales / offsets)
+            // ============================================================
+            {
+                "name": "a1-pot-1",
+                "position": [-20, 0, 20],
+                "rotation": [0, 18, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a1-pot-2",
+                "position": [0, 0, 35],
+                "rotation": [0, 0, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a1-pot-3",
+                "position": [35, 0, 25],
+                "rotation": [0, -18, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a1-pot-4",
+                "position": [-40, 0, 40],
+                "rotation": [0, 22, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }, { "type": "coin", "value": 1 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a1-pot-5",
+                "position": [40, 0, -40],
+                "rotation": [0, 45, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+
+            // ============================================================
+            //  AREA 1 — Coins and Apples (scattered in the square)
+            // ============================================================
+            { "name": "a1-c1", "position": [-30, 0.75, 20],  "rotation": [0, 20, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a1-c2", "position": [-5, 0.75, 25],   "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a1-c3", "position": [30, 0.75, 40],   "rotation": [0, 30, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a1-c4", "position": [40, 0.75, -25],  "rotation": [0, 40, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a1-c5", "position": [-20, 0.75, -20], "rotation": [0, -25, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a1-apple-1", "position": [-45, 0.55, 45], "rotation": [0, 15, 0], "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "apple_mesh", "material": "lit-apple" },
+                    { "type": "Collectible", "collectibleType": "apple", "value": 2, "rotationSpeed": 2.0, "bobbingHeight": 0.12 }
+                ] },
+            { "name": "a1-apple-2", "position": [30, 0.55, 50], "rotation": [0, -20, 0], "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "apple_mesh", "material": "lit-apple" },
+                    { "type": "Collectible", "collectibleType": "apple", "value": 2, "rotationSpeed": 2.0, "bobbingHeight": 0.12 }
+                ] },
+
+            // ============================================================
+            //  CORRIDOR — Temple-wall blocks (x ∈ [60, 160], width 16)
+            // ============================================================
+            // Corridor walls — visual mesh is 7 units tall so they look right,
+            // but the invisible collider is 16 units tall (halfExtents y=8 at
+            // position y=8) so Aladdin cannot jump over them. Thickness in z
+            // is 2.2 so fast movement never tunnels through.
+            {
+                "name": "corridor-wall-n-visual",
+                "position": [110, 3.5, -8],
+                "scale": [100, 7, 0.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall" }
+                ]
+            },
+            {
+                "name": "corridor-wall-n",
+                "position": [110, 7, -8],
+                "scale": [100, 14, 0.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [101, 7, 1.1], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "corridor-wall-s",
+                "position": [110, 7, 8],
+                "scale": [100, 14, 0.6],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [101, 7, 1.1], "friction": 0.55 }
+                ]
+            },
+            { "name": "corr-c1", "position": [80, 0.75, 0],  "rotation": [0, 10, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "corr-c2", "position": [110, 0.75, 0], "rotation": [0, 0, 0],   "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "corr-c3", "position": [140, 0.75, 0], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+
+            // ============================================================
+            //  AREA 2 — Invisible safety perimeter
+            //    Interior walkable: x ∈ [161, 319], z ∈ [-79, 79].
+            // ============================================================
+            { "name": "a2-bound-n",   "position": [240, 8, -80],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [80, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "a2-bound-s",   "position": [240, 8, 80],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [80, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "a2-bound-w-n", "position": [160, 8, -44],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 36], "friction": 0.8 }
+                ] },
+            { "name": "a2-bound-w-s", "position": [160, 8, 44],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 36], "friction": 0.8 }
+                ] },
+            { "name": "a2-bound-e",   "position": [320, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 80], "friction": 0.8 }
+                ] },
+
+            // ============================================================
+            //  AREA 2 — Buildings (test-app scales + colliders)
+            //
+            //  Layout per request:
+            //    NORTH backdrop : 2 × stylized_kasbah (scale 60) — MASSIVE palaces
+            //    SOUTH backdrop : 2 × stylized_kasbah (scale 60)
+            //    WEST flanks    : 2 × desert_shop (scale 30) either side of corridor
+            //    EAST (behind portal): row of 5 × desert_shop (scale 30)
+            //
+            //  stylized_kasbah : scale 60,  halfExtents [30.6, 13.5, 29], centerOffset [0, 12.95, 0.16]
+            //  desert_shop     : scale 30,  halfExtents [11.65, 15.05, 11.65]
+            // ============================================================
+
+            // ----- NORTH backdrop (two huge kasbahs at z=-115) -----
+            { "name": "a2-n-kasbah-1", "position": [190, 0, -115], "rotation": [0, 8, 0], "scale": [60, 60, 60],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_stylized_kasbah", "material": "lit-env-kasbah" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 12.95, 0.16], "halfExtents": [30.6, 13.5, 29], "friction": 0.55 }
+                ] },
+            { "name": "a2-n-kasbah-2", "position": [290, 0, -115], "rotation": [0, -6, 0], "scale": [60, 60, 60],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_stylized_kasbah", "material": "lit-env-kasbah" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 12.95, 0.16], "halfExtents": [30.6, 13.5, 29], "friction": 0.55 }
+                ] },
+
+            // ----- SOUTH backdrop (two huge kasbahs at z=+115) -----
+            { "name": "a2-s-kasbah-1", "position": [190, 0, 115], "rotation": [0, 182, 0], "scale": [60, 60, 60],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_stylized_kasbah", "material": "lit-env-kasbah" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 12.95, 0.16], "halfExtents": [30.6, 13.5, 29], "friction": 0.55 }
+                ] },
+            { "name": "a2-s-kasbah-2", "position": [290, 0, 115], "rotation": [0, 190, 0], "scale": [60, 60, 60],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_stylized_kasbah", "material": "lit-env-kasbah" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 12.95, 0.16], "halfExtents": [30.6, 13.5, 29], "friction": 0.55 }
+                ] },
+
+            // ----- WEST flanks of corridor exit — two desert_shops either side -----
+            { "name": "a2-w-desert-shop-n", "position": [135, 0, -45], "rotation": [0, 70, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+            { "name": "a2-w-desert-shop-s", "position": [135, 0, 45], "rotation": [0, 110, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+
+            // ----- EAST edge — ROW OF 5 DESERT_SHOPS BEHIND THE PORTAL -----
+            //       Aligned along x=343, facing west into the arena.
+            //       Shop half-depth at scale 30 ≈ 11.65, so spacing 26 avoids overlap.
+            { "name": "a2-e-desert-shop-1", "position": [343, 0, -52], "rotation": [0, -90, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+            { "name": "a2-e-desert-shop-2", "position": [343, 0, -26], "rotation": [0, -90, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+            { "name": "a2-e-desert-shop-3", "position": [343, 0, 0], "rotation": [0, -90, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+            { "name": "a2-e-desert-shop-4", "position": [343, 0, 26], "rotation": [0, -90, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+            { "name": "a2-e-desert-shop-5", "position": [343, 0, 52], "rotation": [0, -90, 0], "scale": [30, 30, 30],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_desert_shop", "material": "lit-env-desert-shop" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [11.65, 15.05, 11.65], "friction": 0.55 }
+                ] },
+
+            // ============================================================
+            //  AREA 2 — Enemies
+            // ============================================================
+            // {
+            //     "name": "a2-enemy-brute",
+            //     "position": [260, 0.95, -40],
+            //     "rotation": [0, 180, 0],
+            //     "scale": [0.028, 0.028, 0.028],
+            //     "components": [
+            //         { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+            //         {
+            //             "type": "Enemy",
+            //             "patrolSpeed": 2.0,
+            //             "chaseSpeed": 3.6,
+            //             "detectionRange": 22.0,
+            //             "attackRange": 2.4,
+            //             "health": 55,
+            //             "damage": 14,
+            //             "attackCooldown": 1.8,
+            //             "waypoints": [[250, 0.95, -40], [275, 0.95, -40], [275, 0.95, -20], [250, 0.95, -20]]
+            //         },
+            //         { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
+            //         { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+            //     ]
+            // },
+            {
+                "name": "a2-enemy-trash1",
+                "position": [280, 0.95, -30],
+                "rotation": [0, 200, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 2.2,
+                        "chaseSpeed": 4.0,
+                        "detectionRange": 24.0,
+                        "attackRange": 2.0,
+                        "health": 40,
+                        "damage": 10,
+                        "attackCooldown": 1.5,
+                        "waypoints": [[270, 0.95, -10], [270, 0.95, -25]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "a2-enemy-trash2",
+                "position": [280, 0.95, 30],
+                "rotation": [0, 200, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 2.2,
+                        "chaseSpeed": 4.0,
+                        "detectionRange": 24.0,
+                        "attackRange": 2.0,
+                        "health": 40,
+                        "damage": 10,
+                        "attackCooldown": 1.5,
+                        "waypoints": [[280, 0.95, 10], [280, 0.95, 25]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "a2-enemy-slime",
+                "position": [220, 0.95, 0],
+                "rotation": [0, 0, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 4.4,
+                        "chaseSpeed": 6.2,
+                        "detectionRange": 20.0,
+                        "attackRange": 2.2,
+                        "health": 45,
+                        "damage": 12,
+                        "attackCooldown": 1.6,
+                        "waypoints": [[220, 0.95, 10], [245, 0.95, 10], [245, 0.95, -10], [220, 0.95, -10]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 42.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.55, "height": 1.25, "friction": 0.65 }
+                ]
+            },
+
+            // ----- A few pots and pickups in area 2 -----
+            {
+                "name": "a2-pot-1",
+                "position": [185, 0, -25],
+                "rotation": [0, 25, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "apple", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a2-pot-2",
+                "position": [220, 0, -50],
+                "rotation": [0, -15, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "a2-pot-3",
+                "position": [250, 0, 55],
+                "rotation": [0, 40, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            { "name": "a2-c1", "position": [180, 0.75, 45],  "rotation": [0, 15, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a2-c2", "position": [230, 0.75, -55], "rotation": [0, -30, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a2-c3", "position": [300, 0.75, 40],  "rotation": [0, 25, 0],  "scale": [5.2, 5.2, 5.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" },
+                    { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 }
+                ] },
+            { "name": "a2-apple-1", "position": [250, 0.55, 60], "rotation": [0, 20, 0], "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "apple_mesh", "material": "lit-apple" },
+                    { "type": "Collectible", "collectibleType": "apple", "value": 2, "rotationSpeed": 2.0, "bobbingHeight": 0.12 }
+                ] },
+
+            // ============================================================
+            //  AREA 2 — Portal to Place 2 (east end)
+            //  targetPosition is a PLACEHOLDER until Place 2 is built.
+            // ============================================================
+            {
+                "name": "portal-place1-to-2-visual",
+                "position": [308, 0.1, 0],
+                "rotation": [0, -90, 0],
+                "scale": [1.8, 1.8, 1.8],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-0" }
+                ]
+            },
+            {
+                "name": "portal-place1-to-2",
+                "position": [308, 1.2, 0],
+                "components": [
+                    {
+                        "type": "Room Portal",
+                        "radius": 3.5,
+                        "blackoutDuration": 1.2,
+                        "cooldownDuration": 2.5,
+                        // Placeholder — will be Place 2 spawn once built.
+                        "targetPosition": [430, 2, 0],
+                        "setYaw": true,
+                        "targetYaw": 90
+                    }
+                ]
+            }
+        ]
+    }
+}

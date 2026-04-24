@@ -145,6 +145,13 @@ namespace our {
                 facingYaw = e->localTransform.rotation.y - meshYawVisualOffset;
                 while (facingYaw > glm::pi<float>()) facingYaw -= 2.0f * glm::pi<float>();
                 while (facingYaw < -glm::pi<float>()) facingYaw += 2.0f * glm::pi<float>();
+                // Start the orbit camera lined up with the player's facing so the
+                // third-person view shows what Aladdin is looking at on level start.
+                cameraOrbitYaw = facingYaw;
+            }
+            // Allow explicit override from the level config (degrees).
+            if (data.contains("cameraOrbitYawDegrees")) {
+                cameraOrbitYaw = glm::radians(data.value("cameraOrbitYawDegrees", glm::degrees(cameraOrbitYaw)));
             }
         }
     };
