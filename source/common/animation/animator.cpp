@@ -36,8 +36,8 @@ namespace our {
             mClips[c.name] = c;
     }
 
-    void Animator::play(const std::string& name, bool loop) {
-        if (mCurrentName == name && mLoop == loop) return; // already playing
+    void Animator::play(const std::string& name, bool loop, float speed) {
+        if (mCurrentName == name && mLoop == loop && mPlaybackSpeed == speed) return; // already playing
 
         auto it = mClips.find(name);
         if (it == mClips.end()) {
@@ -50,11 +50,13 @@ namespace our {
         std::cout << "[DIAG][Animator::play] Switching to \"" << name << "\"  dur=" << it->second.duration
                   << "  tps=" << it->second.ticksPerSecond
                   << "  channels=" << it->second.channels.size() << "\n";
+        // Only reset time when switching to a different clip
+        if (mCurrentName != name) mTime = 0.f;
+
         mCurrent     = &it->second;
         mCurrentName = name;
         mLoop        = loop;
-        // Only reset time when switching to a different clip
-        if (mCurrentName != name) mTime = 0.f;
+        mPlaybackSpeed = speed;
     }
 
     void Animator::update(float deltaTime) {
@@ -73,7 +75,7 @@ namespace our {
         if (!mCurrent || !mBoneMap) return;
 
         // Advance time in ticks
-        mTime += deltaTime * mCurrent->ticksPerSecond;
+        mTime += deltaTime * mCurrent->ticksPerSecond * mPlaybackSpeed;
 
         if (mLoop) {
             mTime = std::fmod(mTime, mCurrent->duration);

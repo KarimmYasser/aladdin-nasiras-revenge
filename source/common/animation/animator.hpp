@@ -28,7 +28,8 @@ namespace our {
         // Start playing a clip by name.
         // loop=true  → clip restarts when it ends
         // loop=false → clip freezes on the last frame
-        void play(const std::string& name, bool loop = true);
+        // speed      → playback speed multiplier
+        void play(const std::string& name, bool loop = true, float speed = 1.0f);
 
         // Advance time and recompute finalBoneMatrices. Call every frame.
         void update(float deltaTime);
@@ -59,8 +60,9 @@ namespace our {
         // Playback state
         const AnimationClip* mCurrent     = nullptr;
         std::string          mCurrentName;
-        float                mTime        = 0.f;
-        bool                 mLoop        = true;
+        float                mTime          = 0.f;
+        bool                 mLoop          = true;
+        float                mPlaybackSpeed = 1.0f;
 
         // Output – MAX_BONES identity matrices initially
         std::vector<glm::mat4> mFinalMatrices;

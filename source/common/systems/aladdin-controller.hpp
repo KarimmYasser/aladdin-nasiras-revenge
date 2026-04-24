@@ -376,6 +376,8 @@ namespace our {
                     if (aladdin->isAttacking) {
                         targetClip = "kick";
                         loop = false;
+                        animPtr->play(targetClip, loop, 1.6f); // Faster kick
+                        continue; // Skip the default play call below
                     } else if (!aladdin->isGrounded) {
                         targetClip = "jump";
                         loop = false;
