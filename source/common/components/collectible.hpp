@@ -19,7 +19,8 @@ namespace our {
             COIN,
             GEM,
             APPLE,
-            KEY
+            KEY,
+            HEALTH
         };
 
         Type type = Type::COIN;           // Default type is Coin
@@ -53,6 +54,7 @@ namespace our {
             else if(typeStr == "gem") type = Type::GEM;
             else if(typeStr == "apple") type = Type::APPLE;
             else if(typeStr == "key") type = Type::KEY;
+            else if(typeStr == "health") type = Type::HEALTH;
 
             value = data.value("value", value);
             collectionRadius = data.value("collectionRadius", collectionRadius);

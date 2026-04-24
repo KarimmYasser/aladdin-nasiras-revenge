@@ -117,6 +117,11 @@ public:
         mr->material = AssetLoader<Material>::get("lit-apple");
         loot->localTransform.scale = glm::vec3(1.3f);
         coll->type = CollectibleComponent::Type::APPLE;
+      } else if (req.entry.type == "health") {
+        mr->mesh = AssetLoader<Mesh>::get("health_bottle_mesh");
+        mr->material = AssetLoader<Material>::get("health-bottle-mat");
+        loot->localTransform.scale = glm::vec3(8.0f);
+        coll->type = CollectibleComponent::Type::HEALTH;
       } else {
         // Default/Gem case
         mr->mesh = AssetLoader<Mesh>::get("cube");
