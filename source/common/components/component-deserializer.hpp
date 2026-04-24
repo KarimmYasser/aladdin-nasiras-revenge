@@ -16,6 +16,7 @@
 #include "level-exit.hpp"
 #include "room-portal.hpp"
 #include "light.hpp"
+#include "dialogue.hpp"
 
 namespace our {
 
@@ -55,6 +56,8 @@ namespace our {
             component = entity->addComponent<RoomPortalComponent>();
         } else if (type == LightComponent::getID()) {
             component = entity->addComponent<LightComponent>();
+        } else if (type == DialogueTriggerComponent::getID()) {
+            component = entity->addComponent<DialogueTriggerComponent>();
         }
         if(component) component->deserialize(data);
     }

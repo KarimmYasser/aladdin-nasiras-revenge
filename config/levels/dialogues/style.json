@@ -1,0 +1,40 @@
+{
+    "_comment": "Shared styling for dialogue boxes. Each speaker defines its own text color and background so Aladdin and the Genie are visually distinct on screen. Colors are RGBA in the range [0, 1]. The future dialogue system should read this file once and apply the chosen speaker style for every line.",
+
+    "font": {
+        "path": "assets/fonts/Cairo-Regular.ttf",
+        "size": 28,
+        "lineSpacing": 6
+    },
+
+    "box": {
+        "paddingX": 24,
+        "paddingY": 18,
+        "borderThickness": 3,
+        "cornerRadius": 10,
+        "bottomMargin": 36,
+        "maxWidthRatio": 0.78
+    },
+
+    "typing": {
+        "charactersPerSecond": 42,
+        "advanceKey": "space"
+    },
+
+    "speakers": {
+        "aladdin": {
+            "displayName": "Aladdin",
+            "nameColor":    [1.00, 0.78, 0.35, 1.00],
+            "textColor":    [1.00, 0.94, 0.78, 1.00],
+            "background":   [0.18, 0.10, 0.04, 0.88],
+            "borderColor":  [0.85, 0.62, 0.22, 1.00]
+        },
+        "genie": {
+            "displayName": "Genie",
+            "nameColor":    [0.55, 0.92, 1.00, 1.00],
+            "textColor":    [0.80, 0.96, 1.00, 1.00],
+            "background":   [0.04, 0.10, 0.24, 0.88],
+            "borderColor":  [0.45, 0.82, 1.00, 1.00]
+        }
+    }
+}

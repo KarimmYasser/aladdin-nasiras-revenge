@@ -1,0 +1,30 @@
+{
+    "_comment": "Second Genie meeting (Level 2, Place 3). Triggered when Aladdin approaches the second lamp near his spawn in Place 3. Genie teaches the apple-throwing mechanic (the projectile logic itself is not yet implemented — only the dialogue).",
+
+    "meeting": 2,
+    "title": "Second Meeting",
+    "level": 2,
+    "place": 3,
+
+    "trigger": {
+        "lampEntity":   "p3-lamp-active",
+        "radius":       4.5,
+        "oneShot":      true,
+        "revealEntity": "p3-genie"
+    },
+
+    "onFinish": {
+        "removeEntities": ["p3-lamp-active", "p3-genie"],
+        "revealEntities": ["p3-lamp-used"],
+        "unlockAbility":  "apple_projectile"
+    },
+
+    "lines": [
+        { "speaker": "genie", "text": "Listen carefully, this will help you survive." },
+        { "speaker": "genie", "text": "The lamp is responding to danger… it's unlocking a hidden trick." },
+        { "speaker": "genie", "text": "Press \"P\" and you'll enter a special mode… call it an apple fight if you like." },
+        { "speaker": "genie", "text": "In that state, you can throw apples at your enemies." },
+        { "speaker": "genie", "text": "They may look simple… but they hit much harder than anything else you have." },
+        { "speaker": "genie", "text": "Use it when you're overwhelmed… or when something refuses to fall." }
+    ]
+}
