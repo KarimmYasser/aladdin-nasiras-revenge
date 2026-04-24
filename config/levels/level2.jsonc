@@ -1,43 +1,47 @@
 {
     // =====================================================================
-    //  Aladdin — Level 2 (4 Places, step 1 of 4: PLACE 1 built so far)
+    //  Aladdin — Level 2 (4 Places, step 3 of 4: PLACE 1 + 2 + 3 built)
     //
     //  All buildings use the EXACT scales and collider halfExtents from
     //  config/assets-test/app.jsonc (team-agreed sizes). Every building
     //  now has a solid collider so you cannot walk through it.
     //
-    //  Areas were enlarged to accommodate the larger building sizes:
-    //    - Area 1  : 120x120 interior (x ∈ [-60, 60], z ∈ [-60, 60])
-    //    - Corridor: length 100 (x ∈ [60, 160], width 16: z ∈ [-8, 8])
-    //    - Area 2  : 160x160 interior (center x=240, z ∈ [-80, 80])
-    //    - Portal at east end of Area 2 (x ≈ 306) — teleports to PLACEHOLDER
-    //      [430, 2, 0] until Place 2 is built.
+    //  ┌──────────── PLACE 1 (Agrabah square) ──────────┐
+    //  │  Area 1  : 120×120 interior (x ∈ [-60, 60])    │
+    //  │  Corridor: length 100 (x ∈ [60, 160], z ±8)    │
+    //  │  Area 2  : 160×160 (center x=240) — 3 enemies  │
+    //  │  Portal (x≈308) → PLACE 2 entry [435, 2, 0]    │
+    //  └────────────────────────────────────────────────┘
     //
-    //  Coordinate plan (birds-eye, +X right, -Z north / away from camera):
+    //  ┌──────────── PLACE 2 (First Genie meeting) ─────┐
+    //  │  60×60 open arena, hidden safety walls         │
+    //  │  Center (460, 0, 0). No enemies, just magic.   │
+    //  │  Lamp at (460, 0.45, 0) + Genie at (463, 0,-4) │
+    //  │  Portal (x≈486) → PLACE 3 entry [595, 2, 0]    │
+    //  │  Dialogue: config/levels/dialogues/meeting-1.json │
+    //  └────────────────────────────────────────────────┘
     //
-    //            z=-80                                z=-80
-    //             +--------------+                   +------------------+
-    //             |   AREA 1     |                   |      AREA 2      |
-    //   x=-60  →  | (Aladdin,    |    corridor       |   3 enemies,     | ← x=320
-    //             |  fountain,   |   (temple wall)   |    kasbahs,      |
-    //             |  pots, coins)|===================|    portal to P2  |
-    //             |              |   z ∈ [-8,8]      |                  |
-    //             +--------------+                   +------------------+
-    //            z=+80         x=60              x=160               z=+80
+    //  ┌──────────── PLACE 3 (Second meeting + slimes) ─┐
+    //  │  60×60 open arena, hidden safety walls         │
+    //  │  Center (620, 0, 0). 3 slime enemies.          │
+    //  │  Lamp at (605, 0.45, 0) — meeting near spawn   │
+    //  │  Portal (x≈646) → PLACE 4 (placeholder)        │
+    //  │  Dialogue: config/levels/dialogues/meeting-2.json │
+    //  └────────────────────────────────────────────────┘
     // =====================================================================
 
     "start-scene": "play",
     "window": {
-        "title": "Aladdin — Level 2 · Place 1 (Two-Area Agrabah Square)",
+        "title": "Aladdin — Level 2 · Places 1–3 (Agrabah → Genie meetings)",
         "size": { "width": 1280, "height": 720 },
         "fullscreen": false
     },
     "game": {
         "total_coins": 14,
-        "total_enemies": 3,
-        "time_3star": 300,
-        "time_2star": 420,
-        "time_1star": 600
+        "total_enemies": 6,
+        "time_3star": 420,
+        "time_2star": 540,
+        "time_1star": 720
     },
 
     "scene": {
@@ -88,7 +92,10 @@
                 // Portal / carpet
                 "portal_tex_0": "assets/models/Portal/0.png",
                 "portal_tex_1": "assets/models/Portal/1.png",
-                "carpet_tex":   "assets/models/Carpet/magic_carpet_diff.png"
+                "carpet_tex":   "assets/models/Carpet/magic_carpet_diff.png",
+
+                // Genie (NPC for meetings in Place 2 & 3)
+                "genie_tex":   "assets/models/Genie/genie_diff.png"
             },
             "meshes": {
                 "cube":   "assets/models/cube.obj",
@@ -116,7 +123,13 @@
                 "env_agraba_market_shop": "assets/models/Environment objects/agraba_market_shop/agraba_market_shop.obj",
 
                 "env_fountain_1": "assets/models/Environment objects/Fountains/Fountain 1/Fountain.obj",
-                "env_fountain_2": "assets/models/Environment objects/Fountains/Fountain 2/Fountain.obj"
+                "env_fountain_2": "assets/models/Environment objects/Fountains/Fountain 2/Fountain.obj",
+
+                // Magic lamp (appears in Place 2 & 3 for Genie meetings)
+                "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
+
+                // Genie (NPC — appears near the lamp, disappears after dialogue)
+                "genie_mesh": "assets/models/Genie/genie.obj"
             },
             "samplers": {
                 "default": {},
@@ -274,6 +287,32 @@
                     "albedo_map": "carpet_tex", "sampler": "default",
                     "shininess": 18.0, "ambient": 0.36,
                     "uv_multiplier": [1.2, 1.2]
+                },
+
+                // Magic lamp — ACTIVE (glowing gold) — triggers Genie meeting
+                "lit-env-lamp": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 82.0, "ambient": 0.42,
+                    "albedo_tint": [1.0, 0.82, 0.32]
+                },
+                // Magic lamp — USED (dim, spent) — remains after Genie disappears
+                "lit-env-lamp-used": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 10.0, "ambient": 0.22,
+                    "albedo_tint": [0.45, 0.38, 0.22]
+                },
+
+                // Genie NPC
+                "lit-genie": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "genie_tex", "sampler": "default",
+                    "shininess": 24.0, "ambient": 0.36,
+                    "albedo_tint": [0.72, 0.92, 1.0]
                 }
             }
         },
@@ -1001,8 +1040,8 @@
                 ] },
 
             // ============================================================
-            //  AREA 2 — Portal to Place 2 (east end)
-            //  targetPosition is a PLACEHOLDER until Place 2 is built.
+            //  AREA 2 — Portal to Place 2 (east end of Place 1)
+            //  Teleports Aladdin into Place 2's arena at its west entrance.
             // ============================================================
             {
                 "name": "portal-place1-to-2-visual",
@@ -1022,8 +1061,414 @@
                         "radius": 3.5,
                         "blackoutDuration": 1.2,
                         "cooldownDuration": 2.5,
-                        // Placeholder — will be Place 2 spawn once built.
-                        "targetPosition": [430, 2, 0],
+                        // Drops Aladdin just inside Place 2's west wall, facing east.
+                        "targetPosition": [435, 2.0, 0],
+                        "setYaw": true,
+                        "targetYaw": 90
+                    }
+                ]
+            },
+
+            // ================================================================
+            //  PLACE 2 — "Open 60×60 arena, hidden safety walls, first Genie
+            //  meeting". Aladdin arrives here from Place 1's portal.
+            //
+            //  Center at x=460, z=0. Walkable interior: x ∈ [430, 490],
+            //  z ∈ [-30, 30]. Portal to Place 3 sits on the east wall.
+            //
+            //  Birds-eye (+X right, -Z north):
+            //
+            //       z=-30 +----------------------+
+            //             |                      |
+            //             |   (Genie pops in     |
+            //    Aladdin  |    here when         |   PORTAL
+            //    arrives →|    Aladdin nears     | → to Place 3
+            //    facing   |    the lamp)         |
+            //    east     |        💡  (lamp)    |
+            //             |                      |
+            //       z=+30 +----------------------+
+            //            x=430     x=460       x=490
+            // ================================================================
+
+            // ------ Place 2 ground + floor collider --------------------------
+            {
+                "name": "place2-ground",
+                "position": [460, 0, 0.01],
+                "rotation": [-90, 0, 0],
+                "scale": [60, 60, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
+                ]
+            },
+            {
+                "name": "place2-floor-collider",
+                "position": [460, -0.25, 0.01],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 0.3, 30], "friction": 0.85, "restitution": 0.0 }
+                ]
+            },
+
+            // ------ Place 2 fill light (warm, magical) -----------------------
+            // A bluish rim light over the lamp so the Genie reveal reads well.
+            {
+                "name": "place2-lamp-rim",
+                "position": [460, 6, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [0.55, 0.72, 1.0], "intensity": 1.8,
+                      "attenuation": { "constant": 1.0, "linear": 0.18, "quadratic": 0.06 } }
+                ]
+            },
+
+            // ------ Place 2 SAFETY BOUNDS (invisible walls, 60×60) -----------
+            //  60×60 → each wall half-extent along its span is 30.
+            {
+                "name": "p2-bound-n",
+                "position": [460, 8, -30],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p2-bound-s",
+                "position": [460, 8, 30],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p2-bound-w",
+                "position": [430, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p2-bound-e",
+                "position": [490, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
+                ]
+            },
+
+            // ------ Place 2 MAGIC LAMP (active — triggers first Genie meeting)
+            //  The Dialogue Trigger component ties this lamp to the
+            //  meeting-1 script. When Aladdin steps within `radius`,
+            //  the DialogueSystem:
+            //    1. Reveals `p2-genie` (mesh was hidden at spawn).
+            //    2. Freezes the game and plays the conversation.
+            //    3. On finish, removes this lamp + the Genie and reveals
+            //       `p2-lamp-used`.
+            {
+                "name": "p2-lamp-active",
+                "position": [460, 0.45, 0],
+                "rotation": [0, 20, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 },
+                    {
+                        "type": "Dialogue Trigger",
+                        "script": "config/levels/dialogues/meeting-1.json",
+                        "style":  "config/levels/dialogues/style.json",
+                        "radius": 5.5,
+                        "oneShot": true,
+                        "revealEntity": "p2-genie",
+                        "removeEntitiesOnFinish": ["p2-lamp-active"],
+                        "revealEntitiesOnFinish": ["p2-lamp-used"]
+                    }
+                ]
+            },
+            // Dim "used" lamp — invisible at spawn, revealed after meeting.
+            {
+                "name": "p2-lamp-used",
+                "position": [460, 0.45, 0],
+                "rotation": [0, 60, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp-used", "visible": false },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 }
+                ]
+            },
+
+            // ------ Place 2 GENIE (first meeting) ----------------------------
+            //  Hidden at spawn (visible: false). DialogueSystem makes him
+            //  appear when the lamp trigger fires and removes him when the
+            //  conversation ends.
+            {
+                "name": "p2-genie",
+                "position": [483, 0, -4],
+                "rotation": [0, 270, 0],
+                "scale": [0.94, 0.94, 0.94],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
+                ]
+            },
+
+            // ------ Place 2 PORTAL to Place 3 (east end) ---------------------
+            {
+                "name": "portal-place2-to-3-visual",
+                "position": [486, 0.1, 0],
+                "rotation": [0, -90, 0],
+                "scale": [1.8, 1.8, 1.8],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-1" }
+                ]
+            },
+            {
+                "name": "portal-place2-to-3",
+                "position": [486, 1.2, 0],
+                "components": [
+                    {
+                        "type": "Room Portal",
+                        "radius": 3.5,
+                        "blackoutDuration": 1.2,
+                        "cooldownDuration": 2.5,
+                        // Lands Aladdin just inside Place 3's west wall, facing east.
+                        "targetPosition": [595, 2.0, 0],
+                        "setYaw": true,
+                        "targetYaw": 90
+                    }
+                ]
+            },
+
+            // ================================================================
+            //  PLACE 3 — "Open 60×60 arena, hidden safety walls, 3 slimes,
+            //  second Genie meeting (apple-fight tutorial)".
+            //
+            //  Center at x=620, z=0. Walkable interior: x ∈ [590, 650],
+            //  z ∈ [-30, 30]. Portal to Place 4 (future) sits on east wall.
+            //
+            //  Birds-eye (+X right, -Z north):
+            //
+            //       z=-30 +----------------------+
+            //             |   slime    slime     |
+            //    Aladdin  |                      |   PORTAL
+            //    arrives →|  💡 (meeting 2)      | → to Place 4
+            //    facing   |                      |   (placeholder)
+            //    east     |          slime       |
+            //             |                      |
+            //       z=+30 +----------------------+
+            //            x=590     x=620       x=650
+            // ================================================================
+
+            // ------ Place 3 ground + floor collider --------------------------
+            {
+                "name": "place3-ground",
+                "position": [620, 0, 0],
+                "rotation": [-90, 0, 0],
+                "scale": [60, 60, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
+                ]
+            },
+            {
+                "name": "place3-floor-collider",
+                "position": [620, -0.25, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 0.3, 30], "friction": 0.85, "restitution": 0.0 }
+                ]
+            },
+
+            // ------ Place 3 lighting ----------------------------------------
+            {
+                "name": "place3-fill",
+                "position": [620, 14, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [1.0, 0.85, 0.68], "intensity": 3.0,
+                      "attenuation": { "constant": 1.0, "linear": 0.05, "quadratic": 0.012 } }
+                ]
+            },
+            {
+                "name": "place3-lamp-rim",
+                "position": [605, 6, 0],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [0.55, 0.72, 1.0], "intensity": 1.6,
+                      "attenuation": { "constant": 1.0, "linear": 0.18, "quadratic": 0.06 } }
+                ]
+            },
+
+            // ------ Place 3 SAFETY BOUNDS (invisible walls, 60×60) ----------
+            {
+                "name": "p3-bound-n",
+                "position": [620, 8, -30],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p3-bound-s",
+                "position": [620, 8, 30],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p3-bound-w",
+                "position": [590, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
+                ]
+            },
+            {
+                "name": "p3-bound-e",
+                "position": [650, 8, 0],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
+                ]
+            },
+
+            // ------ Place 3 MAGIC LAMP (meeting 2 — near Aladdin's face) ----
+            //  Dialogue script: config/levels/dialogues/meeting-2.json.
+            //  Same reveal/remove pattern as Place 2.
+            {
+                "name": "p3-lamp-active",
+                "position": [605, 0.45, 0],
+                "rotation": [0, -20, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 },
+                    {
+                        "type": "Dialogue Trigger",
+                        "script": "config/levels/dialogues/meeting-2.json",
+                        "style":  "config/levels/dialogues/style.json",
+                        "radius": 5.5,
+                        "oneShot": true,
+                        "revealEntity": "p3-genie",
+                        "removeEntitiesOnFinish": ["p3-lamp-active"],
+                        "revealEntitiesOnFinish": ["p3-lamp-used"]
+                    }
+                ]
+            },
+            {
+                "name": "p3-lamp-used",
+                "position": [605, 0.45, 0],
+                "rotation": [0, 45, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp-used", "visible": false },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 }
+                ]
+            },
+
+            // ------ Place 3 GENIE (second meeting, hidden until near lamp) --
+            {
+                "name": "p3-genie",
+                "position": [608, 0, -4],
+                "rotation": [0, -150, 0],
+                "scale": [0.94, 0.94, 0.94],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
+                ]
+            },
+
+            // ------ Place 3 ENEMIES — 3 slimes (mesh: enemy2 = SlimeEnemy1) --
+            {
+                "name": "p3-slime-1",
+                "position": [630, 0.95, -15],
+                "rotation": [0, 200, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 3.8,
+                        "chaseSpeed": 5.6,
+                        "detectionRange": 20.0,
+                        "attackRange": 2.0,
+                        "health": 40,
+                        "damage": 10,
+                        "attackCooldown": 1.5,
+                        "waypoints": [[625, 0.95, -20], [640, 0.95, -20], [640, 0.95, -10], [625, 0.95, -10]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p3-slime-2",
+                "position": [638, 0.95, 10],
+                "rotation": [0, 170, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 3.8,
+                        "chaseSpeed": 5.6,
+                        "detectionRange": 20.0,
+                        "attackRange": 2.0,
+                        "health": 40,
+                        "damage": 10,
+                        "attackCooldown": 1.5,
+                        "waypoints": [[635, 0.95, 5], [640, 0.95, 20], [625, 0.95, 20], [625, 0.95, 5]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p3-slime-3",
+                "position": [625, 0.95, 22],
+                "rotation": [0, 120, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Enemy",
+                        "patrolSpeed": 3.6,
+                        "chaseSpeed": 5.4,
+                        "detectionRange": 18.0,
+                        "attackRange": 2.0,
+                        "health": 40,
+                        "damage": 10,
+                        "attackCooldown": 1.5,
+                        "waypoints": [[620, 0.95, 22], [630, 0.95, 22], [630, 0.95, 14], [620, 0.95, 14]]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+
+            // ------ Place 3 PORTAL (east end — placeholder for Place 4) -----
+            {
+                "name": "portal-place3-to-4-visual",
+                "position": [646, 0.1, 0],
+                "rotation": [0, -90, 0],
+                "scale": [1.8, 1.8, 1.8],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-0" }
+                ]
+            },
+            {
+                "name": "portal-place3-to-4",
+                "position": [646, 1.2, 0],
+                "components": [
+                    {
+                        "type": "Room Portal",
+                        "radius": 3.5,
+                        "blackoutDuration": 1.2,
+                        "cooldownDuration": 2.5,
+                        // PLACEHOLDER — Place 4 not built yet. Keeps the player
+                        // safely inside Place 3 for now.
+                        "targetPosition": [620, 2.0, 0],
                         "setYaw": true,
                         "targetYaw": 90
                     }
