@@ -119,8 +119,8 @@ namespace our {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
                      SHADOW_MAP_SIZE, SHADOW_MAP_SIZE,
                      0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // Clamp to border = 1.0 so fragments outside the shadow frustum are treated as lit.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -203,6 +203,15 @@ namespace our {
         // If there is no camera, we return (we cannot render without a camera)
         if(camera == nullptr) return;
 
+        //TODO: (Req 9) Modify the following line such that "cameraForward" contains a vector pointing the camera forward direction
+        // The camera's local forward is (0,0,-1). Transform it to world space using the LocalToWorld matrix.
+        auto camM = camera->getOwner()->getLocalToWorldMatrix();
+        glm::vec3 cameraForward = glm::vec3(camM * glm::vec4(0, 0, -1, 0));
+        glm::vec3 cameraPos = glm::vec3(camM[3]);
+
+        //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
+        glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
+
         // Find the first directional light and render all opaque geometry from its perspective into the shadow depth map.
         LightComponent* shadowCaster = nullptr;
         for (auto* lc : lights) {
@@ -214,28 +223,27 @@ namespace our {
 
         shadowEnabled = (shadowCaster != nullptr && !opaqueCommands.empty());
         if (shadowEnabled) {
-            // Build the light's view matrix.
-            // The directional light has no true position; we place the "eye" far back
-            // along the opposite of the light direction so the scene fits in the frustum.
             glm::mat4 lM  = shadowCaster->getOwner()->getLocalToWorldMatrix();
             glm::vec3 lDir = glm::normalize(glm::vec3(lM * glm::vec4(0, 0, -1, 0)));
 
-            // Choose an up vector that is not parallel to lDir.
-            glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f)
-                           ? glm::vec3(1, 0, 0)
-                           : glm::vec3(0, 1, 0);
-            glm::vec3 lEye = -lDir * 20.0f;
+            glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+            
+            // Center the shadow frustum on the camera position so shadows follow the player as they move
+            glm::vec3 lEye = cameraPos - lDir * 20.0f;
             glm::mat4 lightView = glm::lookAt(lEye, lEye + lDir, up);
 
-            // Orthographic projection covers ±15 units from the scene origin.
-            // Adjust 'range' if the scene is larger.
-            float range = 15.0f;
+            // Orthographic projection covers ±20 units around the camera.
+            float range = 20.0f;
             glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 50.0f);
             lightSpaceMatrix = lightProj * lightView;
 
             // Render the scene depth from the light's point of view.
             glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
             glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+            
+            // CRITICAL FIX: Explicitly enable depth writing. 
+            // If a previous frame's post-processing disabled glDepthMask, clear and draw will fail.
+            glDepthMask(GL_TRUE); 
             glClear(GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
@@ -250,12 +258,6 @@ namespace our {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        //TODO: (Req 9) Modify the following line such that "cameraForward" contains a vector pointing the camera forward direction
-        // HINT: See how you wrote the CameraComponent::getViewMatrix, it should help you solve this one
-        // The camera's local forward is (0,0,-1). Transform it to world space using the LocalToWorld matrix.
-        // w=0 because it is a direction, not a point (translation should not affect it)
-        auto M = camera->getOwner()->getLocalToWorldMatrix();
-        glm::vec3 cameraForward = glm::vec3(M * glm::vec4(0, 0, -1, 0));
         std::sort(transparentCommands.begin(), transparentCommands.end(), [cameraForward](const RenderCommand& first, const RenderCommand& second){
             //TODO: (Req 9) Finish this function
             // We sort transparent objects from FAR to NEAR (back-to-front / painter's algorithm)
@@ -263,11 +265,6 @@ namespace our {
             // A larger dot product means the object is further in the forward direction => draw it first
             return glm::dot(first.center, cameraForward) > glm::dot(second.center, cameraForward);
         });
-
-        //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
-        glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
-        // extract the camera position for sky sphere centering and lit shader eye_pos uniform.
-        glm::vec3 cameraPos = glm::vec3(M[3]);
 
         // upload all collected lights to the shader currently bound by a LitMaterial.
         ShaderProgram* lastLitShader = nullptr; // Optimization: track last shader to avoid re-uploading lights
