@@ -141,6 +141,12 @@ namespace our {
         shadowShader->attach("assets/shaders/shadow.vert", GL_VERTEX_SHADER);
         shadowShader->attach("assets/shaders/shadow.frag", GL_FRAGMENT_SHADER);
         shadowShader->link();
+
+        // Skinned mesh shader: same fragment shader as lit objects, custom vertex shader.
+        skinnedShader = new ShaderProgram();
+        skinnedShader->attach("assets/shaders/skinned.vert", GL_VERTEX_SHADER);
+        skinnedShader->attach("assets/shaders/light.frag",   GL_FRAGMENT_SHADER);
+        skinnedShader->link();
     }
 
     void ForwardRenderer::destroy(){
@@ -166,6 +172,7 @@ namespace our {
         if(shadowFBO)          { glDeleteFramebuffers(1, &shadowFBO);  shadowFBO = 0; }
         if(shadowDepthTexture) { glDeleteTextures(1, &shadowDepthTexture); shadowDepthTexture = 0; }
         if(shadowShader)       { delete shadowShader; shadowShader = nullptr; }
+        if(skinnedShader)      { delete skinnedShader; skinnedShader = nullptr; }
     }
 
     void ForwardRenderer::render(World* world){
@@ -184,12 +191,18 @@ namespace our {
             }
             // If this entity has a mesh renderer component
             if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer && meshRenderer->visible){
+                // Skip entities handled by SkinnedMeshRendererComponent (they have their own dedicated pass)
+                if (entity->getComponent<SkinnedMeshRendererComponent>()) continue;
+                // Also skip entities that still use the legacy AnimatorComponent
+                if (entity->getComponent<AnimatorComponent>()) continue;
+
                 // We construct a command from it
                 RenderCommand command;
                 command.localToWorld = meshRenderer->getOwner()->getLocalToWorldMatrix();
                 command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                 command.mesh = meshRenderer->mesh;
                 command.material = meshRenderer->material;
+
                 // if it is transparent, we add it to the transparent commands list
                 if(command.material->transparent){
                     transparentCommands.push_back(command);
@@ -336,6 +349,13 @@ namespace our {
                 sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
                 glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+                
+                // If this command has bones, upload them to the shader
+                if(!command.bones.empty()){
+                    for (int i = 0; i < (int)command.bones.size() && i < 100; i++) {
+                        sh->set("finalBoneMatrices[" + std::to_string(i) + "]", command.bones[i]);
+                    }
+                }
             }
             command.mesh->draw();
         }
@@ -372,8 +392,145 @@ namespace our {
                 sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
                 glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+                
+                // If this command has bones, upload them to the shader
+                if(!command.bones.empty()){
+                    for (int i = 0; i < (int)command.bones.size() && i < 100; i++) {
+                        sh->set("finalBoneMatrices[" + std::to_string(i) + "]", command.bones[i]);
+                    }
+                }
             }
             command.mesh->draw();
+        }
+
+        // ── Skinned mesh pass ───────────────────────────────────────────────────
+        // Draws entities that have a SkinnedMeshRendererComponent using the
+        // GPU skinning vertex shader.  Legacy AnimatorComponent entities are
+        // also handled here for backward compatibility.
+        if (skinnedShader) {
+            skinnedShader->use();
+            uploadLights(skinnedShader);  // eye_pos, lights[], shadow uniforms
+
+            // Rebind shadow map on unit 3 for the skinned pass
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+            glActiveTexture(GL_TEXTURE0);
+
+            for (auto entity : world->getEntities()) {
+
+                // ── New merged component path ─────────────────────────────────
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    if (!smr->skinnedMesh || !smr->visible) continue;
+
+                    glm::mat4 model = entity->getLocalToWorldMatrix();
+                    glm::mat3 nrm   = glm::mat3(glm::transpose(glm::inverse(model)));
+
+                    if (entity->name == "aladdin") {
+                        static int frameCount = 0;
+                        if (frameCount++ % 100 == 0) {
+                            std::cout << "[DIAG][ForwardRenderer] Rendering aladdin: pos=" << model[3][0] << "," << model[3][1] << "," << model[3][2] 
+                                      << " scale=" << glm::length(glm::vec3(model[0])) << " visible=" << smr->visible 
+                                      << " bones=" << smr->animator.getFinalBoneMatrices().size() << std::endl;
+                        }
+                    }
+
+                    skinnedShader->set("transform",          VP * model);
+                    skinnedShader->set("model",              model);
+                    glUniformMatrix3fv(skinnedShader->getUniformLocation("normal_mat"),
+                                       1, GL_FALSE, &nrm[0][0]);
+                    skinnedShader->set("light_space_matrix", lightSpaceMatrix);
+
+                    const auto& mats = smr->animator.getFinalBoneMatrices();
+                    if (!mats.empty()) {
+                        GLint loc = skinnedShader->getUniformLocation("finalBoneMatrices[0]");
+                        if (loc != -1) {
+                            glUniformMatrix4fv(loc, (GLsizei)std::min((size_t)mats.size(), (size_t)64), GL_FALSE, &mats[0][0][0]);
+                        }
+                    }
+
+                    // Bind material textures & set uniforms ON THE SKINNED SHADER for each submesh.
+                    for (int i = 0; i < (int)smr->materials.size(); i++) {
+                        Material* mat = smr->materials[i];
+                        if (!mat) continue;
+
+                        if (auto* litMat = dynamic_cast<LitMaterial*>(mat)) {
+                            litMat->pipelineState.setup();
+                            skinnedShader->use(); // ensure we're still on the skinned program
+
+                            // Re-bind shadow map on unit 3 (pipelineState.setup() may reset state)
+                            glActiveTexture(GL_TEXTURE3);
+                            glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+
+                            // Albedo (unit 0)
+                            static auto* white = our::texture_utils::singleColor({255, 255, 255, 255});
+                            static auto* black = our::texture_utils::singleColor({0, 0, 0, 255});
+                            glActiveTexture(GL_TEXTURE0);
+                            (litMat->albedo_map ? litMat->albedo_map : white)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(0);
+                            skinnedShader->set("material.albedo_map", (GLint)0);
+
+                            // Specular (unit 1)
+                            glActiveTexture(GL_TEXTURE1);
+                            (litMat->specular_map ? litMat->specular_map : black)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(1);
+                            skinnedShader->set("material.specular_map", (GLint)1);
+
+                            // Emission (unit 2)
+                            glActiveTexture(GL_TEXTURE2);
+                            (litMat->emission_map ? litMat->emission_map : black)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(2);
+                            skinnedShader->set("material.emission_map", (GLint)2);
+
+                            // Shadow (unit 3) uniform
+                            skinnedShader->set("shadow_map", (GLint)3);
+
+                            skinnedShader->set("material.shininess", litMat->shininess);
+                            skinnedShader->set("material.ambient", litMat->ambient);
+                            skinnedShader->set("material.albedo_tint", litMat->albedo_tint);
+                            skinnedShader->set("uv_multiplier", litMat->uv_multiplier);
+
+                            glActiveTexture(GL_TEXTURE0);
+                        } else {
+                            // Non-lit material fallback: let it set up, then rebind our shader
+                            mat->setup();
+                            skinnedShader->use();
+                        }
+
+                        if (i < (int)smr->skinnedMesh->submeshes.size()) {
+                            smr->skinnedMesh->drawSubmesh(i);
+                        } else if (i == 0) {
+                            // Fallback if no submeshes defined (unlikely with my loader update)
+                            smr->skinnedMesh->draw();
+                        }
+                    }
+                    continue; // handled — skip legacy path below
+                }
+
+                // ── Legacy AnimatorComponent path (backward compat) ───────────
+                auto* anim = entity->getComponent<AnimatorComponent>();
+                if (!anim || !anim->skinnedMesh) continue;
+
+                glm::mat4 model  = entity->getLocalToWorldMatrix();
+                glm::mat3 nrm    = glm::mat3(glm::transpose(glm::inverse(model)));
+
+                skinnedShader->set("transform",          VP * model);
+                skinnedShader->set("model",              model);
+                glUniformMatrix3fv(skinnedShader->getUniformLocation("normal_mat"),
+                                   1, GL_FALSE, &nrm[0][0]);
+                skinnedShader->set("light_space_matrix", lightSpaceMatrix);
+
+                const auto& mats = anim->animator.getFinalBoneMatrices();
+                for (int i = 0; i < (int)mats.size() && i < Animator::MAX_BONES; i++)
+                    skinnedShader->set("finalBoneMatrices[" + std::to_string(i) + "]", mats[i]);
+
+                if (auto* mr = entity->getComponent<MeshRendererComponent>()) {
+                    if (mr->material) {
+                        mr->material->setup();
+                        skinnedShader->use();
+                    }
+                }
+                anim->skinnedMesh->draw();
+            }
         }
 
         // If there is a postprocess material, apply postprocessing

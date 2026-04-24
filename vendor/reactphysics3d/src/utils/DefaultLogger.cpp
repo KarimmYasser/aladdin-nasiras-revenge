@@ -65,7 +65,7 @@ DefaultLogger::Formatter* DefaultLogger::getFormatter(Format format) const {
 void DefaultLogger::addFileDestination(const std::string& filePath, uint logLevelFlag, Format format) {
 
     // Make sure capacity is an integral multiple of alignment
-    const size_t allocatedSize = std::ceil(sizeof(FileDestination) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+    const size_t allocatedSize = static_cast<size_t>(std::ceil(sizeof(FileDestination) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
     FileDestination* destination = new (mAllocator.allocate(allocatedSize)) FileDestination(filePath, logLevelFlag, getFormatter(format));
     mDestinations.add(destination);
@@ -75,7 +75,7 @@ void DefaultLogger::addFileDestination(const std::string& filePath, uint logLeve
 void DefaultLogger::addStreamDestination(std::ostream& outputStream, uint logLevelFlag, Format format) {
 
     // Make sure capacity is an integral multiple of alignment
-    const size_t allocatedSize = std::ceil(sizeof(StreamDestination) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+    const size_t allocatedSize = static_cast<size_t>(std::ceil(sizeof(StreamDestination) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
     StreamDestination* destination = new (mAllocator.allocate(allocatedSize)) StreamDestination(outputStream, logLevelFlag, getFormatter(format));
     mDestinations.add(destination);
@@ -92,7 +92,7 @@ void DefaultLogger::removeAllDestinations() {
         mDestinations[i]->~Destination();
 
         // Make sure capacity is an integral multiple of alignment
-        size = std::ceil(size / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+        size = static_cast<size_t>(std::ceil(size / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
         mAllocator.release(mDestinations[i], size);
     }

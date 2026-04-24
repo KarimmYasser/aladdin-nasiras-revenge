@@ -18,6 +18,7 @@
 #include <systems/room-portal.hpp>
 #include <systems/projectile.hpp>
 #include <audio/audio-system.hpp>
+#include <systems/animation-system.hpp>
 
 #include <imgui.h>
 #include <sstream>
@@ -43,6 +44,7 @@ class Playstate: public our::State {
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
     our::ProjectileSystem projectileSystem;
+    our::AnimationSystem animationSystem;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -71,7 +73,11 @@ class Playstate: public our::State {
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
-        if(config.contains("assets")){
+        // Skip if they were already loaded by the LoadingState
+        if(config.contains("assets") && 
+           our::AssetLoader<our::Mesh>::empty() && 
+           our::AssetLoader<our::ShaderProgram>::empty() &&
+           our::AssetLoader<our::Texture2D>::empty()){
             our::deserializeAllAssets(config["assets"]);
         }
         // If we have a world in the scene config, we use it to populate our world
@@ -181,6 +187,8 @@ class Playstate: public our::State {
         hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
         checkpointSystem.update(&world, &physicsSystem);
         levelExitSystem.update(&world);
+        // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
+        animationSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 

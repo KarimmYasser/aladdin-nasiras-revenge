@@ -3,6 +3,8 @@
 #include "../ecs/world.hpp"
 #include "../components/camera.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/animator-component.hpp"
+#include "../components/skinned-mesh-renderer.hpp"
 #include "../components/light.hpp"
 #include "../material/lit-material.hpp"
 #include "../shader/shader.hpp"
@@ -24,6 +26,7 @@ namespace our
         glm::vec3 center;
         Mesh* mesh;
         Material* material;
+        std::vector<glm::mat4> bones; // empty for static meshes
     };
 
     // A forward renderer is a renderer that draw the object final color directly to the framebuffer
@@ -54,6 +57,9 @@ namespace our
         ShaderProgram* shadowShader = nullptr;       // shadow.vert / shadow.frag
         glm::mat4 lightSpaceMatrix{1.0f};            // current frame's light VP matrix
         bool shadowEnabled = false;                  // true when a valid shadow map exists
+
+        // Skinned mesh shader (skinned.vert + light.frag)
+        ShaderProgram* skinnedShader = nullptr;
 
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.

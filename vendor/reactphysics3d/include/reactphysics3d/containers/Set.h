@@ -279,7 +279,7 @@ class Set {
             assert(nbAllocatedEntries > 0);
 
             // Make sure capacity is an integral multiple of alignment
-            nbAllocatedEntries = std::ceil(nbAllocatedEntries / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+            nbAllocatedEntries = static_cast<uint64>(std::ceil(nbAllocatedEntries / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
             V* newEntries = static_cast<V*>(mAllocator.allocate(nbAllocatedEntries * sizeof(V)));
             uint64* newNextEntries = static_cast<uint64*>(mAllocator.allocate(nbAllocatedEntries * sizeof(uint64)));

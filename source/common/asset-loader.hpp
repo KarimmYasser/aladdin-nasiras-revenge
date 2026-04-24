@@ -21,6 +21,8 @@ namespace our {
         // For example: {"white": "textures/white.png", "polka": "textures/polka.png"} defines 2 textures
         // where the key will be asset name and the description holds the path to the texture file
         static void deserialize(const nlohmann::json&);
+        // This function loads a single asset defined by its name and description
+        static void deserializeSingle(const std::string& name, const nlohmann::json& desc);
         // This function find an asset by its name and returns a pointer to it
         // If no asset with the given name was found, the function returns a nullptr
         // WARNING: never delete the asset returned by the function.
@@ -38,6 +40,16 @@ namespace our {
                 delete asset;
             }
             assets.clear();
+        }
+
+        // Returns true if no assets are loaded
+        static bool empty() {
+            return assets.empty();
+        }
+
+        // Returns the number of loaded assets
+        static size_t count() {
+            return assets.size();
         }
     };
 
