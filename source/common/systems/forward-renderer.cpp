@@ -119,8 +119,8 @@ namespace our {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
                      SHADOW_MAP_SIZE, SHADOW_MAP_SIZE,
                      0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // Clamp to border = 1.0 so fragments outside the shadow frustum are treated as lit.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -141,6 +141,12 @@ namespace our {
         shadowShader->attach("assets/shaders/shadow.vert", GL_VERTEX_SHADER);
         shadowShader->attach("assets/shaders/shadow.frag", GL_FRAGMENT_SHADER);
         shadowShader->link();
+
+        // Skinned mesh shader: same fragment shader as lit objects, custom vertex shader.
+        skinnedShader = new ShaderProgram();
+        skinnedShader->attach("assets/shaders/skinned.vert", GL_VERTEX_SHADER);
+        skinnedShader->attach("assets/shaders/light.frag",   GL_FRAGMENT_SHADER);
+        skinnedShader->link();
     }
 
     void ForwardRenderer::destroy(){
@@ -166,6 +172,7 @@ namespace our {
         if(shadowFBO)          { glDeleteFramebuffers(1, &shadowFBO);  shadowFBO = 0; }
         if(shadowDepthTexture) { glDeleteTextures(1, &shadowDepthTexture); shadowDepthTexture = 0; }
         if(shadowShader)       { delete shadowShader; shadowShader = nullptr; }
+        if(skinnedShader)      { delete skinnedShader; skinnedShader = nullptr; }
     }
 
     void ForwardRenderer::render(World* world){
@@ -184,12 +191,18 @@ namespace our {
             }
             // If this entity has a mesh renderer component
             if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer && meshRenderer->visible){
+                // Skip entities handled by SkinnedMeshRendererComponent (they have their own dedicated pass)
+                if (entity->getComponent<SkinnedMeshRendererComponent>()) continue;
+                // Also skip entities that still use the legacy AnimatorComponent
+                if (entity->getComponent<AnimatorComponent>()) continue;
+
                 // We construct a command from it
                 RenderCommand command;
                 command.localToWorld = meshRenderer->getOwner()->getLocalToWorldMatrix();
                 command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                 command.mesh = meshRenderer->mesh;
                 command.material = meshRenderer->material;
+
                 // if it is transparent, we add it to the transparent commands list
                 if(command.material->transparent){
                     transparentCommands.push_back(command);
@@ -203,6 +216,15 @@ namespace our {
         // If there is no camera, we return (we cannot render without a camera)
         if(camera == nullptr) return;
 
+        //TODO: (Req 9) Modify the following line such that "cameraForward" contains a vector pointing the camera forward direction
+        // The camera's local forward is (0,0,-1). Transform it to world space using the LocalToWorld matrix.
+        auto camM = camera->getOwner()->getLocalToWorldMatrix();
+        glm::vec3 cameraForward = glm::vec3(camM * glm::vec4(0, 0, -1, 0));
+        glm::vec3 cameraPos = glm::vec3(camM[3]);
+
+        //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
+        glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
+
         // Find the first directional light and render all opaque geometry from its perspective into the shadow depth map.
         LightComponent* shadowCaster = nullptr;
         for (auto* lc : lights) {
@@ -214,28 +236,27 @@ namespace our {
 
         shadowEnabled = (shadowCaster != nullptr && !opaqueCommands.empty());
         if (shadowEnabled) {
-            // Build the light's view matrix.
-            // The directional light has no true position; we place the "eye" far back
-            // along the opposite of the light direction so the scene fits in the frustum.
             glm::mat4 lM  = shadowCaster->getOwner()->getLocalToWorldMatrix();
             glm::vec3 lDir = glm::normalize(glm::vec3(lM * glm::vec4(0, 0, -1, 0)));
 
-            // Choose an up vector that is not parallel to lDir.
-            glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f)
-                           ? glm::vec3(1, 0, 0)
-                           : glm::vec3(0, 1, 0);
-            glm::vec3 lEye = -lDir * 20.0f;
+            glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+            
+            // Center the shadow frustum on the camera position so shadows follow the player as they move
+            glm::vec3 lEye = cameraPos - lDir * 20.0f;
             glm::mat4 lightView = glm::lookAt(lEye, lEye + lDir, up);
 
-            // Orthographic projection covers ±15 units from the scene origin.
-            // Adjust 'range' if the scene is larger.
-            float range = 15.0f;
+            // Orthographic projection covers ±20 units around the camera.
+            float range = 20.0f;
             glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 50.0f);
             lightSpaceMatrix = lightProj * lightView;
 
             // Render the scene depth from the light's point of view.
             glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
             glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+            
+            // CRITICAL FIX: Explicitly enable depth writing. 
+            // If a previous frame's post-processing disabled glDepthMask, clear and draw will fail.
+            glDepthMask(GL_TRUE); 
             glClear(GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
@@ -247,15 +268,24 @@ namespace our {
                 command.mesh->draw();
             }
 
+            // Also render skinned meshes into the shadow map
+            for (auto entity : world->getEntities()) {
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    if (!smr->skinnedMesh || !smr->visible) continue;
+                    glm::mat4 model = entity->getLocalToWorldMatrix();
+                    shadowShader->set("light_space_matrix", lightSpaceMatrix);
+                    shadowShader->set("model", model);
+                    
+                    // Note: This uses a non-skinned shadow shader for simplicity,
+                    // which casts a shadow based on the T-pose/mesh bounds.
+                    // For full animated shadows, a skinned shadow shader would be needed.
+                    smr->skinnedMesh->draw();
+                }
+            }
+
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        //TODO: (Req 9) Modify the following line such that "cameraForward" contains a vector pointing the camera forward direction
-        // HINT: See how you wrote the CameraComponent::getViewMatrix, it should help you solve this one
-        // The camera's local forward is (0,0,-1). Transform it to world space using the LocalToWorld matrix.
-        // w=0 because it is a direction, not a point (translation should not affect it)
-        auto M = camera->getOwner()->getLocalToWorldMatrix();
-        glm::vec3 cameraForward = glm::vec3(M * glm::vec4(0, 0, -1, 0));
         std::sort(transparentCommands.begin(), transparentCommands.end(), [cameraForward](const RenderCommand& first, const RenderCommand& second){
             //TODO: (Req 9) Finish this function
             // We sort transparent objects from FAR to NEAR (back-to-front / painter's algorithm)
@@ -263,11 +293,6 @@ namespace our {
             // A larger dot product means the object is further in the forward direction => draw it first
             return glm::dot(first.center, cameraForward) > glm::dot(second.center, cameraForward);
         });
-
-        //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
-        glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
-        // extract the camera position for sky sphere centering and lit shader eye_pos uniform.
-        glm::vec3 cameraPos = glm::vec3(M[3]);
 
         // upload all collected lights to the shader currently bound by a LitMaterial.
         ShaderProgram* lastLitShader = nullptr; // Optimization: track last shader to avoid re-uploading lights
@@ -339,6 +364,13 @@ namespace our {
                 sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
                 glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+                
+                // If this command has bones, upload them to the shader
+                if(!command.bones.empty()){
+                    for (int i = 0; i < (int)command.bones.size() && i < 100; i++) {
+                        sh->set("finalBoneMatrices[" + std::to_string(i) + "]", command.bones[i]);
+                    }
+                }
             }
             command.mesh->draw();
         }
@@ -375,8 +407,136 @@ namespace our {
                 sh->set("model", command.localToWorld);
                 glm::mat3 normalMat = glm::mat3(glm::transpose(glm::inverse(command.localToWorld)));
                 glUniformMatrix3fv(sh->getUniformLocation("normal_mat"), 1, GL_FALSE, &normalMat[0][0]);
+                
+                // If this command has bones, upload them to the shader
+                if(!command.bones.empty()){
+                    for (int i = 0; i < (int)command.bones.size() && i < 100; i++) {
+                        sh->set("finalBoneMatrices[" + std::to_string(i) + "]", command.bones[i]);
+                    }
+                }
             }
             command.mesh->draw();
+        }
+
+        // ── Skinned mesh pass ───────────────────────────────────────────────────
+        // Draws entities that have a SkinnedMeshRendererComponent using the
+        // GPU skinning vertex shader.  Legacy AnimatorComponent entities are
+        // also handled here for backward compatibility.
+        if (skinnedShader) {
+            skinnedShader->use();
+            uploadLights(skinnedShader);  // eye_pos, lights[], shadow uniforms
+
+            // Rebind shadow map on unit 3 for the skinned pass
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+            glActiveTexture(GL_TEXTURE0);
+
+            for (auto entity : world->getEntities()) {
+
+                // ── New merged component path ─────────────────────────────────
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    if (!smr->skinnedMesh || !smr->visible) continue;
+
+                    glm::mat4 model = entity->getLocalToWorldMatrix();
+                    glm::mat3 nrm   = glm::mat3(glm::transpose(glm::inverse(model)));
+
+                    skinnedShader->set("transform",          VP * model);
+                    skinnedShader->set("model",              model);
+                    glUniformMatrix3fv(skinnedShader->getUniformLocation("normal_mat"),
+                                       1, GL_FALSE, &nrm[0][0]);
+                    skinnedShader->set("light_space_matrix", lightSpaceMatrix);
+
+                    const auto& mats = smr->animator.getFinalBoneMatrices();
+                    if (!mats.empty()) {
+                        GLint loc = skinnedShader->getUniformLocation("finalBoneMatrices[0]");
+                        if (loc != -1) {
+                            glUniformMatrix4fv(loc, (GLsizei)std::min((size_t)mats.size(), (size_t)64), GL_FALSE, &mats[0][0][0]);
+                        }
+                    }
+
+                    // Bind material textures & set uniforms ON THE SKINNED SHADER for each submesh.
+                    for (int i = 0; i < (int)smr->materials.size(); i++) {
+                        Material* mat = smr->materials[i];
+                        if (!mat) continue;
+
+                        if (auto* litMat = dynamic_cast<LitMaterial*>(mat)) {
+                            litMat->pipelineState.setup();
+                            skinnedShader->use(); // ensure we're still on the skinned program
+
+                            // Re-bind shadow map on unit 3 (pipelineState.setup() may reset state)
+                            glActiveTexture(GL_TEXTURE3);
+                            glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+
+                            // Albedo (unit 0)
+                            static auto* white = our::texture_utils::singleColor({255, 255, 255, 255});
+                            static auto* black = our::texture_utils::singleColor({0, 0, 0, 255});
+                            glActiveTexture(GL_TEXTURE0);
+                            (litMat->albedo_map ? litMat->albedo_map : white)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(0);
+                            skinnedShader->set("material.albedo_map", (GLint)0);
+
+                            // Specular (unit 1)
+                            glActiveTexture(GL_TEXTURE1);
+                            (litMat->specular_map ? litMat->specular_map : black)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(1);
+                            skinnedShader->set("material.specular_map", (GLint)1);
+
+                            // Emission (unit 2)
+                            glActiveTexture(GL_TEXTURE2);
+                            (litMat->emission_map ? litMat->emission_map : black)->bind();
+                            if (litMat->sampler) litMat->sampler->bind(2);
+                            skinnedShader->set("material.emission_map", (GLint)2);
+
+                            // Shadow (unit 3) uniform
+                            skinnedShader->set("shadow_map", (GLint)3);
+
+                            skinnedShader->set("material.shininess", litMat->shininess);
+                            skinnedShader->set("material.ambient", litMat->ambient);
+                            skinnedShader->set("material.albedo_tint", litMat->albedo_tint);
+                            skinnedShader->set("uv_multiplier", litMat->uv_multiplier);
+
+                            glActiveTexture(GL_TEXTURE0);
+                        } else {
+                            // Non-lit material fallback: let it set up, then rebind our shader
+                            mat->setup();
+                            skinnedShader->use();
+                        }
+
+                        if (i < (int)smr->skinnedMesh->submeshes.size()) {
+                            smr->skinnedMesh->drawSubmesh(i);
+                        } else if (i == 0) {
+                            // Fallback if no submeshes defined (unlikely with my loader update)
+                            smr->skinnedMesh->draw();
+                        }
+                    }
+                    continue; // handled — skip legacy path below
+                }
+
+                // ── Legacy AnimatorComponent path (backward compat) ───────────
+                auto* anim = entity->getComponent<AnimatorComponent>();
+                if (!anim || !anim->skinnedMesh) continue;
+
+                glm::mat4 model  = entity->getLocalToWorldMatrix();
+                glm::mat3 nrm    = glm::mat3(glm::transpose(glm::inverse(model)));
+
+                skinnedShader->set("transform",          VP * model);
+                skinnedShader->set("model",              model);
+                glUniformMatrix3fv(skinnedShader->getUniformLocation("normal_mat"),
+                                   1, GL_FALSE, &nrm[0][0]);
+                skinnedShader->set("light_space_matrix", lightSpaceMatrix);
+
+                const auto& mats = anim->animator.getFinalBoneMatrices();
+                for (int i = 0; i < (int)mats.size() && i < Animator::MAX_BONES; i++)
+                    skinnedShader->set("finalBoneMatrices[" + std::to_string(i) + "]", mats[i]);
+
+                if (auto* mr = entity->getComponent<MeshRendererComponent>()) {
+                    if (mr->material) {
+                        mr->material->setup();
+                        skinnedShader->use();
+                    }
+                }
+                anim->skinnedMesh->draw();
+            }
         }
 
         // If there is a postprocess material, apply postprocessing

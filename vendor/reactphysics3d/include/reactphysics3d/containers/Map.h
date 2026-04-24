@@ -280,7 +280,7 @@ class Map {
             assert(nbAllocatedEntries > 0);
 
             // Make sure capacity is an integral multiple of alignment
-            nbAllocatedEntries = std::ceil(nbAllocatedEntries / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+            nbAllocatedEntries = static_cast<uint64>(std::ceil(nbAllocatedEntries / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
             Pair<K, V>* newEntries = static_cast<Pair<K, V>*>(mAllocator.allocate(nbAllocatedEntries * sizeof(Pair<K, V>)));
             uint64* newNextEntries = static_cast<uint64*>(mAllocator.allocate(nbAllocatedEntries * sizeof(uint64)));

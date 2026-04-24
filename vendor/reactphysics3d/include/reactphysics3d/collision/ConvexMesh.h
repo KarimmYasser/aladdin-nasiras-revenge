@@ -135,7 +135,7 @@ class ConvexMesh {
  * @return The number of vertices in the mesh
  */
 RP3D_FORCE_INLINE uint32 ConvexMesh::getNbVertices() const {
-    return mVertices.size();
+    return static_cast<uint32>(mVertices.size());
 }
 
 /// Return a vertex

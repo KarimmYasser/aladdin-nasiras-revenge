@@ -32,9 +32,9 @@
 using namespace reactphysics3d;
 
 // Make sure capacity is an integral multiple of alignment
-const size_t QHHalfEdgeStructure::mVertexAllocatedSize = std::ceil(sizeof(Vertex) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
-const size_t QHHalfEdgeStructure::mEdgeAllocatedSize = std::ceil(sizeof(Edge) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
-const size_t QHHalfEdgeStructure::mFaceAllocatedSize = std::ceil(sizeof(Face) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+const size_t QHHalfEdgeStructure::mVertexAllocatedSize = static_cast<size_t>(std::ceil(sizeof(Vertex) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
+const size_t QHHalfEdgeStructure::mEdgeAllocatedSize = static_cast<size_t>(std::ceil(sizeof(Edge) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
+const size_t QHHalfEdgeStructure::mFaceAllocatedSize = static_cast<size_t>(std::ceil(sizeof(Face) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
 
 // Destructor

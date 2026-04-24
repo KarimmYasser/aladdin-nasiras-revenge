@@ -19,7 +19,8 @@ namespace our {
             COIN,
             GEM,
             APPLE,
-            KEY
+            KEY,
+            HEALTH
         };
 
         Type type = Type::COIN;           // Default type is Coin
@@ -35,6 +36,7 @@ namespace our {
         float animationTimer = 0.0f;      // Accumulated time for sine wave
         float initialY = 0.0f;            // Stores the starting Y position to bob around
         bool initialYSet = false;         // Helper to capture the initial position once
+        float pickupDelay = 0.0f;         // Time in seconds before this can be picked up
 
         // The ID of this component type is "Collectible"
         static std::string getID() { return "Collectible"; }
@@ -52,6 +54,7 @@ namespace our {
             else if(typeStr == "gem") type = Type::GEM;
             else if(typeStr == "apple") type = Type::APPLE;
             else if(typeStr == "key") type = Type::KEY;
+            else if(typeStr == "health") type = Type::HEALTH;
 
             value = data.value("value", value);
             collectionRadius = data.value("collectionRadius", collectionRadius);

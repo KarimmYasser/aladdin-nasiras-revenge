@@ -26,6 +26,9 @@ class Menustate: public our::State {
     our::Texture2D* markerIcon = nullptr;
     bool showSettings = false;
     int masterVolume = 100;
+    float mouseSensitivity = 0.003f;
+    bool isFullscreen = false;
+    int selectedButton = 0; // 0: Play, 1: Settings, 2: Exit
 
     void goToPlayLevel() {
         auto& cfg = getApp()->getConfig();
@@ -44,7 +47,7 @@ class Menustate: public our::State {
                 std::cerr << "Could not open play-level-config: " << path << std::endl;
             }
         }
-        getApp()->changeState("play");
+        getApp()->changeState("loading");
     }
 
     void onInitialize() override {
@@ -80,19 +83,45 @@ class Menustate: public our::State {
         // Load marker icon
         markerIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
 
+        // Load initial settings from config
+        auto& cfg = getApp()->getConfig();
+        masterVolume = (int)(our::AudioSystem::instance().getMasterVolume() * 100.0f);
+        
+        if (cfg.contains("game")) {
+            mouseSensitivity = cfg["game"].value("mouseSensitivity", 0.003f);
+        }
+        if (cfg.contains("window")) {
+            isFullscreen = cfg["window"].value("fullscreen", false);
+        }
+
         // Start menu background music
         our::AudioSystem::instance().playMusic("assets/audio/menu.mp3");
+
+        // Ensure cursor is visible in menu
+        glfwSetInputMode(getApp()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
     void onDraw(double deltaTime) override {
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 
-        if(keyboard.justPressed(GLFW_KEY_SPACE)){
-            goToPlayLevel();
+        if(keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)){
+            if (selectedButton == 0) goToPlayLevel();
+            else if (selectedButton == 1) showSettings = !showSettings;
+            else if (selectedButton == 2) getApp()->close();
         } else if(keyboard.justPressed(GLFW_KEY_ESCAPE)) {
             // If the escape key is pressed in this frame, exit the game
             getApp()->close();
+        }
+
+        // Arrow Key Navigation
+        if (keyboard.justPressed(GLFW_KEY_DOWN)) {
+            selectedButton = (selectedButton + 1) % 3;
+            our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+        }
+        if (keyboard.justPressed(GLFW_KEY_UP)) {
+            selectedButton = (selectedButton - 1 + 3) % 3;
+            our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
         }
 
         // Get the framebuffer size to set the viewport and the create the projection matrix.
@@ -122,6 +151,7 @@ class Menustate: public our::State {
     }
 
     void onImmediateGui() override {
+        auto& keyboard = getApp()->getKeyboard();
         ImGuiIO& io = ImGui::GetIO();
         float w = io.DisplaySize.x;
         float h = io.DisplaySize.y;
@@ -151,77 +181,88 @@ class Menustate: public our::State {
         ImGui::End();
 
         // ── Buttons ──
-        float btnW = 220.0f;
-        float btnH = 50.0f;
-        ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.55f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSize(ImVec2(btnW + 100, 0));
-        ImGui::Begin("##MenuButtons", nullptr,
-            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
-        ImGui::SetWindowFontScale(2.0f);
+        if (!showSettings) {
+            float btnW = 220.0f;
+            float btnH = 50.0f;
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.55f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(btnW + 100, 0));
+            ImGui::Begin("##MenuButtons", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+            ImGui::SetWindowFontScale(2.0f);
 
-        // Style buttons
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.1f, 0.8f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+            // Style buttons
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.1f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
 
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH))) {
-            goToPlayLevel();
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+            bool pushedPlay = false;
+            if (selectedButton == 0) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedPlay = true; }
+            if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH)) || (selectedButton == 0 && keyboard.justPressed(GLFW_KEY_ENTER))) {
+                goToPlayLevel();
+            }
+            if (ImGui::IsItemHovered()) selectedButton = 0;
+            if (pushedPlay) ImGui::PopStyleColor();
+
+            if ((ImGui::IsItemHovered() || selectedButton == 0) && markerIcon) {
+                ImVec2 min = ImGui::GetItemRectMin();
+                ImVec2 max = ImGui::GetItemRectMax();
+                float coinY = min.y + (btnH - 32.0f) * 0.5f;
+                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+            }
+
+            ImGui::Spacing();
+
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+            bool pushedSettings = false;
+            if (selectedButton == 1) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedSettings = true; }
+            if (ImGui::Button(" SETTINGS ", ImVec2(btnW, btnH))) {
+                showSettings = true;
+            }
+            if (ImGui::IsItemHovered()) selectedButton = 1;
+            if (pushedSettings) ImGui::PopStyleColor();
+
+            if ((ImGui::IsItemHovered() || selectedButton == 1) && markerIcon) {
+                ImVec2 min = ImGui::GetItemRectMin();
+                ImVec2 max = ImGui::GetItemRectMax();
+                float coinY = min.y + (btnH - 32.0f) * 0.5f;
+                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+            }
+
+            ImGui::Spacing();
+
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+            bool pushedExit = false;
+            if (selectedButton == 2) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedExit = true; }
+            if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
+                getApp()->close();
+            }
+            if (ImGui::IsItemHovered()) selectedButton = 2;
+            if (pushedExit) ImGui::PopStyleColor();
+
+            if ((ImGui::IsItemHovered() || selectedButton == 2) && markerIcon) {
+                ImVec2 min = ImGui::GetItemRectMin();
+                ImVec2 max = ImGui::GetItemRectMax();
+                float coinY = min.y + (btnH - 32.0f) * 0.5f;
+                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+            }
+
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+            ImGui::End();
         }
-        if (ImGui::IsItemHovered() && markerIcon) {
-            ImVec2 min = ImGui::GetItemRectMin();
-            ImVec2 max = ImGui::GetItemRectMax();
-            float coinY = min.y + (btnH - 32.0f) * 0.5f;
-            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
-                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
-        }
-
-        ImGui::Spacing();
-
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (ImGui::Button(" SETTINGS ", ImVec2(btnW, btnH))) {
-            showSettings = !showSettings;
-        }
-        if (ImGui::IsItemHovered() && markerIcon) {
-            ImVec2 min = ImGui::GetItemRectMin();
-            ImVec2 max = ImGui::GetItemRectMax();
-            float coinY = min.y + (btnH - 32.0f) * 0.5f;
-            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
-                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
-        }
-
-        ImGui::Spacing();
-
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
-            getApp()->close();
-        }
-        if (ImGui::IsItemHovered() && markerIcon) {
-            ImVec2 min = ImGui::GetItemRectMin();
-            ImVec2 max = ImGui::GetItemRectMax();
-            float coinY = min.y + (btnH - 32.0f) * 0.5f;
-            ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(),
-                ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
-        }
-
-        ImGui::PopStyleVar();
-        ImGui::PopStyleColor(4);
-        ImGui::End();
 
         // ── Settings Panel ──
         if (showSettings) {
-            float panelW = 360.0f;
-            float panelH = 180.0f;
-            ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.82f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            float panelW = 380.0f;
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.55f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(panelW, 0));
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 14.0f);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 16));
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.02f, 0.12f, 0.88f));
             ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.8f, 0.2f, 0.5f));
-            ImGui::Begin("##SettingsPanel", nullptr,
-                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin("##SettingsPanel", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
 
             // Title
             ImGui::SetWindowFontScale(1.8f);
@@ -240,7 +281,6 @@ class Menustate: public our::State {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
             ImGui::Text("Sound");
             ImGui::PopStyleColor();
-
             ImGui::Spacing();
 
             // Volume slider
@@ -256,9 +296,65 @@ class Menustate: public our::State {
             if (ImGui::SliderInt("##Volume", &masterVolume, 0, 100, "Volume: %d%%")) {
                 our::AudioSystem::instance().setMasterVolume((float)masterVolume / 100.0f);
             }
-
             ImGui::PopStyleVar(2);
             ImGui::PopStyleColor(4);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // Camera section
+            ImGui::SetWindowFontScale(1.4f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+            ImGui::Text("Controls");
+            ImGui::PopStyleColor();
+            ImGui::Spacing();
+
+            ImGui::SetWindowFontScale(1.2f);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.1f, 0.25f, 0.9f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+            ImGui::SetNextItemWidth(panelW - 40.0f);
+            if (ImGui::SliderFloat("##Sensitivity", &mouseSensitivity, 0.0001f, 0.01f, "Sensitivity: %.4f")) {
+                getApp()->getConfig()["game"]["mouseSensitivity"] = mouseSensitivity;
+            }
+            ImGui::PopStyleColor(2);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // Display section
+            ImGui::SetWindowFontScale(1.4f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+            ImGui::Text("Display");
+            ImGui::PopStyleColor();
+            ImGui::Spacing();
+
+            ImGui::SetWindowFontScale(1.2f);
+            ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.1f, 0.25f, 0.9f));
+            if (ImGui::Checkbox(" Fullscreen Mode", &isFullscreen)) {
+                GLFWwindow* window = getApp()->getWindow();
+                if (isFullscreen) {
+                    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+                    glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+                } else {
+                    glfwSetWindowMonitor(window, nullptr, 100, 100, 1280, 720, 0);
+                }
+                getApp()->getConfig()["window"]["fullscreen"] = isFullscreen;
+            }
+            ImGui::PopStyleColor(2);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // Back button
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 120.0f) * 0.5f);
+            if (ImGui::Button("CLOSE", ImVec2(120, 35))) {
+                showSettings = false;
+            }
 
             ImGui::End();
             ImGui::PopStyleColor(2);
@@ -266,15 +362,13 @@ class Menustate: public our::State {
         }
 
         // ── Controls hint ──
-        float hintY = showSettings ? h * 0.96f : h * 0.88f;
+        float hintY = h * 0.92f;
         ImGui::SetNextWindowPos(ImVec2(w * 0.5f, hintY), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("##Hint", nullptr,
-            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-            ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("##Hint", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
-        ImGui::Text("Press SPACE to play  |  ESC to exit");
+        ImGui::Text("Arrows: Navigate | SPACE/ENTER: Select | ESC: Exit");
         ImGui::PopStyleColor();
         ImGui::End();
     }

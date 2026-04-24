@@ -16,7 +16,12 @@
 #include "level-exit.hpp"
 #include "room-portal.hpp"
 #include "light.hpp"
+<<<<<<< HEAD
 #include "dialogue.hpp"
+=======
+#include "animator-component.hpp"
+#include "skinned-mesh-renderer.hpp"
+>>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 
 namespace our {
 
@@ -58,6 +63,10 @@ namespace our {
             component = entity->addComponent<LightComponent>();
         } else if (type == DialogueTriggerComponent::getID()) {
             component = entity->addComponent<DialogueTriggerComponent>();
+        } else if (type == AnimatorComponent::getID()) {
+            component = entity->addComponent<AnimatorComponent>();
+        } else if (type == SkinnedMeshRendererComponent::getID()) {
+            component = entity->addComponent<SkinnedMeshRendererComponent>();
         }
         if(component) component->deserialize(data);
     }

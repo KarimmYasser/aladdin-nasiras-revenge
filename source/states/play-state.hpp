@@ -16,8 +16,13 @@
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
+<<<<<<< HEAD
 #include <systems/dialogue.hpp>
+=======
+#include <systems/projectile.hpp>
+>>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 #include <audio/audio-system.hpp>
+#include <systems/animation-system.hpp>
 
 #include <imgui.h>
 #include <sstream>
@@ -42,7 +47,12 @@ class Playstate: public our::State {
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
+<<<<<<< HEAD
     our::DialogueSystem dialogueSystem;
+=======
+    our::ProjectileSystem projectileSystem;
+    our::AnimationSystem animationSystem;
+>>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -72,7 +82,11 @@ class Playstate: public our::State {
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
-        if(config.contains("assets")){
+        // Skip if they were already loaded by the LoadingState
+        if(config.contains("assets") && 
+           our::AssetLoader<our::Mesh>::empty() && 
+           our::AssetLoader<our::ShaderProgram>::empty() &&
+           our::AssetLoader<our::Texture2D>::empty()){
             our::deserializeAllAssets(config["assets"]);
         }
         // If we have a world in the scene config, we use it to populate our world
@@ -210,6 +224,8 @@ class Playstate: public our::State {
             hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
             checkpointSystem.update(&world, &physicsSystem);
             levelExitSystem.update(&world);
+            // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
+            animationSystem.update(&world, (float)deltaTime);
         }
         // Always render so the frozen scene stays on screen behind the
         // dialogue box.
@@ -426,6 +442,27 @@ class Playstate: public our::State {
         ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
+
+        // ═══════════════════════════════════════════════════════
+        //  AIMING CROSSHAIR
+        // ═══════════════════════════════════════════════════════
+        if (aladdin && aladdin->isAiming) {
+            ImVec2 center = ImVec2(screenWidth * 0.5f + aladdin->aimOffset.x, screenHeight * 0.5f + aladdin->aimOffset.y);
+            float size = 20.0f;
+            float thickness = 2.0f;
+            ImU32 color = IM_COL32(255, 255, 255, 220); 
+            
+            auto drawList = ImGui::GetForegroundDrawList();
+            // Horizontal line
+            drawList->AddLine(ImVec2(center.x - size, center.y), ImVec2(center.x + size, center.y), color, thickness);
+            // Vertical line
+            drawList->AddLine(ImVec2(center.x, center.y - size), ImVec2(center.x, center.y + size), color, thickness);
+            // Center Dot
+            drawList->AddCircleFilled(center, 3.0f, color);
+            
+            // Add a small shadow/outline to make it visible on bright backgrounds
+            drawList->AddCircle(center, 3.5f, IM_COL32(0, 0, 0, 150), 12, 1.0f);
+        }
 
         // For debugging only (TODO: remove or disable in production builds)
         aladdinController.onImmediateGui(&world);
