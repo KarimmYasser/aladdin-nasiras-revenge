@@ -169,11 +169,6 @@ namespace our {
                     while (aladdin->facingYaw >  glm::pi<float>()) aladdin->facingYaw -= 2.0f * glm::pi<float>();
                     while (aladdin->facingYaw < -glm::pi<float>()) aladdin->facingYaw += 2.0f * glm::pi<float>();
                 }
-                // Apply visual rotation — facingYaw directly, no 180° offset
-                entity->localTransform.rotation.x = 0.0f;
-                entity->localTransform.rotation.y = aladdin->facingYaw;
-                entity->localTransform.rotation.z = 0.0f;
-
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
 
@@ -225,7 +220,7 @@ namespace our {
                     }
 
                     physicsWorld.setLinearVelocity(entity, targetVelocity);
-                    aladdin->velocity = targetVelocity;
+                    // We will update aladdin->velocity in postPhysicsUpdate from the actual RB velocity
                 } else {
                     // Fallback for scenes that still do not have a rigid body setup yet
                     if(hasMoveInput) {
@@ -355,6 +350,8 @@ namespace our {
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if (!aladdin || aladdin->lives <= 0) continue;
 
+                auto* rbComp = entity->getComponent<RigidBodyComponent>();
+
                 Entity* swordHitbox = getOrCreateSwordHitbox(world, entity);
                 updateSwordHitboxTransform(entity, swordHitbox);
 
@@ -451,9 +448,11 @@ namespace our {
                     }
                 }
 
-                // ── Animation state machine ────────────────────────────────────────
-                // Drive whichever animation component is present on this entity.
-                // Prefer SkinnedMeshRendererComponent; fall back to the legacy AnimatorComponent.
+                // ── 5. Sync State & Animation (Moved here to use actual physics velocity) ──
+                if (rbComp && rbComp->bodyHandle) {
+                    aladdin->velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                }
+
                 Animator* animPtr = nullptr;
                 if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>())
                     animPtr = &smr->animator;
@@ -463,31 +462,45 @@ namespace our {
                 if (animPtr) {
                     std::string targetClip = "idle";
                     bool loop = true;
+                    float playbackSpeed = 1.0f;
+
+                    // Use ACTUAL horizontal speed from the physics body
+                    float horizontalSpeed = glm::length(glm::vec2(aladdin->velocity.x, aladdin->velocity.z));
 
                     if (aladdin->isAttacking) {
                         targetClip = "kick";
                         loop = false;
-                        animPtr->play(targetClip, loop, 1.6f); // Faster kick
-                        continue; // Skip the default play call below
+                        playbackSpeed = 1.8f; 
                     } else if (!aladdin->isGrounded) {
                         targetClip = "jump";
                         loop = false;
-                    } else if (glm::length(glm::vec2(aladdin->velocity.x,
-                                                      aladdin->velocity.z)) > 0.1f) {
+                        playbackSpeed = 1.0f;
+                        animPtr->setSuppressRootMotion(true); // Prevent baked vertical motion
+                    } else if (horizontalSpeed > 0.5f) { 
                         targetClip = "walk";
+                        // Balanced divisor for speed 11.0
+                        playbackSpeed = horizontalSpeed / 8.5f; 
                     }
 
-                    // Fallback: If target clip isn't found, try "walk", then first available clip
+                    if (aladdin->isGrounded) {
+                        animPtr->setSuppressRootMotion(false); // Reset when on ground
+                    }
+
                     if (!animPtr->hasClip(targetClip)) {
-                        if (animPtr->hasClip("walk")) {
-                            targetClip = "walk";
-                        } else if (!animPtr->getClips().empty()) {
-                            targetClip = animPtr->getClips().begin()->first;
-                        }
+                        if (animPtr->hasClip("walk") && targetClip == "idle") targetClip = "walk";
+                        else if (!animPtr->getClips().empty()) targetClip = animPtr->getClips().begin()->first;
                     }
 
-                    animPtr->play(targetClip, loop);
+                    float currentSpeed = animPtr->getPlaybackSpeed();
+                    if (animPtr->currentClipName() != targetClip || std::abs(currentSpeed - playbackSpeed) > 0.05f) {
+                        animPtr->play(targetClip, loop, playbackSpeed);
+                    }
                 }
+
+                // ── Visual Rotation Sync (Moved here to prevent jitter) ──
+                entity->localTransform.rotation.x = 0.0f;
+                entity->localTransform.rotation.y = aladdin->facingYaw;
+                entity->localTransform.rotation.z = 0.0f;
 
             }
             updateFollowCamera(world, physicsSystem, deltaTime);

@@ -46,7 +46,15 @@ namespace our {
         // Returns the list of all available clips.
         const std::unordered_map<std::string, AnimationClip>& getClips() const { return mClips; }
 
+        // Set/Get the playback speed multiplier
+        void setPlaybackSpeed(float speed) { mPlaybackSpeed = speed; }
+        float getPlaybackSpeed() const { return mPlaybackSpeed; }
+
+        // Root motion suppression (prevents double-jumping if animation has baked movement)
+        void setSuppressRootMotion(bool suppress) { mSuppressRootMotion = suppress; }
+
     private:
+        bool mSuppressRootMotion = false;
         // Scene hierarchy
         NodeData  mRoot;
         glm::mat4 mGlobalInverse{1.f};
@@ -64,6 +72,12 @@ namespace our {
         bool                 mLoop          = true;
         float                mPlaybackSpeed = 1.0f;
 
+        // Crossfade state
+        const AnimationClip* mPrevious = nullptr;
+        float                mPreviousTime = 0.f;
+        float                mCrossFadeTime = 0.f;
+        float                mCrossFadeDuration = 0.2f;
+
         // Output – MAX_BONES identity matrices initially
         std::vector<glm::mat4> mFinalMatrices;
 
@@ -71,7 +85,7 @@ namespace our {
         void traverse(const NodeData& node, const glm::mat4& parentTransform);
 
         // Returns the BoneChannel for a given node name in the current clip, or nullptr.
-        const BoneChannel* findChannel(const std::string& name) const;
+        const BoneChannel* findChannel(const std::string& name, const AnimationClip* clip = nullptr) const;
 
         // Key-frame interpolation helpers
         glm::vec3 interpPosition(const BoneChannel& ch, float t) const;

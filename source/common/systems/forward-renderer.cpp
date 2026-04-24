@@ -268,6 +268,21 @@ namespace our {
                 command.mesh->draw();
             }
 
+            // Also render skinned meshes into the shadow map
+            for (auto entity : world->getEntities()) {
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    if (!smr->skinnedMesh || !smr->visible) continue;
+                    glm::mat4 model = entity->getLocalToWorldMatrix();
+                    shadowShader->set("light_space_matrix", lightSpaceMatrix);
+                    shadowShader->set("model", model);
+                    
+                    // Note: This uses a non-skinned shadow shader for simplicity,
+                    // which casts a shadow based on the T-pose/mesh bounds.
+                    // For full animated shadows, a skinned shadow shader would be needed.
+                    smr->skinnedMesh->draw();
+                }
+            }
+
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
@@ -424,15 +439,6 @@ namespace our {
 
                     glm::mat4 model = entity->getLocalToWorldMatrix();
                     glm::mat3 nrm   = glm::mat3(glm::transpose(glm::inverse(model)));
-
-                    if (entity->name == "aladdin") {
-                        static int frameCount = 0;
-                        if (frameCount++ % 100 == 0) {
-                            std::cout << "[DIAG][ForwardRenderer] Rendering aladdin: pos=" << model[3][0] << "," << model[3][1] << "," << model[3][2] 
-                                      << " scale=" << glm::length(glm::vec3(model[0])) << " visible=" << smr->visible 
-                                      << " bones=" << smr->animator.getFinalBoneMatrices().size() << std::endl;
-                        }
-                    }
 
                     skinnedShader->set("transform",          VP * model);
                     skinnedShader->set("model",              model);

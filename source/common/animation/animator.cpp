@@ -17,18 +17,6 @@ namespace our {
         // Pre-fill with identity matrices so any un-animated bone is a no-op.
         int count = std::min(boneCount, MAX_BONES);
         mFinalMatrices.assign(count, glm::mat4(1.f));
-
-        // ── DIAGNOSTIC ─────────────────────────────────────────────
-        std::cout << "[DIAG][Animator::init]\n";
-        std::cout << "  boneCount=" << boneCount << "  allocated=" << count << "\n";
-        std::cout << "  boneMap ptr=" << (void*)boneMap
-                  << "  boneMap size=" << (boneMap ? boneMap->size() : 0) << "\n";
-        std::cout << "  rootNode name=\"" << mRoot.name << "\"  children=" << mRoot.children.size() << "\n";
-        std::cout << "  globalInverse[0][0]=" << mGlobalInverse[0][0]
-                  << "  [1][1]=" << mGlobalInverse[1][1]
-                  << "  [2][2]=" << mGlobalInverse[2][2]
-                  << "  [3][3]=" << mGlobalInverse[3][3] << "\n";
-        // ──────────────────────────────────────────────────
     }
 
     void Animator::loadClips(const std::vector<AnimationClip>& clips) {
@@ -37,21 +25,16 @@ namespace our {
     }
 
     void Animator::play(const std::string& name, bool loop, float speed) {
-        if (mCurrentName == name && mLoop == loop && mPlaybackSpeed == speed) return; // already playing
-
         auto it = mClips.find(name);
-        if (it == mClips.end()) {
-            std::cerr << "[DIAG][Animator::play] Clip NOT FOUND: \"" << name << "\"  totalClips=" << mClips.size() << "\n";
-            for (const auto& pair : mClips)
-                std::cerr << "  available: \"" << pair.first << "\"\n";
-            return;
-        }
+        if (it == mClips.end()) return;
 
-        std::cout << "[DIAG][Animator::play] Switching to \"" << name << "\"  dur=" << it->second.duration
-                  << "  tps=" << it->second.ticksPerSecond
-                  << "  channels=" << it->second.channels.size() << "\n";
-        // Only reset time when switching to a different clip
-        if (mCurrentName != name) mTime = 0.f;
+        // If switching to a new clip, start a crossfade
+        if (mCurrentName != name) {
+            mPrevious = mCurrent;
+            mPreviousTime = mTime;
+            mCrossFadeTime = 0.f;
+            mTime = 0.f;
+        }
 
         mCurrent     = &it->second;
         mCurrentName = name;
@@ -60,23 +43,10 @@ namespace our {
     }
 
     void Animator::update(float deltaTime) {
-        // ── DIAGNOSTIC: one-shot first-frame report ──────────────────────────────
-        static int updateCallCount = 0;
-        if (updateCallCount < 3) {
-            ++updateCallCount;
-            std::cout << "[DIAG][Animator::update] call#" << updateCallCount
-                      << "  mCurrent=" << (mCurrent ? "\"" + mCurrentName + "\"" : "null")
-                      << "  mBoneMap=" << (void*)mBoneMap
-                      << "  mBoneMap.size=" << (mBoneMap ? mBoneMap->size() : 0)
-                      << "  mFinalMatrices.size=" << mFinalMatrices.size()
-                      << "  mTime=" << mTime << "  dt=" << deltaTime << "\n";
-        }
-        // ────────────────────────────────────────────────────────────────────
         if (!mCurrent || !mBoneMap) return;
 
-        // Advance time in ticks
+        // Advance current time
         mTime += deltaTime * mCurrent->ticksPerSecond * mPlaybackSpeed;
-
         if (mLoop) {
             mTime = std::fmod(mTime, mCurrent->duration);
             if (mTime < 0.f) mTime += mCurrent->duration;
@@ -84,20 +54,24 @@ namespace our {
             mTime = std::min(mTime, mCurrent->duration);
         }
 
+        // Advance previous time (for blending)
+        if (mPrevious) {
+            mPreviousTime += deltaTime * mPrevious->ticksPerSecond * mPlaybackSpeed;
+            if (mLoop) { // Assuming same loop setting for simplicity during blend
+                mPreviousTime = std::fmod(mPreviousTime, mPrevious->duration);
+                if (mPreviousTime < 0.f) mPreviousTime += mPrevious->duration;
+            } else {
+                mPreviousTime = std::min(mPreviousTime, mPrevious->duration);
+            }
+
+            mCrossFadeTime += deltaTime;
+            if (mCrossFadeTime >= mCrossFadeDuration) {
+                mPrevious = nullptr;
+            }
+        }
+
         // Walk the node hierarchy to fill mFinalMatrices
         traverse(mRoot, glm::mat4(1.f));
-
-        // ── DIAGNOSTIC: sample first bone matrix after traverse ───────────────────
-        static int postTraverseCount = 0;
-        if (postTraverseCount < 2 && !mFinalMatrices.empty()) {
-            ++postTraverseCount;
-            const glm::mat4& m0 = mFinalMatrices[0];
-            std::cout << "[DIAG][Animator::update] bone[0] matrix diagonal="
-                      << m0[0][0] <<","<< m0[1][1] <<","<< m0[2][2] <<","<< m0[3][3] << "\n";
-            std::cout << "  bone[0] col3(translation)="
-                      << m0[3][0] <<","<< m0[3][1] <<","<< m0[3][2] << "\n";
-        }
-        // ────────────────────────────────────────────────────────────────────
     }
 
     // -----------------------------------------------------------------------
@@ -107,11 +81,43 @@ namespace our {
         glm::mat4 nodeTransform = node.defaultTransform;
 
         // If the current clip has a channel for this node, use interpolated TRS.
-        const BoneChannel* ch = findChannel(node.name);
-        if (ch) {
-            glm::vec3 pos   = interpPosition(*ch, mTime);
-            glm::quat rot   = interpRotation(*ch, mTime);
-            glm::vec3 scale = interpScale   (*ch, mTime);
+        const BoneChannel* chCur = findChannel(node.name);
+        const BoneChannel* chPre = mPrevious ? findChannel(node.name, mPrevious) : nullptr;
+
+        if (chCur || chPre) {
+            glm::vec3 pos, scale;
+            glm::quat rot;
+
+            if (chCur && chPre) {
+                // Blend between previous and current
+                float alpha = glm::clamp(mCrossFadeTime / mCrossFadeDuration, 0.0f, 1.0f);
+                pos   = glm::mix(interpPosition(*chPre, mPreviousTime), interpPosition(*chCur, mTime), alpha);
+                rot   = glm::slerp(interpRotation(*chPre, mPreviousTime), interpRotation(*chCur, mTime), alpha);
+                scale = glm::mix(interpScale(*chPre, mPreviousTime), interpScale(*chCur, mTime), alpha);
+            } else if (chCur) {
+                pos   = interpPosition(*chCur, mTime);
+                rot   = interpRotation(*chCur, mTime);
+                scale = interpScale(*chCur, mTime);
+            } else {
+                pos   = interpPosition(*chPre, mPreviousTime);
+                rot   = interpRotation(*chPre, mPreviousTime);
+                scale = interpScale(*chPre, mPreviousTime);
+            }
+
+            // Suppress root motion (vertical translation) if requested
+            // Targets Root, Armature, and common "Hips/Pelvis" nodes where baked movement often lives.
+            if (mSuppressRootMotion) {
+                std::string lowerName = node.name;
+                for(auto &c : lowerName) c = std::tolower(c);
+                
+                if (node.name == mRoot.name || 
+                    lowerName.find("root") != std::string::npos || 
+                    lowerName.find("armature") != std::string::npos ||
+                    lowerName.find("hips") != std::string::npos ||
+                    lowerName.find("pelvis") != std::string::npos) {
+                    pos.y = 0.0f; // Lock vertical height
+                }
+            }
 
             nodeTransform = glm::translate(glm::mat4(1.f), pos)
                           * glm::mat4_cast(rot)
@@ -134,9 +140,10 @@ namespace our {
             traverse(child, globalTransform);
     }
 
-    const BoneChannel* Animator::findChannel(const std::string& name) const {
-        if (!mCurrent) return nullptr;
-        for (const auto& ch : mCurrent->channels)
+    const BoneChannel* Animator::findChannel(const std::string& name, const AnimationClip* clip) const {
+        const AnimationClip* target = clip ? clip : mCurrent;
+        if (!target) return nullptr;
+        for (const auto& ch : target->channels)
             if (ch.boneName == name) return &ch;
         return nullptr;
     }
