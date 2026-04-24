@@ -239,6 +239,22 @@ namespace our {
         }
     }
 
+    void PhysicsWorld::destroyRigidBody(Entity* entity) {
+        if (!physicsWorld || !entity) return;
+        auto* rbComp = entity->getComponent<RigidBodyComponent>();
+        if (rbComp && rbComp->bodyHandle) {
+            Logger::info("PhysicsWorld", "Destroying rigid body for entity '", entity->name, "'");
+            physicsWorld->destroyRigidBody(rbComp->bodyHandle);
+            rbComp->bodyHandle = nullptr;
+        }
+
+        auto* colliderComp = entity->getComponent<ColliderComponent>();
+        if (colliderComp) {
+            colliderComp->colliderHandle = nullptr;
+        }
+    }
+
+
 
     void PhysicsWorld::createCollider(Entity* entity, const ColliderDesc& desc) {
         if (!physicsWorld) {
@@ -449,7 +465,16 @@ namespace our {
     }
 
     bool PhysicsWorld::hasAnyInteraction(Entity* a, Entity* b, const bool includeStay) const {
-        return hasContactEvent(a, b, includeStay) || hasTriggerEvent(a, b, includeStay);
+        return hasContactEvent(a, b, includeStay) || hasTriggerEvent(a, b, includeStay) || testOverlap(a, b);
+    }
+    
+    bool PhysicsWorld::testOverlap(Entity* a, Entity* b) const {
+        if (!physicsWorld || !a || !b) return false;
+        auto* rbA = a->getComponent<RigidBodyComponent>();
+        auto* rbB = b->getComponent<RigidBodyComponent>();
+        if (!rbA || !rbB || !rbA->bodyHandle || !rbB->bodyHandle) return false;
+
+        return physicsWorld->testOverlap(rbA->bodyHandle, rbB->bodyHandle);
     }
 
     bool PhysicsWorld::isGrounded(Entity* entity, const float minUpDot) const {

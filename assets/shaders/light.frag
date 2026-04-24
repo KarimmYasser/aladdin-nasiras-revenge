@@ -55,7 +55,7 @@ uniform sampler2D shadow_map;
 uniform int       shadow_enabled;  // 0 = no shadows this frame, 1 = shadow map is valid
 
 // Compute the shadow factor for a directional-light shadow map.
-// Uses a 3x3 PCF kernel so shadow edges are soft rather than aliased.
+// Uses a 5x5 PCF kernel so shadow edges are soft rather than aliased.
 
 // light_space_pos — the fragment position in the light's clip space (from vertex shader)
 // N               — surface normal (world space, normalized)
@@ -73,20 +73,21 @@ float computeShadow(vec4 light_space_pos, vec3 N, vec3 L) {
 
     float current_depth = proj.z;
 
-    // to avoid "shadow acne" (self-shadowing noise due to limited depth precision).
-    float bias = max(0.05 * (1.0 - dot(N, L)), 0.005);
+    // To avoid "shadow acne" (self-shadowing noise due to limited depth precision).
+    // The bias is scaled by the slope of the surface relative to the light.
+    float bias = max(0.005 * (1.0 - dot(N, L)), 0.0005);
 
-    // PCF: sample the shadow map in a 3x3 neighbourhood and average the results.
+    // PCF: sample the shadow map in a 5x5 neighbourhood and average the results.
     // This produces a soft penumbra instead of a hard aliased edge.
     float shadow = 0.0;
     vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
+    for (int x = -2; x <= 2; x++) {
+        for (int y = -2; y <= 2; y++) {
             float closest_depth = texture(shadow_map, proj.xy + vec2(x, y) * texel_size).r;
             shadow += (current_depth - bias > closest_depth) ? 1.0 : 0.0;
         }
     }
-    return shadow / 9.0;
+    return shadow / 25.0;
 }
 
 // ---------------------------------------------------------------------------

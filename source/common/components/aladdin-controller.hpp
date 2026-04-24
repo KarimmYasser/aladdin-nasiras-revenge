@@ -67,6 +67,8 @@ namespace our {
         std::vector<Entity*> hitEntities;
         bool isThrowing = false;
         float throwTimer = 0.0f;
+        bool isAiming = false; // NEW: True when holding 'R'
+        glm::vec2 aimOffset = {0, 0}; // Offset for crosshair in pixels/units
 
         int coinCount = 0;
         int gemCount = 0;

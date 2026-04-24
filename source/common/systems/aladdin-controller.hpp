@@ -15,6 +15,7 @@
 #include "../application.hpp"
 #include "../physics/physics-system.hpp"
 #include "../audio/audio-system.hpp"
+#include "../components/projectile.hpp"
 #include <imgui.h>
 
 #include <glm/glm.hpp>
@@ -67,7 +68,7 @@ namespace our {
 
             auto* collider = hitbox->addComponent<ColliderComponent>();
             collider->shape = ColliderShape::Box;
-            collider->halfExtents = glm::vec3(0.5f, 0.6f, 0.9f);
+            collider->halfExtents = glm::vec3(0.8f, 1.2f, 1.2f);
             collider->isTrigger = true;
 
             swordHitboxes[player] = hitbox;
@@ -77,7 +78,7 @@ namespace our {
         static void updateSwordHitboxTransform(Entity* player, Entity* swordHitbox) {
             const float yaw = player->localTransform.rotation.y;
             const glm::vec3 forward = glm::normalize(glm::vec3(glm::sin(yaw), 0.0f, glm::cos(yaw)));
-            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.9f, 0.0f);
+            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.0f, 0.0f);
 
             swordHitbox->localTransform.position = player->localTransform.position + offset;
             swordHitbox->localTransform.rotation = glm::vec3(0.0f, yaw, 0.0f);
@@ -108,16 +109,32 @@ namespace our {
                 auto& keyboard = app->getKeyboard();
                 auto& mouse = app->getMouse();
 
-                // ─── 0. Mouse orbit: update camera orbit yaw/pitch ───
-                if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+                // ─── 0. Mouse orbit or Crosshair Move ───
+                if (aladdin->isAiming) {
+                    // Hide OS cursor but keep tracking active
+                    glfwSetInputMode(app->getWindow(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                    
+                    // Sync our aimOffset with the actual mouse position relative to center
+                    glm::vec2 mousePos = mouse.getMousePosition();
+                    glm::vec2 windowSize = app->getWindowSize();
+                    aladdin->aimOffset.x = mousePos.x - (windowSize.x * 0.5f);
+                    aladdin->aimOffset.y = mousePos.y - (windowSize.y * 0.5f);
+                } else if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+                    // Lock cursor for orbit
+                    glfwSetInputMode(app->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    
+                    // Normal camera rotation
                     glm::vec2 delta = mouse.getMouseDelta();
                     aladdin->cameraOrbitYaw   -= delta.x * aladdin->mouseSensitivity;
                     aladdin->cameraOrbitPitch -= delta.y * aladdin->mouseSensitivity;
-                    // Clamp pitch to avoid flipping
                     aladdin->cameraOrbitPitch = glm::clamp(
                         aladdin->cameraOrbitPitch,
                         -glm::half_pi<float>() * 0.85f,
                          glm::half_pi<float>() * 0.35f);
+                } else {
+                    // Default state: ensure cursor is locked if not aiming/orbiting 
+                    // (depending on game design, but usually for TPS it stays locked)
+                    glfwSetInputMode(app->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 }
 
                 // ─── 1. Camera-relative movement from WASD ───
@@ -232,13 +249,84 @@ namespace our {
                 }
 
                 // 5. Handle Ranged Attack (Apple Throw)
-                if(keyboard.justPressed(GLFW_KEY_R) && !aladdin->isThrowing && aladdin->appleCount > 0) {
+                if(keyboard.isPressed(GLFW_KEY_R) && aladdin->appleCount > 0) {
+                    if (!aladdin->isAiming) {
+                        aladdin->isAiming = true;
+                        // Center the actual mouse cursor at start of aiming
+                        glm::vec2 windowSize = app->getWindowSize();
+                        glfwSetCursorPos(app->getWindow(), windowSize.x * 0.5, windowSize.y * 0.5);
+                        aladdin->aimOffset = {0, 0};
+                    }
+                } else if (aladdin->isAiming) {
+                    // KEY RELEASED: Throw the apple!
+                    aladdin->isAiming = false;
                     aladdin->isThrowing = true;
-                    aladdin->throwTimer = 0.3f; // Throw animation for 0.3 seconds
+                    aladdin->throwTimer = 0.3f;
                     aladdin->appleCount--;
-                    // TODO (Animation): Trigger the "Throw" animation (Member 1)
-                    // TODO (Gameplay): Implement an actual Projectile System (Member 3 - future phase).
-                    // This should spawn a new entity with an Apple mesh, Collider, and Velocity.
+                    
+                    // --- SPAWN PHYSICAL APPLE ---
+                    Entity* apple = world->add();
+                    apple->name = "ThrownApple";
+                    
+                    // Find the camera's forward direction to aim correctly
+                    Entity* cameraEntity = nullptr;
+                    for (auto e : world->getEntities()) {
+                        if (e->getComponent<CameraComponent>()) {
+                            cameraEntity = e;
+                            break;
+                        }
+                    }
+
+                    // Calculate direction: from camera forward + crosshair offset
+                    glm::vec3 throwDir;
+                    if (cameraEntity) {
+                        const float cyaw = cameraEntity->localTransform.rotation.y;
+                        const float cpitch = cameraEntity->localTransform.rotation.x;
+                        
+                        // Camera base vectors
+                        glm::vec3 camFwd = glm::normalize(glm::vec3(
+                            -glm::cos(cpitch) * glm::sin(cyaw),
+                             glm::sin(cpitch),
+                            -glm::cos(cpitch) * glm::cos(cyaw)
+                        ));
+                        glm::vec3 camRight = glm::normalize(glm::cross(camFwd, glm::vec3(0, 1, 0)));
+                        glm::vec3 camUp = glm::normalize(glm::cross(camRight, camFwd));
+
+                        // Apply aim offset (normalized by screen sensitivity)
+                        float sens = 0.002f; 
+                        throwDir = glm::normalize(camFwd + (aladdin->aimOffset.x * sens * camRight) - (aladdin->aimOffset.y * sens * camUp));
+                    } else {
+                        const float pyaw = aladdin->facingYaw;
+                        throwDir = glm::normalize(glm::vec3(-glm::sin(pyaw), 0.2f, -glm::cos(pyaw)));
+                    }
+
+                    // Position at Aladdin's hands
+                    const float pyaw = aladdin->facingYaw;
+                    const glm::vec3 playerFwd = glm::vec3(-glm::sin(pyaw), 0.0f, -glm::cos(pyaw));
+                    apple->localTransform.position = entity->localTransform.position + glm::vec3(0, 1.3f, 0) + playerFwd * 0.8f;
+                    apple->localTransform.scale = glm::vec3(1.2f);
+                    
+                    auto* mr = apple->addComponent<MeshRendererComponent>();
+                    mr->mesh = AssetLoader<Mesh>::get("apple_mesh");
+                    mr->material = AssetLoader<Material>::get("lit-apple");
+                    
+                    auto* projectile = apple->addComponent<ProjectileComponent>();
+                    projectile->owner = entity;
+                    projectile->damage = 34.0f;
+                    
+                    auto* rb = apple->addComponent<RigidBodyComponent>();
+                    rb->type = RigidBodyType::Dynamic;
+                    rb->useGravity = true;
+                    
+                    auto* col = apple->addComponent<ColliderComponent>();
+                    col->shape = ColliderShape::Sphere;
+                    col->radius = 0.25f;
+                    col->isTrigger = true;
+
+                    // Set Initial Velocity in aiming direction
+                    glm::vec3 throwVel = throwDir * 25.0f; // Fast throw
+                    if (throwVel.y < 3.0f) throwVel.y += 3.0f; // Slight upward arc
+                    rb->velocity = throwVel;
                 }
 
                 if(aladdin->isThrowing) {
@@ -246,10 +334,6 @@ namespace our {
                     if(aladdin->throwTimer <= 0.0f) {
                         aladdin->isThrowing = false;
                     }
-                    
-                    // Simple Throw Test: Log when an apple is "thrown" towards a target
-                    // TODO (Physics/Gameplay): In the real system, the spawned projectile
-                    // will handle its own collision with enemies independently.
                 }
 
             }
@@ -260,6 +344,8 @@ namespace our {
          * Handles sword hits and third-person camera follow.
          */
         void postPhysicsUpdate(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
+            if (!world) return;
+
             for (auto entity : world->getEntities()) {
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if (!aladdin || aladdin->lives <= 0) continue;
@@ -278,84 +364,84 @@ namespace our {
                         }
                         if(!swordOverlap) continue;
 
-                        // Check for Target objects (from original mock)
-                        if(other->name.find("Target") != std::string::npos){
-                            if (wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            markHitInCurrentAttack(aladdin, other);
-                            std::cout << "Sword Hit: " << other->name << "!" << std::endl;
-                            glm::vec3 dir = other->localTransform.position - entity->localTransform.position;
-                            if(glm::length(dir) > 0.0001f) {
-                                other->localTransform.position += glm::normalize(dir) * 0.1f;
-                            }
-                        }
-
-                        // Check for Real Enemies
+                        // Check for Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
                             if(wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            enemy->health -= 25; // Aladdin deals 25 damage per hit
-                            markHitInCurrentAttack(aladdin, other); // Mark this enemy as hit
-                            std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
-
+                            enemy->health -= 25;
+                            markHitInCurrentAttack(aladdin, other);
                             if(enemy->health <= 0) {
                                 enemy->currentState = EnemyComponent::State::DEAD;
-                                std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
                                 AudioSystem::instance().playSound("assets/audio/death.wav");
                             } else {
                                 AudioSystem::instance().playSound("assets/audio/hit.wav");
                             }
                         }
 
-                        // Check for Breakable Props (Pots)
+                        // Check for Breakable Props
                         BreakableComponent* breakable = other->getComponent<BreakableComponent>();
                         if(breakable) {
                             if(wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            markHitInCurrentAttack(aladdin, other); // Mark this breakable as hit
-                            std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
-
-                            // Spawn multiple loot items if defined
+                            markHitInCurrentAttack(aladdin, other);
+                            
+                            struct LootRequest {
+                                glm::vec3 position;
+                                LootEntry entry;
+                            };
+                            std::vector<LootRequest> requests;
                             for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
-                                const auto& lootEntry = breakable->lootItems[i];
-
-                                Entity* loot = world->add();
-                                loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
-
-                                // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
                                 float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
-                                float radius = 3.5f; // Increased distance from the center for more scattering
-                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
+                                float radius = 4.0f; // Wider scatter to prevent instant pickup
+                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 1.2f, glm::sin(angle) * radius);
+                                requests.push_back({other->localTransform.position + scatterOffset, breakable->lootItems[i]});
+                            }
 
-                                loot->localTransform.position = other->localTransform.position + scatterOffset;
-
-                                // Add MeshRenderer for loot
+                            for(const auto& req : requests) {
+                                Entity* loot = world->add();
+                                loot->name = "Dropped_" + req.entry.type;
+                                loot->localTransform.position = req.position;
+                                
                                 auto mr = loot->addComponent<MeshRendererComponent>();
-                                mr->mesh = AssetLoader<Mesh>::get("cube");
-                                mr->material = AssetLoader<Material>::get("loot_mat");
-
-                                    // Add Collectible component
-                                    auto coll = loot->addComponent<CollectibleComponent>();
-                                    if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
-                                    else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
-                                    else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
-                                    coll->value = lootEntry.value;
-
-                                    // Add physics trigger so collectible system can detect pickup
-                                    auto rb = loot->addComponent<RigidBodyComponent>();
-                                    rb->type = RigidBodyType::Static;
-                                    rb->mass = 0.0f;
-                                    rb->useGravity = false;
-
-                                    auto lootCollider = loot->addComponent<ColliderComponent>();
-                                    lootCollider->shape = ColliderShape::Sphere;
-                                    lootCollider->radius = 0.5f;
-                                    lootCollider->isTrigger = true;
+                                auto coll = loot->addComponent<CollectibleComponent>();
+                                coll->pickupDelay = 0.6f; // Delay pickup so they can be seen spawning
+                                
+                                if(req.entry.type == "coin") {
+                                    mr->mesh = AssetLoader<Mesh>::get("coin_mesh");
+                                    mr->material = AssetLoader<Material>::get("coin-mat");
+                                    loot->localTransform.scale = glm::vec3(4.6f);
+                                    coll->type = CollectibleComponent::Type::COIN;
+                                } else if(req.entry.type == "apple") {
+                                    mr->mesh = AssetLoader<Mesh>::get("apple_mesh");
+                                    mr->material = AssetLoader<Material>::get("lit-apple");
+                                    loot->localTransform.scale = glm::vec3(1.3f);
+                                    coll->type = CollectibleComponent::Type::APPLE;
+                                } else if(req.entry.type == "health") {
+                                    mr->mesh = AssetLoader<Mesh>::get("health_bottle_mesh");
+                                    mr->material = AssetLoader<Material>::get("health-bottle-mat");
+                                    loot->localTransform.scale = glm::vec3(8.0f);
+                                    coll->type = CollectibleComponent::Type::HEALTH;
+                                } else {
+                                    // Default/Gem case
+                                    mr->mesh = AssetLoader<Mesh>::get("cube");
+                                    mr->material = AssetLoader<Material>::get("coin-mat");
+                                    loot->localTransform.scale = glm::vec3(0.5f);
+                                    coll->type = CollectibleComponent::Type::GEM;
                                 }
+                                coll->value = req.entry.value;
 
-                            // Mark the pot for removal
+                                auto rb = loot->addComponent<RigidBodyComponent>();
+                                rb->type = RigidBodyType::Static;
+                                auto lootCollider = loot->addComponent<ColliderComponent>();
+                                lootCollider->shape = ColliderShape::Sphere;
+                                lootCollider->radius = 0.5f;
+                                lootCollider->isTrigger = true;
+                            }
+                            // Mark the pot for removal and destroy its physics body immediately
+                            if (physicsSystem) {
+                                physicsSystem->getPhysicsWorld().destroyRigidBody(other);
+                            }
                             world->markForRemoval(other);
+                            AudioSystem::instance().playSound("assets/audio/potBreak.mp3");
                         }
                     }
                 }

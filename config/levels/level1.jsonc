@@ -33,7 +33,8 @@
                 "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
                 "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png"
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "health_bottle_tex": "assets/models/Health Bottle/Texture/Bottle.png"
             },
             "meshes": {
                 "cube": "assets/models/cube.obj",
@@ -43,7 +44,8 @@
                 "apple_mesh": "assets/models/Apple/apple.obj",
                 "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj"
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "health_bottle_mesh": "assets/models/Health Bottle/Health Bottle.obj"
             },
             "samplers": {
                 "default": {},
@@ -110,6 +112,15 @@
                     "sampler": "default",
                     "shininess": 40.0,
                     "ambient": 0.3
+                },
+                "health-bottle-mat": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "health_bottle_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.4
                 },
                 "lit-pot": {
                     "type": "lit",
@@ -377,26 +388,31 @@
                 ]
             },
 
-            { "name": "pot-a", "position": [-6, 0, -5], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-a", "position": [-6, 0, -5], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
-                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "health", "value": 25 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
                 ] },
-            { "name": "pot-b", "position": [5, 0, 6], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-b", "position": [5, 0, 6], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
                     { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
                 ] },
-            { "name": "pot-c", "position": [-4, 0, 7], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-c", "position": [-4, 0, 7], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
-                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
+                ] },
+            { "name": "h1", "position": [3, 1.2, 3], "rotation": [0, 0, 0], "scale": [8.0, 8.0, 8.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "health_bottle_mesh", "material": "health-bottle-mat" },
+                    { "type": "Collectible", "collectibleType": "health", "value": 25, "rotationSpeed": 2.0, "bobbingHeight": 0.15 }
                 ] },
 
             { "name": "c1", "position": [-7, 0.65, 2], "rotation": [0, 20, 0], "scale": [4.6, 4.6, 4.6],

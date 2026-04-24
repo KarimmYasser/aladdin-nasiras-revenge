@@ -16,6 +16,7 @@
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
+#include <systems/projectile.hpp>
 #include <audio/audio-system.hpp>
 #include <systems/animation-system.hpp>
 
@@ -42,6 +43,7 @@ class Playstate: public our::State {
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
+    our::ProjectileSystem projectileSystem;
     our::AnimationSystem animationSystem;
 
     // -- Game Scoring State --
@@ -178,6 +180,7 @@ class Playstate: public our::State {
         aladdinController.update(&world, &physicsSystem, (float)deltaTime);
         enemySystem.update(&world, &physicsSystem, (float)deltaTime);
         physicsSystem.update(&world, (float)deltaTime);
+        projectileSystem.update(&world, &physicsSystem, (float)deltaTime);
         aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
@@ -394,6 +397,27 @@ class Playstate: public our::State {
         ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
+
+        // ═══════════════════════════════════════════════════════
+        //  AIMING CROSSHAIR
+        // ═══════════════════════════════════════════════════════
+        if (aladdin && aladdin->isAiming) {
+            ImVec2 center = ImVec2(screenWidth * 0.5f + aladdin->aimOffset.x, screenHeight * 0.5f + aladdin->aimOffset.y);
+            float size = 20.0f;
+            float thickness = 2.0f;
+            ImU32 color = IM_COL32(255, 255, 255, 220); 
+            
+            auto drawList = ImGui::GetForegroundDrawList();
+            // Horizontal line
+            drawList->AddLine(ImVec2(center.x - size, center.y), ImVec2(center.x + size, center.y), color, thickness);
+            // Vertical line
+            drawList->AddLine(ImVec2(center.x, center.y - size), ImVec2(center.x, center.y + size), color, thickness);
+            // Center Dot
+            drawList->AddCircleFilled(center, 3.0f, color);
+            
+            // Add a small shadow/outline to make it visible on bright backgrounds
+            drawList->AddCircle(center, 3.5f, IM_COL32(0, 0, 0, 150), 12, 1.0f);
+        }
 
         // For debugging only (TODO: remove or disable in production builds)
         aladdinController.onImmediateGui(&world);
