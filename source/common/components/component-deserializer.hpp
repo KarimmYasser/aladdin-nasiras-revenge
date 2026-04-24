@@ -16,12 +16,9 @@
 #include "level-exit.hpp"
 #include "room-portal.hpp"
 #include "light.hpp"
-<<<<<<< HEAD
 #include "dialogue.hpp"
-=======
 #include "animator-component.hpp"
 #include "skinned-mesh-renderer.hpp"
->>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 
 namespace our {
 
