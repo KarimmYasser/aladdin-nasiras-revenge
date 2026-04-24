@@ -16,11 +16,8 @@
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
-<<<<<<< HEAD
 #include <systems/dialogue.hpp>
-=======
 #include <systems/projectile.hpp>
->>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 #include <audio/audio-system.hpp>
 #include <systems/animation-system.hpp>
 
@@ -47,12 +44,9 @@ class Playstate: public our::State {
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
-<<<<<<< HEAD
     our::DialogueSystem dialogueSystem;
-=======
     our::ProjectileSystem projectileSystem;
     our::AnimationSystem animationSystem;
->>>>>>> 4a847de39fd3e19b729477589b0a2fcf2b99d846
 
     // -- Game Scoring State --
     int coinsCollected = 0;
