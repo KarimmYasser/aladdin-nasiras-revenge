@@ -106,6 +106,11 @@ namespace our {
 
                 if(aladdin->lives <= 0) continue;
 
+                // Sync sensitivity with global settings
+                if (app->getConfig().contains("game")) {
+                    aladdin->mouseSensitivity = app->getConfig()["game"].value("mouseSensitivity", aladdin->mouseSensitivity);
+                }
+
                 auto& keyboard = app->getKeyboard();
                 auto& mouse = app->getMouse();
 

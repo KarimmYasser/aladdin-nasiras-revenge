@@ -121,6 +121,11 @@ namespace our {
             if (initialized) ma_engine_set_volume(&engine, vol);
         }
 
+        float getMasterVolume() {
+            if (initialized) return ma_engine_get_volume(&engine);
+            return 1.0f;
+        }
+
         bool isInitialized() const { return initialized; }
 
     private:
