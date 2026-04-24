@@ -212,6 +212,7 @@ class Playstate: public our::State {
             aladdinController.update(&world, &physicsSystem, (float)deltaTime);
             enemySystem.update(&world, &physicsSystem, (float)deltaTime);
             physicsSystem.update(&world, (float)deltaTime);
+            projectileSystem.update(&world, &physicsSystem, (float)deltaTime);
             aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
             cameraController.update(&world, (float)deltaTime);
             collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
