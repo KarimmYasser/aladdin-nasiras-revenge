@@ -66,7 +66,7 @@ namespace our {
 
             auto* collider = hitbox->addComponent<ColliderComponent>();
             collider->shape = ColliderShape::Box;
-            collider->halfExtents = glm::vec3(0.5f, 0.6f, 0.9f);
+            collider->halfExtents = glm::vec3(0.8f, 1.2f, 1.2f);
             collider->isTrigger = true;
 
             swordHitboxes[player] = hitbox;
@@ -76,7 +76,7 @@ namespace our {
         static void updateSwordHitboxTransform(Entity* player, Entity* swordHitbox) {
             const float yaw = player->localTransform.rotation.y;
             const glm::vec3 forward = glm::normalize(glm::vec3(glm::sin(yaw), 0.0f, glm::cos(yaw)));
-            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.9f, 0.0f);
+            const glm::vec3 offset = forward * 1.1f + glm::vec3(0.0f, 0.0f, 0.0f);
 
             swordHitbox->localTransform.position = player->localTransform.position + offset;
             swordHitbox->localTransform.rotation = glm::vec3(0.0f, yaw, 0.0f);
@@ -337,6 +337,8 @@ namespace our {
          * Handles sword hits and third-person camera follow.
          */
         void postPhysicsUpdate(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
+            if (!world) return;
+
             for (auto entity : world->getEntities()) {
                 AladdinControllerComponent* aladdin = entity->getComponent<AladdinControllerComponent>();
                 if (!aladdin || aladdin->lives <= 0) continue;
@@ -355,88 +357,82 @@ namespace our {
                         }
                         if(!swordOverlap) continue;
 
-                        // Check for Target objects (from original mock)
-                        if(other->name.find("Target") != std::string::npos){
-                            if (wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            markHitInCurrentAttack(aladdin, other);
-                            std::cout << "Sword Hit: " << other->name << "!" << std::endl;
-                            glm::vec3 dir = other->localTransform.position - entity->localTransform.position;
-                            if(glm::length(dir) > 0.0001f) {
-                                other->localTransform.position += glm::normalize(dir) * 0.1f;
-                            }
-                        }
-
-                        // Check for Real Enemies
+                        // Check for Enemies
                         EnemyComponent* enemy = other->getComponent<EnemyComponent>();
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
                             if(wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            enemy->health -= 25; // Aladdin deals 25 damage per hit
-                            markHitInCurrentAttack(aladdin, other); // Mark this enemy as hit
-                            std::cout << "[AladdinSystem] Hit " << other->name << "! Enemy Health: " << enemy->health << std::endl;
-
+                            enemy->health -= 25;
+                            markHitInCurrentAttack(aladdin, other);
                             if(enemy->health <= 0) {
                                 enemy->currentState = EnemyComponent::State::DEAD;
-                                std::cout << "[AladdinSystem] " << other->name << " defeated!" << std::endl;
                                 AudioSystem::instance().playSound("assets/audio/death.wav");
                             } else {
                                 AudioSystem::instance().playSound("assets/audio/hit.wav");
                             }
                         }
 
-                        // Check for Breakable Props (Pots)
+                        // Check for Breakable Props
                         BreakableComponent* breakable = other->getComponent<BreakableComponent>();
                         if(breakable) {
                             if(wasHitInCurrentAttack(aladdin, other)) continue;
-
-                            markHitInCurrentAttack(aladdin, other); // Mark this breakable as hit
-                            std::cout << "[AladdinSystem] Broke " << other->name << "!" << std::endl;
-
-                            // Spawn multiple loot items if defined
+                            markHitInCurrentAttack(aladdin, other);
+                            
+                            struct LootRequest {
+                                glm::vec3 position;
+                                LootEntry entry;
+                            };
+                            std::vector<LootRequest> requests;
                             for(size_t i = 0; i < breakable->lootItems.size(); ++i) {
-                                const auto& lootEntry = breakable->lootItems[i];
-
-                                Entity* loot = world->add();
-                                loot->name = "Dropped_" + lootEntry.type + "_" + std::to_string(i);
-
-                                // Scatter logic: Use sine and cosine to distribute items in a wider circle around the pot
                                 float angle = ((float)i / (float)breakable->lootItems.size()) * 2.0f * glm::pi<float>();
-                                float radius = 3.5f; // Increased distance from the center for more scattering
-                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 0.7f, glm::sin(angle) * radius);
+                                float radius = 4.0f; // Wider scatter to prevent instant pickup
+                                glm::vec3 scatterOffset = glm::vec3(glm::cos(angle) * radius, 1.2f, glm::sin(angle) * radius);
+                                requests.push_back({other->localTransform.position + scatterOffset, breakable->lootItems[i]});
+                            }
 
-                                loot->localTransform.position = other->localTransform.position + scatterOffset;
-
-                                // Add MeshRenderer for loot
+                            for(const auto& req : requests) {
+                                Entity* loot = world->add();
+                                loot->name = "Dropped_" + req.entry.type;
+                                loot->localTransform.position = req.position;
+                                
                                 auto mr = loot->addComponent<MeshRendererComponent>();
-                                mr->mesh = AssetLoader<Mesh>::get("cube");
-                                mr->material = AssetLoader<Material>::get("loot_mat");
-
-                                    // Add Collectible component
-                                    auto coll = loot->addComponent<CollectibleComponent>();
-                                    if(lootEntry.type == "coin") coll->type = CollectibleComponent::Type::COIN;
-                                    else if(lootEntry.type == "gem") coll->type = CollectibleComponent::Type::GEM;
-                                    else if(lootEntry.type == "apple") coll->type = CollectibleComponent::Type::APPLE;
-                                    coll->value = lootEntry.value;
-
-                                    // Add physics trigger so collectible system can detect pickup
-                                    auto rb = loot->addComponent<RigidBodyComponent>();
-                                    rb->type = RigidBodyType::Static;
-                                    rb->mass = 0.0f;
-                                    rb->useGravity = false;
-
-                                    auto lootCollider = loot->addComponent<ColliderComponent>();
-                                    lootCollider->shape = ColliderShape::Sphere;
-                                    lootCollider->radius = 0.5f;
-                                    lootCollider->isTrigger = true;
+                                auto coll = loot->addComponent<CollectibleComponent>();
+                                coll->pickupDelay = 0.6f; // Delay pickup so they can be seen spawning
+                                
+                                if(req.entry.type == "coin") {
+                                    mr->mesh = AssetLoader<Mesh>::get("coin_mesh");
+                                    mr->material = AssetLoader<Material>::get("coin-mat");
+                                    loot->localTransform.scale = glm::vec3(4.6f);
+                                    coll->type = CollectibleComponent::Type::COIN;
+                                } else if(req.entry.type == "apple") {
+                                    mr->mesh = AssetLoader<Mesh>::get("apple_mesh");
+                                    mr->material = AssetLoader<Material>::get("lit-apple");
+                                    loot->localTransform.scale = glm::vec3(1.3f);
+                                    coll->type = CollectibleComponent::Type::APPLE;
+                                } else {
+                                    // Default/Gem case
+                                    mr->mesh = AssetLoader<Mesh>::get("cube");
+                                    mr->material = AssetLoader<Material>::get("coin-mat");
+                                    loot->localTransform.scale = glm::vec3(0.5f);
+                                    coll->type = CollectibleComponent::Type::GEM;
                                 }
+                                coll->value = req.entry.value;
 
-                            // Mark the pot for removal
+                                auto rb = loot->addComponent<RigidBodyComponent>();
+                                rb->type = RigidBodyType::Static;
+                                auto lootCollider = loot->addComponent<ColliderComponent>();
+                                lootCollider->shape = ColliderShape::Sphere;
+                                lootCollider->radius = 0.5f;
+                                lootCollider->isTrigger = true;
+                            }
+                            // Mark the pot for removal and destroy its physics body immediately
+                            if (physicsSystem) {
+                                physicsSystem->getPhysicsWorld().destroyRigidBody(other);
+                            }
                             world->markForRemoval(other);
+                            AudioSystem::instance().playSound("assets/audio/potBreak.mp3");
                         }
                     }
                 }
-
             }
             updateFollowCamera(world, physicsSystem, deltaTime);
         }

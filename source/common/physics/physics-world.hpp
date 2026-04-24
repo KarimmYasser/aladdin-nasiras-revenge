@@ -94,6 +94,13 @@ namespace our {
          * @param desc The description of the rigid body (e.g., mass, position, etc.).
          */
         void createRigidBody(Entity* entity, const RigidBodyDesc& desc);
+ 
+        /**
+         * @brief Destroys a rigid body in the physics world.
+         * 
+         * @param entity The entity associated with the rigid body to destroy.
+         */
+        void destroyRigidBody(Entity* entity);
 
         /**
          * @brief Creates a collider and attaches it to a rigid body.
@@ -142,6 +149,7 @@ namespace our {
         [[nodiscard]] bool hasContactEvent(Entity* a, Entity* b, bool includeStay = true) const;
         [[nodiscard]] bool hasTriggerEvent(Entity* a, Entity* b, bool includeStay = true) const;
         [[nodiscard]] bool hasAnyInteraction(Entity* a, Entity* b, bool includeStay = true) const;
+        [[nodiscard]] bool testOverlap(Entity* a, Entity* b) const;
         [[nodiscard]] bool isGrounded(Entity* entity, float minUpDot = 0.5f) const;
     };
 

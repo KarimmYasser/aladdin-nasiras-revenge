@@ -63,8 +63,14 @@ namespace our {
                 float verticalOffset = glm::sin(collectible->animationTimer * collectible->bobbingFrequency) * collectible->bobbingHeight;
                 entity->localTransform.position.y = collectible->initialY + verticalOffset;
 
-                // 2. Collection Logic: physics overlap when present, else distance (coins often have no RigidBody).
+                // 2. Collection Logic
                 if(aladdinEntity){
+                    // Update pickup delay
+                    if(collectible->pickupDelay > 0.0f){
+                        collectible->pickupDelay -= deltaTime;
+                        continue; // Skip collection while on delay
+                    }
+
                     bool collected = false;
                     if (physicsSystem) {
                         const auto& physicsWorld = physicsSystem->getPhysicsWorld();
@@ -75,8 +81,9 @@ namespace our {
                         const glm::vec3 d = aladdinEntity->localTransform.position - entity->localTransform.position;
                         const glm::vec3& sc = entity->localTransform.scale;
                         const float scaleMax = glm::max(glm::max(sc.x, sc.y), sc.z);
-                        const float scaleBoost = glm::max(0.0f, 0.38f * scaleMax);
-                        const float reach = collectible->collectionRadius + scaleBoost + 0.55f;
+                        // Toned down reach calculation to prevent instant-vacuuming
+                        const float scaleBoost = glm::max(0.0f, 0.2f * scaleMax);
+                        const float reach = collectible->collectionRadius + scaleBoost + 0.1f;
                         collected = glm::dot(d, d) <= reach * reach;
                     }
 

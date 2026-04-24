@@ -35,6 +35,7 @@ namespace our {
         float animationTimer = 0.0f;      // Accumulated time for sine wave
         float initialY = 0.0f;            // Stores the starting Y position to bob around
         bool initialYSet = false;         // Helper to capture the initial position once
+        float pickupDelay = 0.0f;         // Time in seconds before this can be picked up
 
         // The ID of this component type is "Collectible"
         static std::string getID() { return "Collectible"; }

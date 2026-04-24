@@ -363,26 +363,26 @@
                 ]
             },
 
-            { "name": "pot-a", "position": [-6, 0, -5], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-a", "position": [-6, 0, -5], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
                     { "type": "Breakable", "loot": [{ "type": "coin", "value": 1 }, { "type": "coin", "value": 1 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
                 ] },
-            { "name": "pot-b", "position": [5, 0, 6], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-b", "position": [5, 0, 6], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
                     { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
                 ] },
-            { "name": "pot-c", "position": [-4, 0, 7], "scale": [1.0, 1.0, 1.0],
+            { "name": "pot-c", "position": [-4, 0, 7], "scale": [1.8, 1.8, 1.8],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
                     { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [0.5, 0.55, 0.5], "friction": 0.55 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.9, 1.0, 0.9], "friction": 0.55 }
                 ] },
 
             { "name": "c1", "position": [-7, 0.65, 2], "rotation": [0, 20, 0], "scale": [4.6, 4.6, 4.6],
