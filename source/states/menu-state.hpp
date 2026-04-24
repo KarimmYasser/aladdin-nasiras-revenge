@@ -184,11 +184,13 @@ class Menustate: public our::State {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (selectedButton == 0) ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        bool pushedPlay = false;
+        if (selectedButton == 0) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedPlay = true; }
         if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH)) || (selectedButton == 0 && keyboard.justPressed(GLFW_KEY_ENTER))) {
             goToPlayLevel();
         }
-        if (selectedButton == 0) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) selectedButton = 0;
+        if (pushedPlay) ImGui::PopStyleColor();
 
         if ((ImGui::IsItemHovered() || selectedButton == 0) && markerIcon) {
             ImVec2 min = ImGui::GetItemRectMin();
@@ -201,11 +203,13 @@ class Menustate: public our::State {
         ImGui::Spacing();
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (selectedButton == 1) ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        bool pushedSettings = false;
+        if (selectedButton == 1) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedSettings = true; }
         if (ImGui::Button(" SETTINGS ", ImVec2(btnW, btnH))) {
             showSettings = !showSettings;
         }
-        if (selectedButton == 1) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) selectedButton = 1;
+        if (pushedSettings) ImGui::PopStyleColor();
 
         if ((ImGui::IsItemHovered() || selectedButton == 1) && markerIcon) {
             ImVec2 min = ImGui::GetItemRectMin();
@@ -218,11 +222,13 @@ class Menustate: public our::State {
         ImGui::Spacing();
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-        if (selectedButton == 2) ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+        bool pushedExit = false;
+        if (selectedButton == 2) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedExit = true; }
         if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
             getApp()->close();
         }
-        if (selectedButton == 2) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) selectedButton = 2;
+        if (pushedExit) ImGui::PopStyleColor();
 
         if ((ImGui::IsItemHovered() || selectedButton == 2) && markerIcon) {
             ImVec2 min = ImGui::GetItemRectMin();
