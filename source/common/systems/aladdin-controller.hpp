@@ -9,6 +9,8 @@
 #include "../components/rigid-body.hpp"
 #include "../components/collider.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/animator-component.hpp"
+#include "../components/skinned-mesh-renderer.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
 #include "../physics/physics-system.hpp"
@@ -353,6 +355,42 @@ namespace our {
                     }
                 }
 
+                // ── Animation state machine ────────────────────────────────────────
+                // Drive whichever animation component is present on this entity.
+                // Prefer SkinnedMeshRendererComponent; fall back to the legacy AnimatorComponent.
+                Animator* animPtr = nullptr;
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>())
+                    animPtr = &smr->animator;
+                else if (auto* anim = entity->getComponent<AnimatorComponent>())
+                    animPtr = &anim->animator;
+
+                if (animPtr) {
+                    std::string targetClip = "idle";
+                    bool loop = true;
+
+                    if (aladdin->isAttacking) {
+                        targetClip = "attack";
+                        loop = false;
+                    } else if (!aladdin->isGrounded) {
+                        targetClip = "jump";
+                        loop = false;
+                    } else if (glm::length(glm::vec2(aladdin->velocity.x,
+                                                      aladdin->velocity.z)) > 0.1f) {
+                        targetClip = "walk";
+                    }
+
+                    // Fallback: If target clip isn't found, try "walk", then first available clip
+                    if (!animPtr->hasClip(targetClip)) {
+                        if (animPtr->hasClip("walk")) {
+                            targetClip = "walk";
+                        } else if (!animPtr->getClips().empty()) {
+                            targetClip = animPtr->getClips().begin()->first;
+                        }
+                    }
+
+                    animPtr->play(targetClip, loop);
+                }
+
             }
             updateFollowCamera(world, physicsSystem, deltaTime);
         }
@@ -471,7 +509,10 @@ namespace our {
                 entity->localTransform.rotation.y = aladdin->facingYaw;
                 entity->localTransform.rotation.z = 0.0f;
 
-                if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
+                // Toggle visibility for first-person camera: prefer new component, fall back to legacy
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    smr->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
+                } else if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
                     meshRenderer->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
                 }
             }

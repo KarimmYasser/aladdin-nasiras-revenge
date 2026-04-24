@@ -138,7 +138,13 @@ def make_merged_wall(name, row, col, w, h, grid):
         "position": [round(x, 3), WALL_HEIGHT / 2, round(z, 3)],
         "scale": [round(scale_x, 3), round(scale_y, 3), round(scale_z, 3)],
         "components": [
-            {"type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall"}
+            {"type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall"},
+            {"type": "RigidBody", "bodyType": "static", "mass": 0.0, "useGravity": False},
+            {
+                "type": "Collider",
+                "shape": "box",
+                "halfExtents": [round(w * CELL_SIZE / 2, 3), round(WALL_HEIGHT / 2, 3), round(h * CELL_SIZE / 2, 3)]
+            }
         ]
     }
 
@@ -149,10 +155,24 @@ def make_ground(grid):
     return {
         "name": "ground",
         "position": [0, -0.01, 0],
-        "rotation": [-90, 0, 0],
-        "scale": [total_w / CUBE_NATIVE, total_h / CUBE_NATIVE, 1],
+        "rotation": [0, 0, 0],
         "components": [
-            {"type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground"}
+            {"type": "RigidBody", "bodyType": "static", "mass": 0.0, "useGravity": False},
+            {
+                "type": "Collider",
+                "shape": "box",
+                "halfExtents": [total_w / 2, 0.1, total_h / 2]
+            }
+        ],
+        "children": [
+            {
+                "name": "ground-mesh",
+                "rotation": [-90, 0, 0],
+                "scale": [total_w / CUBE_NATIVE, total_h / CUBE_NATIVE, 1],
+                "components": [
+                    {"type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground"}
+                ]
+            }
         ]
     }
 
@@ -187,7 +207,36 @@ def make_player(x, z):
         "rotation": [0, 180, 0],
         "scale": [0.175, 0.175, 0.175],
         "components": [
-            {"type": "Mesh Renderer", "mesh": "aladdin_mesh", "material": "lit-aladdin"}
+            {
+                "type": "Aladdin Controller",
+                "speed": 5.0,
+                "jumpForce": 8.0,
+                "enableCameraFollow": True,
+                "meshPitchVisualOffsetDegrees": -90.0
+            },
+            {
+                "type": "Skinned Mesh Renderer",
+                "model": "assets/models/Aladdin/aladdin/Idle.fbx",
+                "animations": [
+                    "assets/models/Aladdin/aladdin/walk.fbx",
+                    "assets/models/Aladdin/aladdin/jump.fbx",
+                    "assets/models/Aladdin/aladdin/kick.fbx"
+                ],
+                "material": "lit-aladdin",
+                "clip": "idle"
+            },
+            {
+                "type": "RigidBody",
+                "bodyType": "dynamic",
+                "mass": 1.0,
+                "useGravity": True
+            },
+            {
+                "type": "Collider",
+                "shape": "capsule",
+                "radius": 0.5,
+                "height": 2.0
+            }
         ]
     }
 
@@ -423,7 +472,8 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120, gr
                 "shaders": {
                     "tinted":   {"vs": "assets/shaders/tinted.vert",   "fs": "assets/shaders/tinted.frag"},
                     "textured": {"vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag"},
-                    "light":    {"vs": "assets/shaders/light.vert",    "fs": "assets/shaders/light.frag"}
+                    "light":    {"vs": "assets/shaders/light.vert",    "fs": "assets/shaders/light.frag"},
+                    "skinned":  {"vs": "assets/shaders/skinned.vert",  "fs": "assets/shaders/light.frag"}
                 },
                 "textures": {
                     "agrabah_ground": "assets/textures/agrabah_ground.png",
@@ -439,7 +489,7 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120, gr
                     "cube":         "assets/models/cube.obj",
                     "plane":        "assets/models/plane.obj",
                     "sphere":       "assets/models/sphere.obj",
-                    "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
+                    "aladdin_mesh": "assets/models/Aladdin/aladdin/Idle.fbx",
                     "monkey_mesh":  "assets/models/monkey.obj",
                     "coin_mesh":    "assets/models/Coin/Coin.obj",
                     "portal_arch_mesh": "assets/models/Portal/mtl15.obj",
@@ -464,7 +514,7 @@ def build_scene_json(entities, coin_count, enemy_count, t3=60, t2=90, t1=120, gr
                         "shininess": 16.0, "ambient": 0.12
                     },
                     "lit-aladdin": {
-                        "type": "lit", "shader": "light",
+                        "type": "lit", "shader": "skinned",
                         "pipelineState": {"faceCulling": {"enabled": True}, "depthTesting": {"enabled": True}},
                         "albedo_map": "aladdin_skin", "sampler": "default",
                         "shininess": 32.0, "ambient": 0.1
@@ -510,9 +560,9 @@ def main():
     parser.add_argument("--rows",  type=int, default=7,   help="Maze rows (default: 7)")
     parser.add_argument("--cols",  type=int, default=7,   help="Maze cols (default: 7)")
     parser.add_argument("--seed",  type=int, default=42,  help="Random seed (default: 42)")
-    parser.add_argument("--time3", type=int, default=60,  help="3-star time limit (sec)")
-    parser.add_argument("--time2", type=int, default=90,  help="2-star time limit (sec)")
-    parser.add_argument("--time1", type=int, default=120, help="1-star time limit (sec)")
+    parser.add_argument("--time3", type=int, default=120, help="3-star time limit (sec)")
+    parser.add_argument("--time2", type=int, default=180, help="2-star time limit (sec)")
+    parser.add_argument("--time1", type=int, default=240, help="1-star time limit (sec)")
     parser.add_argument("--write-app-config", action="store_true",
                         help="Overwrite config/app.jsonc with generated scene config")
     args = parser.parse_args()

@@ -17,6 +17,7 @@
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
 #include <audio/audio-system.hpp>
+#include <systems/animation-system.hpp>
 
 #include <imgui.h>
 #include <sstream>
@@ -41,6 +42,7 @@ class Playstate: public our::State {
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
+    our::AnimationSystem animationSystem;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -178,6 +180,8 @@ class Playstate: public our::State {
         hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
         checkpointSystem.update(&world, &physicsSystem);
         levelExitSystem.update(&world);
+        // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
+        animationSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
