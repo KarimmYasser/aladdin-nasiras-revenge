@@ -71,7 +71,11 @@ class Playstate: public our::State {
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
-        if(config.contains("assets")){
+        // Skip if they were already loaded by the LoadingState
+        if(config.contains("assets") && 
+           our::AssetLoader<our::Mesh>::empty() && 
+           our::AssetLoader<our::ShaderProgram>::empty() &&
+           our::AssetLoader<our::Texture2D>::empty()){
             our::deserializeAllAssets(config["assets"]);
         }
         // If we have a world in the scene config, we use it to populate our world

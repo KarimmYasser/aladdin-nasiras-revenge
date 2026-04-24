@@ -44,7 +44,7 @@ class Menustate: public our::State {
                 std::cerr << "Could not open play-level-config: " << path << std::endl;
             }
         }
-        getApp()->changeState("play");
+        getApp()->changeState("loading");
     }
 
     void onInitialize() override {

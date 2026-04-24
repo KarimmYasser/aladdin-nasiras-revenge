@@ -165,24 +165,29 @@ namespace our {
                     bool groundedFromContacts = physicsWorld.isGrounded(entity, 0.5f);
                     bool groundedFromRaycast = false;
                     if (!groundedFromContacts) {
-                        float probeDistance = 1.15f;
+                        // Calculate the distance from the center to the bottom of the collider
+                        float halfHeight = 0.0f;
                         if (auto* collider = entity->getComponent<ColliderComponent>()) {
                             switch (collider->shape) {
-                                case ColliderShape::Box:
-                                    probeDistance = collider->halfExtents.y + 0.25f;
-                                    break;
-                                case ColliderShape::Sphere:
-                                    probeDistance = collider->radius + 0.25f;
-                                    break;
-                                case ColliderShape::Capsule:
-                                    probeDistance = (collider->height * 0.5f) + collider->radius + 0.25f;
-                                    break;
+                                case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
+                                case ColliderShape::Sphere:  halfHeight = collider->radius; break;
+                                case ColliderShape::Capsule: halfHeight = (collider->height * 0.5f) + collider->radius; break;
                             }
                         }
 
-                        const glm::vec3 origin = entity->localTransform.position + glm::vec3(0.0f, 0.05f, 0.0f);
-                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), probeDistance);
-                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && groundHit.entity != entity && groundHit.normal.y >= 0.5f;
+                        // Start the raycast exactly at the feet (or slightly above to avoid clipping)
+                        // and cast only a small distance down (0.25m)
+                        const glm::vec3 origin = entity->localTransform.position - glm::vec3(0.0f, halfHeight - 0.1f, 0.0f);
+                        const float rayLength = 0.25f; 
+                        
+                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), rayLength);
+                        
+                        // Ignore the player's own entity and their sword hitbox
+                        Entity* sword = (swordHitboxes.count(entity) > 0) ? swordHitboxes[entity] : nullptr;
+                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && 
+                                             groundHit.entity != entity && 
+                                             groundHit.entity != sword &&
+                                             groundHit.normal.y >= 0.5f;
                     }
 
                     aladdin->isGrounded = groundedFromContacts || groundedFromRaycast;
@@ -369,7 +374,7 @@ namespace our {
                     bool loop = true;
 
                     if (aladdin->isAttacking) {
-                        targetClip = "attack";
+                        targetClip = "kick";
                         loop = false;
                     } else if (!aladdin->isGrounded) {
                         targetClip = "jump";
