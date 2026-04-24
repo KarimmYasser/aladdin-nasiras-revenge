@@ -9,6 +9,8 @@
 #include "../components/rigid-body.hpp"
 #include "../components/collider.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/animator-component.hpp"
+#include "../components/skinned-mesh-renderer.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
 #include "../physics/physics-system.hpp"
@@ -163,24 +165,29 @@ namespace our {
                     bool groundedFromContacts = physicsWorld.isGrounded(entity, 0.5f);
                     bool groundedFromRaycast = false;
                     if (!groundedFromContacts) {
-                        float probeDistance = 1.15f;
+                        // Calculate the distance from the center to the bottom of the collider
+                        float halfHeight = 0.0f;
                         if (auto* collider = entity->getComponent<ColliderComponent>()) {
                             switch (collider->shape) {
-                                case ColliderShape::Box:
-                                    probeDistance = collider->halfExtents.y + 0.25f;
-                                    break;
-                                case ColliderShape::Sphere:
-                                    probeDistance = collider->radius + 0.25f;
-                                    break;
-                                case ColliderShape::Capsule:
-                                    probeDistance = (collider->height * 0.5f) + collider->radius + 0.25f;
-                                    break;
+                                case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
+                                case ColliderShape::Sphere:  halfHeight = collider->radius; break;
+                                case ColliderShape::Capsule: halfHeight = (collider->height * 0.5f) + collider->radius; break;
                             }
                         }
 
-                        const glm::vec3 origin = entity->localTransform.position + glm::vec3(0.0f, 0.05f, 0.0f);
-                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), probeDistance);
-                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && groundHit.entity != entity && groundHit.normal.y >= 0.5f;
+                        // Start the raycast exactly at the feet (or slightly above to avoid clipping)
+                        // and cast only a small distance down (0.25m)
+                        const glm::vec3 origin = entity->localTransform.position - glm::vec3(0.0f, halfHeight - 0.1f, 0.0f);
+                        const float rayLength = 0.25f; 
+                        
+                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), rayLength);
+                        
+                        // Ignore the player's own entity and their sword hitbox
+                        Entity* sword = (swordHitboxes.count(entity) > 0) ? swordHitboxes[entity] : nullptr;
+                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && 
+                                             groundHit.entity != entity && 
+                                             groundHit.entity != sword &&
+                                             groundHit.normal.y >= 0.5f;
                     }
 
                     aladdin->isGrounded = groundedFromContacts || groundedFromRaycast;
@@ -353,6 +360,44 @@ namespace our {
                     }
                 }
 
+                // ── Animation state machine ────────────────────────────────────────
+                // Drive whichever animation component is present on this entity.
+                // Prefer SkinnedMeshRendererComponent; fall back to the legacy AnimatorComponent.
+                Animator* animPtr = nullptr;
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>())
+                    animPtr = &smr->animator;
+                else if (auto* anim = entity->getComponent<AnimatorComponent>())
+                    animPtr = &anim->animator;
+
+                if (animPtr) {
+                    std::string targetClip = "idle";
+                    bool loop = true;
+
+                    if (aladdin->isAttacking) {
+                        targetClip = "kick";
+                        loop = false;
+                        animPtr->play(targetClip, loop, 1.6f); // Faster kick
+                        continue; // Skip the default play call below
+                    } else if (!aladdin->isGrounded) {
+                        targetClip = "jump";
+                        loop = false;
+                    } else if (glm::length(glm::vec2(aladdin->velocity.x,
+                                                      aladdin->velocity.z)) > 0.1f) {
+                        targetClip = "walk";
+                    }
+
+                    // Fallback: If target clip isn't found, try "walk", then first available clip
+                    if (!animPtr->hasClip(targetClip)) {
+                        if (animPtr->hasClip("walk")) {
+                            targetClip = "walk";
+                        } else if (!animPtr->getClips().empty()) {
+                            targetClip = animPtr->getClips().begin()->first;
+                        }
+                    }
+
+                    animPtr->play(targetClip, loop);
+                }
+
             }
             updateFollowCamera(world, physicsSystem, deltaTime);
         }
@@ -471,7 +516,10 @@ namespace our {
                 entity->localTransform.rotation.y = aladdin->facingYaw;
                 entity->localTransform.rotation.z = 0.0f;
 
-                if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
+                // Toggle visibility for first-person camera: prefer new component, fall back to legacy
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
+                    smr->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
+                } else if (auto* meshRenderer = entity->getComponent<MeshRendererComponent>()) {
                     meshRenderer->visible = (aladdin->cameraMode != AladdinCameraMode::FirstPerson);
                 }
             }

@@ -18,6 +18,16 @@ add_subdirectory(vendor/glfw)                       # Build the GLFW project to 
 set(RP3D_COMPILE_TESTBED OFF CACHE BOOL "" FORCE)
 add_subdirectory(vendor/reactphysics3d)
 
+# Assimp – disable everything we don't need to keep build times short
+set(ASSIMP_BUILD_TESTS        OFF CACHE BOOL "" FORCE)
+set(ASSIMP_NO_EXPORT          ON  CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_COLLADA_IMPORTER        ON  CACHE BOOL "" FORCE)  # .dae
+set(ASSIMP_BUILD_FBX_IMPORTER           ON  CACHE BOOL "" FORCE)  # .fbx
+set(ASSIMP_BUILD_OBJ_IMPORTER           ON  CACHE BOOL "" FORCE)  # .obj
+set(ASSIMP_INSTALL            OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendor/assimp)
+
 # A variable with all the source files of GLAD
 set(GLAD_SOURCE vendor/glad/src/gl.c)
 # A variables with all the source files of Dear ImGui
@@ -51,6 +61,15 @@ set(COMMON_SOURCES
         source/common/mesh/mesh.hpp
         source/common/mesh/mesh-utils.hpp
         source/common/mesh/mesh-utils.cpp
+        source/common/mesh/skinned-vertex.hpp
+        source/common/mesh/bone-info.hpp
+        source/common/mesh/skinned-mesh.hpp
+        source/common/mesh/skinned-mesh.cpp
+        source/common/animation/animation-types.hpp
+        source/common/animation/animation-loader.hpp
+        source/common/animation/animation-loader.cpp
+        source/common/animation/animator.hpp
+        source/common/animation/animator.cpp
 
         source/common/texture/sampler.hpp
         source/common/texture/sampler.cpp
@@ -88,9 +107,11 @@ set(COMMON_SOURCES
         source/common/components/light.hpp
         source/common/components/light.cpp
         source/common/components/component-deserializer.hpp
+        source/common/components/animator-component.hpp
 
         source/common/systems/forward-renderer.hpp
         source/common/systems/forward-renderer.cpp
+        source/common/systems/animation-system.hpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
         source/common/systems/aladdin-controller.hpp
@@ -110,6 +131,7 @@ include_directories(
         vendor/utils
         vendor/reactphysics3d/include
         vendor/miniaudio
+        vendor/assimp/include
 )
 
 
@@ -146,4 +168,4 @@ set(STATES_SOURCES
 file(COPY ${PROJECT_SOURCE_DIR}/config DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw reactphysics3d)
+target_link_libraries(GAME_APPLICATION glfw reactphysics3d assimp)

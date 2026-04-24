@@ -7,6 +7,7 @@
 #include "../source/common/audio/audio-system.hpp"
 
 #include "states/menu-state.hpp"
+#include "states/loading-state.hpp"
 #include "states/play-state.hpp"
 #include "states/gameover-state.hpp"
 #include "states/victory-state.hpp"
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
     
     // Register all the states of the project in the application
     app.registerState<Menustate>("menu");
+    app.registerState<LoadingState>("loading");
     app.registerState<Playstate>("play");
     app.registerState<GameOverState>("gameover");
     app.registerState<VictoryState>("victory");

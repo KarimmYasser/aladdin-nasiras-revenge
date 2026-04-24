@@ -21,7 +21,8 @@
             "shaders": {
                 "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" },
                 "textured": { "vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag" },
-                "light": { "vs": "assets/shaders/light.vert", "fs": "assets/shaders/light.frag" }
+                "light": { "vs": "assets/shaders/light.vert", "fs": "assets/shaders/light.frag" },
+                "skinned": { "vs": "assets/shaders/skinned.vert", "fs": "assets/shaders/light.frag" }
             },
             "textures": {
                 "agrabah_ground": "assets/textures/agrabah_ground.png",
@@ -80,12 +81,17 @@
                 },
                 "lit-aladdin": {
                     "type": "lit",
-                    "shader": "light",
-                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "shader": "skinned",
                     "albedo_map": "aladdin_skin",
-                    "sampler": "default",
-                    "shininess": 32.0,
-                    "ambient": 0.26
+                    "specular_map": "aladdin_spec",
+                    "emission_map": "black",
+                    "shininess": 10.0,
+                    "ambient": 0.26,
+                    "albedo_tint": [1, 1, 1, 1],
+                    "pipelineState": {
+                        "faceCulling": { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    }
                 },
                 "coin-mat": {
                     "type": "lit",
@@ -346,9 +352,17 @@
                 "name": "aladdin",
                 "position": [0, 2.0, 0],
                 "rotation": [0, 180, 0],
-                "scale": [0.21, 0.21, 0.21],
+                "scale": [21.0, 21.0, 21.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "aladdin_mesh", "material": "lit-aladdin" },
+                    { "type": "Skinned Mesh Renderer",
+                      "model": "assets/models/Aladdin/aladdin/Idle.fbx",
+                      "animations": [
+                          "assets/models/Aladdin/aladdin/walk.fbx",
+                          "assets/models/Aladdin/aladdin/jump.fbx",
+                          "assets/models/Aladdin/aladdin/kick.fbx"
+                      ],
+                      "material": "lit-aladdin",
+                      "clip": "idle" },
                     { "type": "Aladdin Controller", "speed": 11.0, "jumpForce": 11.0, "rotationSpeed": 10.0,
                       "enableCameraFollow": true,
                       "cameraMode": "third",

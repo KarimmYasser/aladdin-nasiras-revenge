@@ -245,7 +245,7 @@ class OverlappingPairs {
                     if (it == lastFrameCollisionInfos.end()) {
 
                         // Make sure capacity is an integral multiple of alignment
-                        const size_t allocatedMemory = std::ceil(sizeof(LastFrameCollisionInfo) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+                        const size_t allocatedMemory = static_cast<size_t>(std::ceil(sizeof(LastFrameCollisionInfo) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
                         LastFrameCollisionInfo* lastFrameInfo = new (mPoolAllocator->allocate(allocatedMemory)) LastFrameCollisionInfo();
 
@@ -276,7 +276,7 @@ class OverlappingPairs {
                             it->second->LastFrameCollisionInfo::~LastFrameCollisionInfo();
 
                             // Make sure capacity is an integral multiple of alignment
-                            const size_t allocatedMemory = std::ceil(sizeof(LastFrameCollisionInfo) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT;
+                            const size_t allocatedMemory = static_cast<size_t>(std::ceil(sizeof(LastFrameCollisionInfo) / float(GLOBAL_ALIGNMENT)) * GLOBAL_ALIGNMENT);
 
                             // Release memory
                             mPoolAllocator->release(it->second, allocatedMemory);
