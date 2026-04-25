@@ -4,6 +4,7 @@
 
 #pragma once
 #include "glm/vec3.hpp"
+#include <string>
 
 namespace our {
     /**
@@ -26,6 +27,8 @@ namespace our {
         Box,
         Sphere,
         Capsule,
+        /// Static triangle soup (ReactPhysics3D ConcaveMeshShape). Requires a loaded Mesh asset with cook data.
+        ConcaveMesh,
     };
 
     struct RigidBodyDesc {
@@ -46,5 +49,7 @@ namespace our {
         bool isTrigger = false;// doesn't collide physically but detects overlaps
         float friction = .5f;
         float restitution = 0.0f;// bounciness
+        /// AssetLoader<Mesh> key — mesh must have been loaded from OBJ with physics cook data.
+        std::string concaveMeshAssetName;
     };
 }

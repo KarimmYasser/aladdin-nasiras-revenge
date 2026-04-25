@@ -1,11 +1,17 @@
 #include <physics/physics-world.hpp>
 
+#include <cstdint>
+
+#include "asset-loader.hpp"
 #include "components/rigid-body.hpp"
 #include "components/collider.hpp"
 #include "glm/detail/type_quat.hpp"
 #include "logger.hpp"
-#include "reactphysics3d/engine/EventListener.h"
+#include "mesh/mesh.hpp"
 #include "reactphysics3d/collision/OverlapCallback.h"
+#include "reactphysics3d/collision/TriangleVertexArray.h"
+#include "reactphysics3d/engine/EventListener.h"
+#include "reactphysics3d/utils/Message.h"
 
 namespace our {
     // HELPERS - Define early so they can be used throughout
@@ -242,15 +248,24 @@ namespace our {
     void PhysicsWorld::destroyRigidBody(Entity* entity) {
         if (!physicsWorld || !entity) return;
         auto* rbComp = entity->getComponent<RigidBodyComponent>();
+        auto* colliderComp = entity->getComponent<ColliderComponent>();
+
         if (rbComp && rbComp->bodyHandle) {
             Logger::info("PhysicsWorld", "Destroying rigid body for entity '", entity->name, "'");
             physicsWorld->destroyRigidBody(rbComp->bodyHandle);
             rbComp->bodyHandle = nullptr;
         }
 
-        auto* colliderComp = entity->getComponent<ColliderComponent>();
         if (colliderComp) {
             colliderComp->colliderHandle = nullptr;
+            if (colliderComp->concaveMeshShapeOwner) {
+                physicsCommon.destroyConcaveMeshShape(colliderComp->concaveMeshShapeOwner);
+                colliderComp->concaveMeshShapeOwner = nullptr;
+            }
+            if (colliderComp->concaveTriangleMeshOwner) {
+                physicsCommon.destroyTriangleMesh(colliderComp->concaveTriangleMeshOwner);
+                colliderComp->concaveTriangleMeshOwner = nullptr;
+            }
         }
     }
 
@@ -279,30 +294,85 @@ namespace our {
         }
 
         reactphysics3d::CollisionShape* shape = nullptr;
-        switch (desc.shape) {
-        case ColliderShape::Box:
-            shape = physicsCommon.createBoxShape(
-                reactphysics3d::Vector3(desc.halfExtents.x, desc.halfExtents.y, desc.halfExtents.z)
+
+        if (desc.shape == ColliderShape::ConcaveMesh) {
+            if (rbComp && rbComp->type != RigidBodyType::Static) {
+                Logger::error("PhysicsWorld", "Concave mesh collider on entity '", entity->name,
+                              "' requires a static RigidBody.");
+                return;
+            }
+
+            Mesh* meshAsset = AssetLoader<Mesh>::get(desc.concaveMeshAssetName);
+            if (!meshAsset || !meshAsset->hasPhysicsTriangleData()) {
+                Logger::error("PhysicsWorld", "Concave mesh collider: missing mesh '", desc.concaveMeshAssetName,
+                              "' or mesh has no physics cook data for entity '", entity->name, "'.");
+                return;
+            }
+
+            const auto& posBuf = meshAsset->getPhysicsVertexPositions();
+            const auto& idxBuf = meshAsset->getPhysicsIndices();
+            reactphysics3d::TriangleVertexArray vertexArray(
+                meshAsset->getPhysicsVertexCount(),
+                posBuf.data(),
+                static_cast<uint32_t>(sizeof(float) * 3),
+                meshAsset->getPhysicsTriangleCount(),
+                idxBuf.data(),
+                static_cast<uint32_t>(sizeof(uint32_t) * 3),
+                reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+                reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE
             );
-            Logger::debug("PhysicsWorld", "Created box collider for entity '", entity->name,
-                         "' with half-extents (", desc.halfExtents.x, ", ", desc.halfExtents.y, ", ", desc.halfExtents.z, ")");
-            break;
-        case ColliderShape::Sphere:
-            shape = physicsCommon.createSphereShape(desc.radius);
-            Logger::debug("PhysicsWorld", "Created sphere collider for entity '", entity->name,
-                         "' with radius ", desc.radius);
-            break;
-        case ColliderShape::Capsule:
-            shape = physicsCommon.createCapsuleShape(
-                desc.radius,
-                desc.height
-            );
-            Logger::debug("PhysicsWorld", "Created capsule collider for entity '", entity->name,
-                         "' with radius ", desc.radius, " and height ", desc.height);
-            break;
-        default:
-            Logger::error("PhysicsWorld", "Unknown collider shape: ", static_cast<int>(desc.shape));
-            return;
+
+            std::vector<reactphysics3d::Message> messages;
+            reactphysics3d::TriangleMesh* triMesh = physicsCommon.createTriangleMesh(vertexArray, messages);
+            for (const auto& msg : messages) {
+                Logger::warning("PhysicsWorld", "TriangleMesh '", desc.concaveMeshAssetName, "': ", msg.text);
+            }
+            if (!triMesh) {
+                Logger::error("PhysicsWorld", "createTriangleMesh failed for entity '", entity->name, "'.");
+                return;
+            }
+
+            const glm::vec3& sc = entity->localTransform.scale;
+            reactphysics3d::Vector3 rpScale(sc.x, sc.y, sc.z);
+            reactphysics3d::ConcaveMeshShape* concave =
+                physicsCommon.createConcaveMeshShape(triMesh, rpScale);
+            if (!concave) {
+                Logger::error("PhysicsWorld", "createConcaveMeshShape failed for entity '", entity->name, "'.");
+                physicsCommon.destroyTriangleMesh(triMesh);
+                return;
+            }
+
+            colliderComp->concaveTriangleMeshOwner = triMesh;
+            colliderComp->concaveMeshShapeOwner = concave;
+            shape = concave;
+            Logger::info("PhysicsWorld", "Created concave mesh collider for '", entity->name, "' from mesh '",
+                         desc.concaveMeshAssetName, "'.");
+        } else {
+            switch (desc.shape) {
+            case ColliderShape::Box:
+                shape = physicsCommon.createBoxShape(
+                    reactphysics3d::Vector3(desc.halfExtents.x, desc.halfExtents.y, desc.halfExtents.z)
+                );
+                Logger::debug("PhysicsWorld", "Created box collider for entity '", entity->name,
+                             "' with half-extents (", desc.halfExtents.x, ", ", desc.halfExtents.y, ", ", desc.halfExtents.z, ")");
+                break;
+            case ColliderShape::Sphere:
+                shape = physicsCommon.createSphereShape(desc.radius);
+                Logger::debug("PhysicsWorld", "Created sphere collider for entity '", entity->name,
+                             "' with radius ", desc.radius);
+                break;
+            case ColliderShape::Capsule:
+                shape = physicsCommon.createCapsuleShape(
+                    desc.radius,
+                    desc.height
+                );
+                Logger::debug("PhysicsWorld", "Created capsule collider for entity '", entity->name,
+                             "' with radius ", desc.radius, " and height ", desc.height);
+                break;
+            default:
+                Logger::error("PhysicsWorld", "Unknown collider shape: ", static_cast<int>(desc.shape));
+                return;
+            }
         }
 
         if (!shape) {

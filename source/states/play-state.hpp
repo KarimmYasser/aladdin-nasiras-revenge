@@ -229,6 +229,11 @@ class Playstate: public our::State {
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();
 
+        // Keep HUD enemy progress synced with Aladdin's persistent kill count.
+        if (auto* aladdin = findAladdin()) {
+            enemiesKilled = aladdin->enemiesKilled;
+        }
+
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 

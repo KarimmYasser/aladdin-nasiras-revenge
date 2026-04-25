@@ -14,6 +14,7 @@
 #include "../asset-loader.hpp"
 #include "../application.hpp"
 #include "../physics/physics-system.hpp"
+#include "../physics/physics-world.hpp"
 #include "../audio/audio-system.hpp"
 #include "../components/projectile.hpp"
 #include <imgui.h>
@@ -36,6 +37,37 @@ namespace our {
     class AladdinControllerSystem {
         Application* app; // Pointer to the application for input handling
         std::unordered_map<Entity*, Entity*> swordHitboxes;
+
+        /**
+         * Foot ray + contact normals. Concave mesh / triangle contacts often have shallow
+         * support normals; capsule can micro-separate while moving, so the ray is always used
+         * together with contacts and cast farther than the old 0.25m probe.
+         */
+        static bool computeGroundedFromPhysics(Entity* entity, PhysicsWorld& physicsWorld, Entity* swordHitbox) {
+            constexpr float kMinUpDotContact = 0.50f;
+            constexpr float kRayLength = 1.5f;
+            constexpr float kMinUpDotRay = 0.50f;
+
+            const bool fromContacts = physicsWorld.isGrounded(entity, kMinUpDotContact);
+
+            float halfHeight = 0.0f;
+            if (auto* collider = entity->getComponent<ColliderComponent>()) {
+                switch (collider->shape) {
+                    case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
+                    case ColliderShape::Sphere:  halfHeight = collider->radius; break;
+                    case ColliderShape::Capsule: halfHeight = (collider->height * 0.5f) + collider->radius; break;
+                    default: break;
+                }
+            }
+
+            const glm::vec3 origin = entity->localTransform.position - glm::vec3(0.0f, halfHeight - 0.08f, 0.0f);
+            const RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), kRayLength);
+            const bool fromRay = groundHit.hasHit && groundHit.entity &&
+                groundHit.entity != entity && groundHit.entity != swordHitbox &&
+                groundHit.normal.y >= kMinUpDotRay;
+
+            return fromContacts || fromRay;
+        }
 
     public:
         // Initialize with the application pointer
@@ -178,36 +210,9 @@ namespace our {
                 // 3. Handle gravity, movement and jumping via real physics (if body exists)
                 if (hasPhysicsBody) {
                     auto& physicsWorld = physicsSystem->getPhysicsWorld();
-
-                    bool groundedFromContacts = physicsWorld.isGrounded(entity, 0.5f);
-                    bool groundedFromRaycast = false;
-                    if (!groundedFromContacts) {
-                        // Calculate the distance from the center to the bottom of the collider
-                        float halfHeight = 0.0f;
-                        if (auto* collider = entity->getComponent<ColliderComponent>()) {
-                            switch (collider->shape) {
-                                case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
-                                case ColliderShape::Sphere:  halfHeight = collider->radius; break;
-                                case ColliderShape::Capsule: halfHeight = (collider->height * 0.5f) + collider->radius; break;
-                            }
-                        }
-
-                        // Start the raycast exactly at the feet (or slightly above to avoid clipping)
-                        // and cast only a small distance down (0.25m)
-                        const glm::vec3 origin = entity->localTransform.position - glm::vec3(0.0f, halfHeight - 0.1f, 0.0f);
-                        const float rayLength = 0.25f; 
-                        
-                        RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), rayLength);
-                        
-                        // Ignore the player's own entity and their sword hitbox
-                        Entity* sword = (swordHitboxes.count(entity) > 0) ? swordHitboxes[entity] : nullptr;
-                        groundedFromRaycast = groundHit.hasHit && groundHit.entity && 
-                                             groundHit.entity != entity && 
-                                             groundHit.entity != sword &&
-                                             groundHit.normal.y >= 0.5f;
-                    }
-
-                    aladdin->isGrounded = groundedFromContacts || groundedFromRaycast;
+                    Entity* sword = (swordHitboxes.count(entity) > 0) ? swordHitboxes[entity] : nullptr;
+                    // Pre-step grounding (jump): same tolerances; postPhysics will refresh after step for animation.
+                    aladdin->isGrounded = computeGroundedFromPhysics(entity, physicsWorld, sword);
 
                     glm::vec3 currentVelocity = physicsWorld.getLinearVelocity(entity);
                     glm::vec3 targetVelocity = currentVelocity;
@@ -217,6 +222,7 @@ namespace our {
                     if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
                         targetVelocity.y = aladdin->jumpForce;
                         aladdin->isGrounded = false;
+                        aladdin->groundedCoyoteTimer = 0.0f;
                     }
 
                     physicsWorld.setLinearVelocity(entity, targetVelocity);
@@ -374,6 +380,7 @@ namespace our {
                             markHitInCurrentAttack(aladdin, other);
                             if(enemy->health <= 0) {
                                 enemy->currentState = EnemyComponent::State::DEAD;
+                                aladdin->enemiesKilled++;
                                 AudioSystem::instance().playSound("assets/audio/death.wav");
                             } else {
                                 AudioSystem::instance().playSound("assets/audio/hit.wav");
@@ -449,8 +456,32 @@ namespace our {
                 }
 
                 // ── 5. Sync State & Animation (Moved here to use actual physics velocity) ──
+                bool groundedSmooth = aladdin->isGrounded;
                 if (rbComp && rbComp->bodyHandle) {
                     aladdin->velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
+                    auto& physicsWorld = physicsSystem->getPhysicsWorld();
+                    const bool groundedRaw =
+                        computeGroundedFromPhysics(entity, physicsWorld, swordHitbox);
+                    aladdin->isGrounded = groundedRaw;
+
+                    const float vy = aladdin->velocity.y;
+                    constexpr float kCoyoteSeconds = 0.18f;
+                    constexpr float kFallVyKillCoyote = -3.4f;
+                    constexpr float kCoyoteMaxRiseVy = 2.8f;
+
+                    if (vy < kFallVyKillCoyote) {
+                        aladdin->groundedCoyoteTimer = 0.0f;
+                    } else if (groundedRaw) {
+                        aladdin->groundedCoyoteTimer = kCoyoteSeconds;
+                    } else if (aladdin->groundedCoyoteTimer > 0.0f) {
+                        aladdin->groundedCoyoteTimer =
+                            glm::max(0.0f, aladdin->groundedCoyoteTimer - deltaTime);
+                    }
+
+                    groundedSmooth =
+                        groundedRaw ||
+                        (aladdin->groundedCoyoteTimer > 0.0f && vy > kFallVyKillCoyote &&
+                         vy < kCoyoteMaxRiseVy);
                 }
 
                 Animator* animPtr = nullptr;
@@ -471,7 +502,7 @@ namespace our {
                         targetClip = "kick";
                         loop = false;
                         playbackSpeed = 1.8f; 
-                    } else if (!aladdin->isGrounded) {
+                    } else if (!groundedSmooth) {
                         targetClip = "jump";
                         loop = false;
                         playbackSpeed = 1.0f;
@@ -482,7 +513,7 @@ namespace our {
                         playbackSpeed = horizontalSpeed / 8.5f; 
                     }
 
-                    if (aladdin->isGrounded) {
+                    if (groundedSmooth) {
                         animPtr->setSuppressRootMotion(false); // Reset when on ground
                     }
 
@@ -700,7 +731,8 @@ namespace our {
             ImGui::Value("Gems", aladdin->gemCount);
             ImGui::Value("Apples", aladdin->appleCount);
             ImGui::Separator();
-            ImGui::Value("Is Grounded", aladdin->isGrounded);
+            ImGui::Value("Is Grounded (strict)", aladdin->isGrounded);
+            ImGui::Text("Coyote timer: %.3f s", (double)aladdin->groundedCoyoteTimer);
             
             ImGui::Separator();
             ImGui::Text("Combat State:");

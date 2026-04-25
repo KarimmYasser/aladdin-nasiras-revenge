@@ -27,6 +27,9 @@ namespace our
         Mesh* mesh;
         Material* material;
         std::vector<glm::mat4> bones; // empty for static meshes
+        /// If indexCount < 0, draw the full index buffer; otherwise drawRange(firstIndex, indexCount).
+        GLsizei drawFirstIndex = 0;
+        GLsizei drawIndexCount = -1;
     };
 
     // A forward renderer is a renderer that draw the object final color directly to the framebuffer
