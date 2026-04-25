@@ -109,16 +109,22 @@ class VictoryState : public our::State {
 
         // ── Summary Panel ──
         ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.50f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSize(ImVec2(420, 0));
+        ImGui::SetNextWindowSize(ImVec2(520, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.75f));
         ImGui::Begin("##Summary", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
         
         ImGui::SetWindowFontScale(1.8f);
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("MISSION COMPLETE").x) * 0.5f);
+        float titleW = ImGui::CalcTextSize("MISSION COMPLETE").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - titleW) * 0.5f);
         ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "MISSION COMPLETE");
         ImGui::Separator();
         ImGui::Spacing();
+
+        char coinStr[64];
+        sprintf(coinStr, "Gold Coins Collected: %d / %d", coins, tCoins);
+        float coinW = (coinIcon ? 45.0f : 0.0f) + ImGui::CalcTextSize(coinStr).x;
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - coinW) * 0.5f);
 
         // Coins summary
         if (coinIcon) {
@@ -126,9 +132,14 @@ class VictoryState : public our::State {
             ImGui::SameLine();
         }
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Gold Coins Collected: %d / %d", coins, tCoins);
+        ImGui::Text("%s", coinStr);
 
         ImGui::Spacing();
+
+        char enemyStr[64];
+        sprintf(enemyStr, "Guards Defeated: %d / %d", enemies, tEnemies);
+        float enemyW = (enemyIcon ? 45.0f : 0.0f) + ImGui::CalcTextSize(enemyStr).x;
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - enemyW) * 0.5f);
 
         // Enemies summary
         if (enemyIcon) {
@@ -136,20 +147,28 @@ class VictoryState : public our::State {
             ImGui::SameLine();
         }
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Guards Defeated: %d / %d", enemies, tEnemies);
+        ImGui::Text("%s", enemyStr);
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.4f);
         
-        ImGui::Text("Time: %d:%02d", (int)totalTime/60, (int)totalTime%60);
-        ImGui::SameLine(ImGui::GetWindowSize().x - 140.0f);
+        char timeStr[32];
+        sprintf(timeStr, "Time: %d:%02d", (int)totalTime/60, (int)totalTime%60);
+        float timeW = ImGui::CalcTextSize(timeStr).x;
+        float starsW = ImGui::CalcTextSize("Stars: ***").x;
+        float gap = 60.0f;
+        float bottomRowW = timeW + gap + starsW;
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - bottomRowW) * 0.5f);
+
+        ImGui::Text("%s", timeStr);
+        ImGui::SameLine(0, gap);
         ImGui::Text("Stars: ");
-        ImGui::SameLine();
+        ImGui::SameLine(0, 0);
         for(int i=0; i<3; ++i) {
             if (i < stars) ImGui::TextColored(ImVec4(1, 0.9f, 0, 1), "*");
             else ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1), "*");
-            if (i < 2) ImGui::SameLine(0, 2);
+            if (i < 2) ImGui::SameLine(0, 1);
         }
 
         ImGui::End();

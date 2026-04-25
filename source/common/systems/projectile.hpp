@@ -50,6 +50,7 @@ public:
           if (auto *enemy = other->getComponent<EnemyComponent>()) {
             if (enemy->currentState != EnemyComponent::State::DEAD) {
               enemy->health -= (int)projectile->damage;
+              enemy->healthBarTimer = 1.5f; // Show health bar when hit
               std::cout << "[ProjectileSystem] Apple hit " << other->name << "! Damage: " << projectile->damage << std::endl;
 
               if (enemy->health <= 0) {

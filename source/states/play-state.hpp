@@ -488,6 +488,7 @@ class Playstate: public our::State {
         }
 
         // For debugging only (TODO: remove or disable in production builds)
+        enemySystem.onImmediateGui(&world);
         aladdinController.onImmediateGui(&world);
 
         // Draw the Genie / Aladdin dialogue box last so it sits on top of

@@ -25,6 +25,7 @@ namespace our {
         float detectionRange = 10.0f;
         float attackRange = 2.0f;
         int health = 50;
+        int maxHealth = 50;
         int damage = 15;
         float attackCooldown = 1.5f;
         float idleAfterAttackDuration = 1.0f; // Seconds to stay idle after an attack
@@ -38,6 +39,7 @@ namespace our {
         float currentAttackTimer = 0.0f;
         float idleTimer = 0.0f; // Timer for the idle state after attack
         float deathTimer = 0.0f; // For "corpse" duration before deletion
+        float healthBarTimer = 0.0f; // Shows health bar for a duration after being hit
 
         static std::string getID() { return "Enemy"; }
 
@@ -48,6 +50,7 @@ namespace our {
             detectionRange = data.value("detectionRange", detectionRange);
             attackRange = data.value("attackRange", attackRange);
             health = data.value("health", health);
+            maxHealth = health; // Set initial max health to starting health
             damage = data.value("damage", damage);
             attackCooldown = data.value("attackCooldown", attackCooldown);
 

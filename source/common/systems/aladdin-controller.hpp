@@ -390,6 +390,7 @@ namespace our {
                         if(enemy && enemy->currentState != EnemyComponent::State::DEAD) {
                             if(wasHitInCurrentAttack(aladdin, other)) continue;
                             enemy->health -= 25;
+                            enemy->healthBarTimer = 1.5f; // Show health bar when hit
                             markHitInCurrentAttack(aladdin, other);
                             if(enemy->health <= 0) {
                                 enemy->currentState = EnemyComponent::State::DEAD;
