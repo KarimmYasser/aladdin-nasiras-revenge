@@ -63,6 +63,7 @@ namespace our
 
         // Skinned mesh shader (skinned.vert + light.frag)
         ShaderProgram* skinnedShader = nullptr;
+        ShaderProgram* shadowSkinnedShader = nullptr;
 
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.
