@@ -150,6 +150,28 @@ class Playstate: public our::State {
             if(!nextAppState.empty()){
                 levelExitSystem.clearNextApplicationState();
                 if(nextAppState == "victory"){
+                    // Determine the next level path for the "Continue" button
+                    auto& appConfig = getApp()->getConfig();
+                    
+                    // Save gameplay statistics for the victory screen
+                    appConfig["last-stats"] = {
+                        {"coinsCollected", coinsCollected},
+                        {"totalCoins", totalCoins},
+                        {"enemiesKilled", enemiesKilled},
+                        {"totalEnemies", totalEnemies},
+                        {"stars", calculateStars()},
+                        {"time", elapsedTime}
+                    };
+
+                    std::string currentLevel = appConfig.value("play-level-config", "config/levels/level1.jsonc");
+                    
+                    if(currentLevel == "config/levels/level1.jsonc") {
+                        appConfig["next-level-config"] = "config/levels/level2.jsonc";
+                    } else {
+                        // If no more levels, return to menu
+                        appConfig["next-level-config"] = "menu";
+                    }
+
                     getApp()->changeState("victory");
                     return;
                 }
@@ -229,8 +251,9 @@ class Playstate: public our::State {
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();
 
-        // Keep HUD enemy progress synced with Aladdin's persistent kill count.
+        // Sync local stats with Aladdin's persistent component stats for HUD/Victory
         if (auto* aladdin = findAladdin()) {
+            coinsCollected = aladdin->coinCount;
             enemiesKilled = aladdin->enemiesKilled;
         }
 

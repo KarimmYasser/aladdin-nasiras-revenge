@@ -47,6 +47,9 @@ class GameOverState : public our::State {
         // Load summary icons
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
         heartIcon = our::texture_utils::loadImage("assets/textures/heart_icon.png");
+
+        // Ensure cursor is visible in game over screen
+        glfwSetInputMode(getApp()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
     void onDraw(double deltaTime) override {

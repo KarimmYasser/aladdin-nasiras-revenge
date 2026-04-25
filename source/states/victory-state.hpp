@@ -7,6 +7,9 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <iomanip>
+#include <fstream>
+#include <iostream>
+#include <json/json.hpp>
 
 // Victory State — displayed when the player reaches the end portal.
 // Shows a celebratory Aladdin-themed background with fade-in effect.
@@ -47,6 +50,9 @@ class VictoryState : public our::State {
         // Load summary icons
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
+
+        // Ensure cursor is visible in victory screen
+        glfwSetInputMode(getApp()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
     void onDraw(double deltaTime) override {
@@ -78,6 +84,16 @@ class VictoryState : public our::State {
     }
 
     void onImmediateGui() override {
+        auto& appConfig = getApp()->getConfig();
+        auto stats = appConfig.value("last-stats", nlohmann::json::object());
+        
+        int coins = stats.value("coinsCollected", 0);
+        int tCoins = stats.value("totalCoins", 0);
+        int enemies = stats.value("enemiesKilled", 0);
+        int tEnemies = stats.value("totalEnemies", 0);
+        int stars = stats.value("stars", 0);
+        float totalTime = stats.value("time", 0.0f);
+
         ImGuiIO& io = ImGui::GetIO();
         float w = io.DisplaySize.x;
         float h = io.DisplaySize.y;
@@ -93,7 +109,7 @@ class VictoryState : public our::State {
 
         // ── Summary Panel ──
         ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.50f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::SetNextWindowSize(ImVec2(420, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.7f));
         ImGui::Begin("##Summary", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
@@ -110,7 +126,7 @@ class VictoryState : public our::State {
             ImGui::SameLine();
         }
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Treasures Found: 100%%"); // Using placeholder since data passing is tricky
+        ImGui::Text("Gold Coins Collected: %d / %d", coins, tCoins);
 
         ImGui::Spacing();
 
@@ -120,14 +136,21 @@ class VictoryState : public our::State {
             ImGui::SameLine();
         }
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Guards Defeated: 100%%");
+        ImGui::Text("Guards Defeated: %d / %d", enemies, tEnemies);
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.4f);
-        ImGui::Text("Final Stars:");
+        
+        ImGui::Text("Time: %d:%02d", (int)totalTime/60, (int)totalTime%60);
+        ImGui::SameLine(ImGui::GetWindowSize().x - 140.0f);
+        ImGui::Text("Stars: ");
         ImGui::SameLine();
-        for(int i=0; i<3; ++i) ImGui::TextColored(ImVec4(1, 0.9f, 0, 1), " * ");
+        for(int i=0; i<3; ++i) {
+            if (i < stars) ImGui::TextColored(ImVec4(1, 0.9f, 0, 1), "*");
+            else ImGui::TextColored(ImVec4(0.3f, 0.3f, 0.3f, 1), "*");
+            if (i < 2) ImGui::SameLine(0, 2);
+        }
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -143,7 +166,30 @@ class VictoryState : public our::State {
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.35f, 0.05f, 1.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
         if (ImGui::Button("  CONTINUE  ", ImVec2(260, 45))) {
-            getApp()->changeState("menu");
+            auto& appConfig = getApp()->getConfig();
+            std::string nextPath = appConfig.value("next-level-config", "menu");
+
+            if (nextPath == "menu") {
+                getApp()->changeState("menu");
+            } else {
+                // Load the next level configuration
+                std::ifstream f(nextPath);
+                if (f) {
+                    try {
+                        nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
+                        if (level.contains("scene")) appConfig["scene"] = level["scene"];
+                        if (level.contains("game")) appConfig["game"] = level["game"];
+                        appConfig["play-level-config"] = nextPath;
+                        getApp()->changeState("loading");
+                    } catch (const std::exception& e) {
+                        std::cerr << "Failed to parse next level " << nextPath << ": " << e.what() << std::endl;
+                        getApp()->changeState("menu");
+                    }
+                } else {
+                    std::cerr << "Could not open next level file: " << nextPath << std::endl;
+                    getApp()->changeState("menu");
+                }
+            }
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);

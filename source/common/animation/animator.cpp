@@ -24,15 +24,18 @@ namespace our {
             mClips[c.name] = c;
     }
 
-    void Animator::play(const std::string& name, bool loop, float speed) {
+    void Animator::play(const std::string& name, bool loop, float speed, float crossFadeOverride) {
         auto it = mClips.find(name);
         if (it == mClips.end()) return;
+        
+        float duration = (crossFadeOverride < 0.0f) ? mCrossFadeDuration : crossFadeOverride;
 
         // If switching to a new clip, start a crossfade
         if (mCurrentName != name) {
             mPrevious = mCurrent;
             mPreviousTime = mTime;
             mCrossFadeTime = 0.f;
+            mCrossFadeDuration = duration; // Temporarily update for this transition
             mTime = 0.f;
         }
 
@@ -85,23 +88,43 @@ namespace our {
         const BoneChannel* chPre = mPrevious ? findChannel(node.name, mPrevious) : nullptr;
 
         if (chCur || chPre) {
+            glm::vec3 posCur, scaleCur, posPre, scalePre;
+            glm::quat rotCur, rotPre;
             glm::vec3 pos, scale;
             glm::quat rot;
 
-            if (chCur && chPre) {
-                // Blend between previous and current
-                float alpha = glm::clamp(mCrossFadeTime / mCrossFadeDuration, 0.0f, 1.0f);
-                pos   = glm::mix(interpPosition(*chPre, mPreviousTime), interpPosition(*chCur, mTime), alpha);
-                rot   = glm::slerp(interpRotation(*chPre, mPreviousTime), interpRotation(*chCur, mTime), alpha);
-                scale = glm::mix(interpScale(*chPre, mPreviousTime), interpScale(*chCur, mTime), alpha);
-            } else if (chCur) {
-                pos   = interpPosition(*chCur, mTime);
-                rot   = interpRotation(*chCur, mTime);
-                scale = interpScale(*chCur, mTime);
+            // Current pose
+            if (chCur) {
+                posCur   = interpPosition(*chCur, mTime);
+                rotCur   = interpRotation(*chCur, mTime);
+                scaleCur = interpScale(*chCur, mTime);
             } else {
-                pos   = interpPosition(*chPre, mPreviousTime);
-                rot   = interpRotation(*chPre, mPreviousTime);
-                scale = interpScale(*chPre, mPreviousTime);
+                // Fallback: if bone is not in current clip, use its default pose (identity for bones usually)
+                posCur   = glm::vec3(0.0f);
+                rotCur   = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+                scaleCur = glm::vec3(1.0f);
+            }
+
+            // Previous pose (for blending)
+            if (chPre) {
+                posPre   = interpPosition(*chPre, mPreviousTime);
+                rotPre   = interpRotation(*chPre, mPreviousTime);
+                scalePre = interpScale(*chPre, mPreviousTime);
+            } else {
+                posPre   = glm::vec3(0.0f);
+                rotPre   = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+                scalePre = glm::vec3(1.0f);
+            }
+
+            if (mPrevious) {
+                float alpha = glm::clamp(mCrossFadeTime / mCrossFadeDuration, 0.0f, 1.0f);
+                pos   = glm::mix(posPre, posCur, alpha);
+                rot   = glm::slerp(rotPre, rotCur, alpha);
+                scale = glm::mix(scalePre, scaleCur, alpha);
+            } else {
+                pos   = posCur;
+                rot   = rotCur;
+                scale = scaleCur;
             }
 
             // Suppress root motion (vertical translation) if requested

@@ -219,10 +219,23 @@ namespace our {
                     targetVelocity.x = hasMoveInput ? moveDir.x * aladdin->speed : 0.0f;
                     targetVelocity.z = hasMoveInput ? moveDir.z * aladdin->speed : 0.0f;
 
-                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded) {
-                        targetVelocity.y = aladdin->jumpForce;
-                        aladdin->isGrounded = false;
-                        aladdin->groundedCoyoteTimer = 0.0f;
+                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded && !aladdin->isJumpPreparing) {
+                        aladdin->isJumpPreparing = true;
+                        aladdin->jumpDelayTimer = 0.32f; // Increased delay to match animation takeoff better
+                    }
+
+                    if(aladdin->isJumpPreparing) {
+                        aladdin->jumpDelayTimer -= deltaTime;
+                        if(aladdin->jumpDelayTimer <= 0.0f) {
+                            targetVelocity.y = aladdin->jumpForce;
+                            aladdin->isJumpPreparing = false;
+                            aladdin->isGrounded = false;
+                            aladdin->groundedCoyoteTimer = 0.0f;
+                        } else {
+                            // Optionally reduce horizontal control while prepping the jump
+                            targetVelocity.x *= 0.5f;
+                            targetVelocity.z *= 0.5f;
+                        }
                     }
 
                     physicsWorld.setLinearVelocity(entity, targetVelocity);
@@ -478,10 +491,16 @@ namespace our {
                             glm::max(0.0f, aladdin->groundedCoyoteTimer - deltaTime);
                     }
 
+                    // Only consider grounded for animation/logic if NOT moving upwards significantly
+                    const bool isMovingUp = aladdin->velocity.y > 0.5f;
+
                     groundedSmooth =
-                        groundedRaw ||
+                        (groundedRaw && !isMovingUp) ||
                         (aladdin->groundedCoyoteTimer > 0.0f && vy > kFallVyKillCoyote &&
                          vy < kCoyoteMaxRiseVy);
+                    
+                    // Sync the component's grounded state
+                    aladdin->isGrounded = groundedRaw && !isMovingUp;
                 }
 
                 Animator* animPtr = nullptr;
@@ -491,6 +510,7 @@ namespace our {
                     animPtr = &anim->animator;
 
                 if (animPtr) {
+                    animPtr->setCrossFadeDuration(aladdin->animationCrossFadeDuration);
                     std::string targetClip = "idle";
                     bool loop = true;
                     float playbackSpeed = 1.0f;
@@ -502,11 +522,52 @@ namespace our {
                         targetClip = "kick";
                         loop = false;
                         playbackSpeed = 1.8f; 
-                    } else if (!groundedSmooth) {
+                    } else if (aladdin->isJumpPreparing || !groundedSmooth) {
                         targetClip = "jump";
                         loop = false;
-                        playbackSpeed = 1.0f;
-                        animPtr->setSuppressRootMotion(true); // Prevent baked vertical motion
+                        animPtr->setSuppressRootMotion(true); 
+                        
+                        if (aladdin->isJumpPreparing) {
+                            playbackSpeed = 1.3f; // Snappy takeoff squash
+                        } else {
+                            // Adaptive Flight Speed:
+                            // We want the animation to reach its final "landing" frames 
+                            // precisely when we hit the ground.
+                            float groundDist = 10.0f;
+                            if (physicsSystem) {
+                                // Raycast down from the character's center
+                                auto& pw = physicsSystem->getPhysicsWorld();
+                                auto hit = pw.raycast(entity->localTransform.position, {0.0f, -1.0f, 0.0f}, 20.0f);
+                                if (hit.hasHit && hit.entity != entity) groundDist = hit.distance;
+                            }
+
+                            if (aladdin->velocity.y > 0.5f) {
+                                // Still rising: slow down slightly to preserve the "jump up" pose
+                                playbackSpeed = 0.65f;
+                            } else {
+                                // Falling: scale speed based on ACTUAL height above ground.
+                                // We calculate where the feet are relative to the center.
+                                float footOffset = 1.25f; 
+                                if (auto* col = entity->getComponent<ColliderComponent>()) {
+                                    if (col->shape == ColliderShape::Capsule) 
+                                        footOffset = (col->height * 0.5f) + col->radius;
+                                    else if (col->shape == ColliderShape::Box)
+                                        footOffset = col->halfExtents.y;
+                                }
+                                
+                                float heightAboveGround = glm::max(0.0f, groundDist - footOffset);
+
+                                // If we are high up (> 3m), crawl the animation (0.1x) to stay in the air pose.
+                                // As we get very close to the ground (< 0.5m), speed up significantly (2.5x)
+                                // to snap into the landing frames.
+                                playbackSpeed = glm::mix(2.5f, 0.1f, glm::clamp(heightAboveGround / 3.0f, 0.0f, 1.0f));
+                            }
+                        }
+                        
+                        // Use a very short crossfade for the jump start to make it snappy
+                        if (animPtr->currentClipName() != targetClip) {
+                            animPtr->play(targetClip, loop, playbackSpeed, 0.1f);
+                        }
                     } else if (horizontalSpeed > 0.5f) { 
                         targetClip = "walk";
                         // Balanced divisor for speed 11.0
