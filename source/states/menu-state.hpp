@@ -11,6 +11,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include <json/json.hpp>
 
 // This state shows how to use some of the abstractions we created to make a menu.
@@ -28,26 +29,114 @@ class Menustate: public our::State {
     int masterVolume = 100;
     float mouseSensitivity = 0.003f;
     bool isFullscreen = false;
-    int selectedButton = 0; // 0: Play, 1: Settings, 2: Exit
+    bool showLevelSelect = false;
+    int selectedButton = 0;
+    int selectedLevelIndex = 0;
+    bool hasContinueSession = false;
+    std::vector<std::string> levelNames;
+    std::vector<std::string> levelConfigs;
 
-    void goToPlayLevel() {
+    enum class MenuAction : int {
+        Play = 0,
+        Continue = 1,
+        Settings = 2,
+        Exit = 3
+    };
+
+    std::vector<MenuAction> getActions() const {
+        std::vector<MenuAction> actions = {MenuAction::Play};
+        if (hasContinueSession) actions.push_back(MenuAction::Continue);
+        actions.push_back(MenuAction::Settings);
+        actions.push_back(MenuAction::Exit);
+        return actions;
+    }
+
+    const char* menuActionLabel(MenuAction action) const {
+        switch (action) {
+            case MenuAction::Play: return "   PLAY   ";
+            case MenuAction::Continue: return " CONTINUE ";
+            case MenuAction::Settings: return " SETTINGS ";
+            case MenuAction::Exit: return "   EXIT   ";
+            default: return "UNKNOWN";
+        }
+    }
+
+    void loadLevelListFromConfig() {
+        levelNames.clear();
+        levelConfigs.clear();
         auto& cfg = getApp()->getConfig();
-        if(cfg.contains("play-level-config") && cfg["play-level-config"].is_string()){
-            std::string path = cfg["play-level-config"].get<std::string>();
-            std::ifstream f(path);
-            if(f){
-                try {
-                    nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
-                    if(level.contains("scene")) cfg["scene"] = level["scene"];
-                    if(level.contains("game")) cfg["game"] = level["game"];
-                } catch(const std::exception& e) {
-                    std::cerr << "Failed to parse play-level-config " << path << ": " << e.what() << std::endl;
+
+        if (cfg.contains("level-select") && cfg["level-select"].is_object()) {
+            auto& levelSelect = cfg["level-select"];
+            if (levelSelect.contains("levels") && levelSelect["levels"].is_array()) {
+                for (auto& item : levelSelect["levels"]) {
+                    if (!item.is_object()) continue;
+                    std::string configPath = item.value("config", "");
+                    if (configPath.empty()) continue;
+                    std::string displayName = item.value("name", configPath);
+                    levelNames.push_back(displayName);
+                    levelConfigs.push_back(configPath);
                 }
-            } else {
-                std::cerr << "Could not open play-level-config: " << path << std::endl;
             }
         }
+
+        if (levelConfigs.empty()) {
+            levelNames = {"Level 1", "Level 2", "Level 3"};
+            levelConfigs = {
+                "config/levels/level1.jsonc",
+                "config/levels/level2.jsonc",
+                "config/levels/level3.jsonc"
+            };
+        }
+        if (selectedLevelIndex >= (int)levelConfigs.size()) selectedLevelIndex = 0;
+    }
+
+    void loadAndEnterLevel(const std::string& levelPath, bool fromContinue) {
+        auto& cfg = getApp()->getConfig();
+        std::ifstream f(levelPath);
+        if(f){
+            try {
+                nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
+                if(level.contains("scene")) cfg["scene"] = level["scene"];
+                if(level.contains("game")) cfg["game"] = level["game"];
+                cfg["active-level-config"] = levelPath;
+                if (!fromContinue) {
+                    cfg["continue-session"]["active"] = false;
+                    cfg["continue-session"]["resume-requested"] = false;
+                } else {
+                    cfg["continue-session"]["resume-requested"] = true;
+                }
+            } catch(const std::exception& e) {
+                std::cerr << "Failed to parse level config " << levelPath << ": " << e.what() << std::endl;
+            }
+        } else {
+            std::cerr << "Could not open level config: " << levelPath << std::endl;
+        }
         getApp()->changeState("loading");
+    }
+
+    void executeAction(MenuAction action) {
+        auto& cfg = getApp()->getConfig();
+        if (action == MenuAction::Play) {
+            showLevelSelect = true;
+            selectedLevelIndex = 0;
+            return;
+        }
+        if (action == MenuAction::Continue) {
+            if (cfg.contains("continue-session") && cfg["continue-session"].is_object() &&
+                cfg["continue-session"].value("active", false)) {
+                std::string levelPath = cfg["continue-session"].value("level-config", "");
+                if (!levelPath.empty()) {
+                    loadAndEnterLevel(levelPath, true);
+                }
+            }
+            return;
+        }
+        if (action == MenuAction::Settings) {
+            showSettings = !showSettings;
+            return;
+        }
+        getApp()->close();
     }
 
     void onInitialize() override {
@@ -79,6 +168,9 @@ class Menustate: public our::State {
         time = 0;
         // Close settings panel when re-entering menu
         showSettings = false;
+        showLevelSelect = false;
+        selectedButton = 0;
+        selectedLevelIndex = 0;
 
         // Load marker icon
         markerIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
@@ -93,6 +185,10 @@ class Menustate: public our::State {
         if (cfg.contains("window")) {
             isFullscreen = cfg["window"].value("fullscreen", false);
         }
+        hasContinueSession = cfg.contains("continue-session") &&
+                             cfg["continue-session"].is_object() &&
+                             cfg["continue-session"].value("active", false);
+        loadLevelListFromConfig();
 
         // Start menu background music
         our::AudioSystem::instance().playMusic("assets/audio/menu.mp3");
@@ -105,23 +201,43 @@ class Menustate: public our::State {
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 
-        if(keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)){
-            if (selectedButton == 0) goToPlayLevel();
-            else if (selectedButton == 1) showSettings = !showSettings;
-            else if (selectedButton == 2) getApp()->close();
+        if(showLevelSelect){
+            const int levelsCount = (int)levelConfigs.size();
+            if (levelsCount > 0) {
+                if (keyboard.justPressed(GLFW_KEY_DOWN)) {
+                    selectedLevelIndex = (selectedLevelIndex + 1) % levelsCount;
+                    our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+                }
+                if (keyboard.justPressed(GLFW_KEY_UP)) {
+                    selectedLevelIndex = (selectedLevelIndex - 1 + levelsCount) % levelsCount;
+                    our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+                }
+                if (keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)) {
+                    loadAndEnterLevel(levelConfigs[selectedLevelIndex], false);
+                }
+            }
+            if (keyboard.justPressed(GLFW_KEY_ESCAPE)) {
+                showLevelSelect = false;
+            }
+        } else if(keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)){
+            auto actions = getActions();
+            if(!actions.empty()) executeAction(actions[selectedButton]);
         } else if(keyboard.justPressed(GLFW_KEY_ESCAPE)) {
             // If the escape key is pressed in this frame, exit the game
             getApp()->close();
         }
 
-        // Arrow Key Navigation
-        if (keyboard.justPressed(GLFW_KEY_DOWN)) {
-            selectedButton = (selectedButton + 1) % 3;
-            our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
-        }
-        if (keyboard.justPressed(GLFW_KEY_UP)) {
-            selectedButton = (selectedButton - 1 + 3) % 3;
-            our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+        if(!showLevelSelect){
+            auto actions = getActions();
+            const int actionCount = (int)actions.size();
+            if (keyboard.justPressed(GLFW_KEY_DOWN) && actionCount > 0) {
+                selectedButton = (selectedButton + 1) % actionCount;
+                our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+            }
+            if (keyboard.justPressed(GLFW_KEY_UP) && actionCount > 0) {
+                selectedButton = (selectedButton - 1 + actionCount) % actionCount;
+                our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
+            }
         }
 
         // Get the framebuffer size to set the viewport and the create the projection matrix.
@@ -181,7 +297,7 @@ class Menustate: public our::State {
         ImGui::End();
 
         // ── Buttons ──
-        if (!showSettings) {
+        if (!showSettings && !showLevelSelect) {
             float btnW = 220.0f;
             float btnH = 50.0f;
             ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.55f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -196,61 +312,79 @@ class Menustate: public our::State {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
 
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-            bool pushedPlay = false;
-            if (selectedButton == 0) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedPlay = true; }
-            if (ImGui::Button("   PLAY   ", ImVec2(btnW, btnH)) || (selectedButton == 0 && keyboard.justPressed(GLFW_KEY_ENTER))) {
-                goToPlayLevel();
-            }
-            if (ImGui::IsItemHovered()) selectedButton = 0;
-            if (pushedPlay) ImGui::PopStyleColor();
+            auto actions = getActions();
+            for(int i = 0; i < (int)actions.size(); i++){
+                auto action = actions[i];
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+                bool pushedBorder = false;
+                if (selectedButton == i) {
+                    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    pushedBorder = true;
+                }
+                if (ImGui::Button(menuActionLabel(action), ImVec2(btnW, btnH))) {
+                    executeAction(action);
+                }
+                if (ImGui::IsItemHovered()) selectedButton = i;
+                if (pushedBorder) ImGui::PopStyleColor();
 
-            if ((ImGui::IsItemHovered() || selectedButton == 0) && markerIcon) {
-                ImVec2 min = ImGui::GetItemRectMin();
-                ImVec2 max = ImGui::GetItemRectMax();
-                float coinY = min.y + (btnH - 32.0f) * 0.5f;
-                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
-            }
-
-            ImGui::Spacing();
-
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-            bool pushedSettings = false;
-            if (selectedButton == 1) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedSettings = true; }
-            if (ImGui::Button(" SETTINGS ", ImVec2(btnW, btnH))) {
-                showSettings = true;
-            }
-            if (ImGui::IsItemHovered()) selectedButton = 1;
-            if (pushedSettings) ImGui::PopStyleColor();
-
-            if ((ImGui::IsItemHovered() || selectedButton == 1) && markerIcon) {
-                ImVec2 min = ImGui::GetItemRectMin();
-                ImVec2 max = ImGui::GetItemRectMax();
-                float coinY = min.y + (btnH - 32.0f) * 0.5f;
-                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
-            }
-
-            ImGui::Spacing();
-
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
-            bool pushedExit = false;
-            if (selectedButton == 2) { ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); pushedExit = true; }
-            if (ImGui::Button("   EXIT   ", ImVec2(btnW, btnH))) {
-                getApp()->close();
-            }
-            if (ImGui::IsItemHovered()) selectedButton = 2;
-            if (pushedExit) ImGui::PopStyleColor();
-
-            if ((ImGui::IsItemHovered() || selectedButton == 2) && markerIcon) {
-                ImVec2 min = ImGui::GetItemRectMin();
-                ImVec2 max = ImGui::GetItemRectMax();
-                float coinY = min.y + (btnH - 32.0f) * 0.5f;
-                ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+                if ((ImGui::IsItemHovered() || selectedButton == i) && markerIcon) {
+                    ImVec2 min = ImGui::GetItemRectMin();
+                    ImVec2 max = ImGui::GetItemRectMax();
+                    float coinY = min.y + (btnH - 32.0f) * 0.5f;
+                    ImGui::GetWindowDrawList()->AddImage((void*)(intptr_t)markerIcon->getOpenGLName(), ImVec2(max.x + 10.0f, coinY), ImVec2(max.x + 42.0f, coinY + 32.0f));
+                }
+                if (i + 1 < (int)actions.size()) ImGui::Spacing();
             }
 
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
             ImGui::End();
+        }
+
+        if(showLevelSelect){
+            float panelW = 420.0f;
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f, h * 0.58f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(panelW, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.02f, 0.12f, 0.88f));
+            ImGui::Begin("##LevelSelectPanel", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::SetWindowFontScale(1.6f);
+            ImGui::Text("Choose Level");
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            ImGui::SetWindowFontScale(1.2f);
+            for (int i = 0; i < (int)levelNames.size(); i++) {
+                bool chosen = (selectedLevelIndex == i);
+                if (chosen) {
+                    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                }
+                if (ImGui::Button(levelNames[i].c_str(), ImVec2(panelW - 60.0f, 40.0f))) {
+                    selectedLevelIndex = i;
+                    loadAndEnterLevel(levelConfigs[i], false);
+                }
+                if (ImGui::IsItemHovered()) selectedLevelIndex = i;
+                if ((chosen || ImGui::IsItemHovered()) && markerIcon) {
+                    ImVec2 min = ImGui::GetItemRectMin();
+                    ImVec2 max = ImGui::GetItemRectMax();
+                    float coinY = min.y + (40.0f - 28.0f) * 0.5f;
+                    ImGui::GetWindowDrawList()->AddImage(
+                        (void*)(intptr_t)markerIcon->getOpenGLName(),
+                        ImVec2(max.x + 8.0f, coinY),
+                        ImVec2(max.x + 36.0f, coinY + 28.0f)
+                    );
+                }
+                if (chosen) ImGui::PopStyleColor();
+                ImGui::Spacing();
+            }
+
+            if (ImGui::Button("BACK", ImVec2(120.0f, 35.0f))) {
+                showLevelSelect = false;
+            }
+
+            ImGui::End();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
         }
 
         // ── Settings Panel ──
@@ -368,7 +502,11 @@ class Menustate: public our::State {
         ImGui::Begin("##Hint", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
-        ImGui::Text("Arrows: Navigate | SPACE/ENTER: Select | ESC: Exit");
+        if(showLevelSelect){
+            ImGui::Text("Arrows: Choose Level | Enter/Click: Start | ESC: Back");
+        } else {
+            ImGui::Text("Arrows: Navigate | Enter/Click: Select | ESC: Exit");
+        }
         ImGui::PopStyleColor();
         ImGui::End();
     }

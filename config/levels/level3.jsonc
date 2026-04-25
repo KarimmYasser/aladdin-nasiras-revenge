@@ -240,7 +240,6 @@
                     }
                 ]
             },
-
             {
                 "name": "pembroke-castle",
                 "position": [0.864, 2.4, -2.305],
@@ -266,27 +265,27 @@
                     }
                 ]
             },
-            // Safety boundaries for Map 1 (Pembroke) to prevent falling out of bounds
-            { "name": "map1-bound-n", "position": [0.0, 18.0, -195.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
-                ] },
-            { "name": "map1-bound-s", "position": [0.0, 18.0, 195.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
-                ] },
-            { "name": "map1-bound-w", "position": [-195.0, 18.0, 0.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
-                ] },
-            { "name": "map1-bound-e", "position": [195.0, 18.0, 0.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
-                ] },
+            // // Safety boundaries for Map 1 (Pembroke) to prevent falling out of bounds
+            // { "name": "map1-bound-n", "position": [0.0, 18.0, -50.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
+            //     ] },
+            // { "name": "map1-bound-s", "position": [0.0, 18.0, 50.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
+            //     ] },
+            // { "name": "map1-bound-w", "position": [-50.0, 18.0, 0.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
+            //     ] },
+            // { "name": "map1-bound-e", "position": [50.0, 18.0, 0.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
+            //     ] },
             {
                 "name": "fill-raby",
                 "position": [600, 24, 0],
@@ -327,26 +326,26 @@
                 ]
             },
             // Safety boundaries for Map 2 (Raby) to prevent leaving ring-map play area
-            { "name": "map2-bound-n", "position": [600.0, 22.0, -235.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
-                ] },
-            { "name": "map2-bound-s", "position": [600.0, 22.0, 235.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
-                ] },
-            { "name": "map2-bound-w", "position": [365.0, 22.0, 0.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
-                ] },
-            { "name": "map2-bound-e", "position": [835.0, 22.0, 0.0],
-                "components": [
-                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
-                ] },
+            // { "name": "map2-bound-n", "position": [600.0, 22.0, -235.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
+            //     ] },
+            // { "name": "map2-bound-s", "position": [600.0, 22.0, 235.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
+            //     ] },
+            // { "name": "map2-bound-w", "position": [365.0, 22.0, 0.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
+            //     ] },
+            // { "name": "map2-bound-e", "position": [835.0, 22.0, 0.0],
+            //     "components": [
+            //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+            //         { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
+            //     ] },
             {
                 "name": "portal-map1-to-map2-visual",
                 "position": [4.6, 2.7, 70],

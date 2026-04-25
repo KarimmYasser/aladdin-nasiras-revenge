@@ -21,6 +21,13 @@ class GameOverState : public our::State {
     our::Texture2D* enemyIcon = nullptr;
     our::Texture2D* heartIcon = nullptr;
 
+    void restartCurrentLevel() {
+        auto& cfg = getApp()->getConfig();
+        cfg["continue-session"]["active"] = false;
+        cfg["continue-session"]["resume-requested"] = false;
+        getApp()->changeState("loading");
+    }
+
     void onInitialize() override {
         // Create the background material
         bgMaterial = new our::TexturedMaterial();
@@ -52,11 +59,15 @@ class GameOverState : public our::State {
     void onDraw(double deltaTime) override {
         auto& keyboard = getApp()->getKeyboard();
 
-        // SPACE or ENTER → return to menu
+        // SPACE or ENTER -> retry current level.
         if (keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)) {
+            restartCurrentLevel();
+        }
+        // M -> return to menu
+        if (keyboard.justPressed(GLFW_KEY_M)) {
             getApp()->changeState("menu");
         }
-        // ESC → quit
+        // ESC -> quit
         if (keyboard.justPressed(GLFW_KEY_ESCAPE)) {
             getApp()->close();
         }
@@ -134,7 +145,7 @@ class GameOverState : public our::State {
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0.05f, 0.05f, 1.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
         if (ImGui::Button("  RETRY  ", ImVec2(260, 45))) {
-            getApp()->changeState("play");
+            restartCurrentLevel();
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);

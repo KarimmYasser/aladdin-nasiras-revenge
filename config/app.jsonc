@@ -1,6 +1,13 @@
 {
     "start-scene": "menu",
     "play-level-config": "config/levels/level3.jsonc",
+    "level-select": {
+        "levels": [
+            {"name": "Level 1", "config": "config/levels/level1.jsonc"},
+            {"name": "Level 2", "config": "config/levels/level2.jsonc"},
+            {"name": "Level 3", "config": "config/levels/level3.jsonc"}
+        ]
+    },
     "window":
     {
         "title":"Default Game Window",
