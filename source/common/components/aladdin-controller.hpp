@@ -64,6 +64,12 @@ namespace our {
         bool isGrounded = false;
         /// Seconds of "still considered on ground" after last strict hit; stabilizes walk vs air on bumpy mesh.
         float groundedCoyoteTimer = 0.2f;
+        /// Time spent continuously airborne (used to debounce fall animation flicker on uneven maps).
+        float airborneTimer = 0.0f;
+        /// Minimum airborne duration before switching to jump/fall animation.
+        float airborneAnimDelay = 0.18f;
+        /// Minimum downward speed to force jump/fall animation immediately.
+        float fallAnimMinDownSpeed = -2.7f;
 
         bool isAttacking = false;
         float attackTimer = 0.0f;
@@ -108,6 +114,8 @@ namespace our {
                 }
             }
             invincibilityDuration = data.value("invincibilityDuration", invincibilityDuration);
+            airborneAnimDelay = data.value("airborneAnimDelay", airborneAnimDelay);
+            fallAnimMinDownSpeed = data.value("fallAnimMinDownSpeed", fallAnimMinDownSpeed);
 
             enableCameraFollow = data.value("enableCameraFollow", enableCameraFollow);
             cameraSmoothing = data.value("cameraSmoothing", cameraSmoothing);

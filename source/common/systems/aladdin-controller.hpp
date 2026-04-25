@@ -462,7 +462,6 @@ namespace our {
                     auto& physicsWorld = physicsSystem->getPhysicsWorld();
                     const bool groundedRaw =
                         computeGroundedFromPhysics(entity, physicsWorld, swordHitbox);
-                    aladdin->isGrounded = groundedRaw;
 
                     const float vy = aladdin->velocity.y;
                     constexpr float kCoyoteSeconds = 0.18f;
@@ -482,6 +481,15 @@ namespace our {
                         groundedRaw ||
                         (aladdin->groundedCoyoteTimer > 0.0f && vy > kFallVyKillCoyote &&
                          vy < kCoyoteMaxRiseVy);
+
+                    if (groundedSmooth) {
+                        aladdin->airborneTimer = 0.0f;
+                    } else {
+                        aladdin->airborneTimer += deltaTime;
+                    }
+
+                    // Expose the debounced grounded state to gameplay/debug UI.
+                    aladdin->isGrounded = groundedSmooth;
                 }
 
                 Animator* animPtr = nullptr;
@@ -502,7 +510,9 @@ namespace our {
                         targetClip = "kick";
                         loop = false;
                         playbackSpeed = 1.8f; 
-                    } else if (!groundedSmooth) {
+                    } else if (!groundedSmooth &&
+                               (aladdin->airborneTimer >= aladdin->airborneAnimDelay ||
+                                aladdin->velocity.y <= aladdin->fallAnimMinDownSpeed)) {
                         targetClip = "jump";
                         loop = false;
                         playbackSpeed = 1.0f;
@@ -733,6 +743,7 @@ namespace our {
             ImGui::Separator();
             ImGui::Value("Is Grounded (strict)", aladdin->isGrounded);
             ImGui::Text("Coyote timer: %.3f s", (double)aladdin->groundedCoyoteTimer);
+            ImGui::Text("Airborne timer: %.3f s", (double)aladdin->airborneTimer);
             
             ImGui::Separator();
             ImGui::Text("Combat State:");
@@ -753,6 +764,8 @@ namespace our {
             ImGui::DragFloat("Speed", &aladdin->speed, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Jump Force", &aladdin->jumpForce, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Rotation Speed", &aladdin->rotationSpeed, 0.1f, 0.0f, 20.0f);
+            ImGui::DragFloat("Airborne Anim Delay", &aladdin->airborneAnimDelay, 0.005f, 0.0f, 0.5f);
+            ImGui::DragFloat("Fall Anim Min Down Speed", &aladdin->fallAnimMinDownSpeed, 0.05f, -20.0f, 0.0f);
 
             ImGui::Separator();
             ImGui::Text("Camera Follow:");

@@ -67,6 +67,7 @@ class Playstate: public our::State {
     our::Texture2D* coinIcon = nullptr;
     our::Texture2D* heartIcon = nullptr;
     our::Texture2D* enemyIcon = nullptr;
+    bool showPositionDebug = false;
 
     void onInitialize() override {
         // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
@@ -251,6 +252,9 @@ class Playstate: public our::State {
                     ? our::AladdinCameraMode::FirstPerson
                     : our::AladdinCameraMode::ThirdPerson;
             }
+        }
+        if (!freezeGameplay && keyboard.justPressed(GLFW_KEY_M)) {
+            showPositionDebug = !showPositionDebug;
         }
 
 #if !defined(NDEBUG)
@@ -439,9 +443,30 @@ class Playstate: public our::State {
         ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-        ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
+        ImGui::Text("WASD: Move | V: 1st/3rd cam | M: coord debug | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
+
+        if (showPositionDebug) {
+            glm::vec3 worldPos{0.0f, 0.0f, 0.0f};
+            if (auto* aladdinEntity = findAladdinEntity()) {
+                worldPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(screenWidth - 320, screenHeight - 110));
+            ImGui::SetNextWindowSize(ImVec2(300, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.55f));
+            ImGui::Begin("##PositionDebug", nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav);
+            ImGui::TextColored(ImVec4(0.6f, 0.9f, 1.0f, 1.0f), "DEBUG COORDINATES");
+            ImGui::Text("X: %.2f", worldPos.x);
+            ImGui::Text("Y: %.2f", worldPos.y);
+            ImGui::Text("Z: %.2f", worldPos.z);
+            ImGui::End();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+        }
 
         // ═══════════════════════════════════════════════════════
         //  AIMING CROSSHAIR

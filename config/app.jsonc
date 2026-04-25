@@ -1,6 +1,6 @@
 {
     "start-scene": "menu",
-    "play-level-config": "config/levels/level2.jsonc",
+    "play-level-config": "config/levels/level3.jsonc",
     "window":
     {
         "title":"Default Game Window",
