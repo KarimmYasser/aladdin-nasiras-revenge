@@ -60,7 +60,10 @@ namespace our {
         float cameraFocusHeight = 1.5f;
 
         glm::vec3 velocity = {0, 0, 0};
+        /// Strict physics probe (contacts + feet ray). Used for jump and debug UI.
         bool isGrounded = false;
+        /// Seconds of "still considered on ground" after last strict hit; stabilizes walk vs air on bumpy mesh.
+        float groundedCoyoteTimer = 0.2f;
 
         bool isAttacking = false;
         float attackTimer = 0.0f;
@@ -73,6 +76,7 @@ namespace our {
         int coinCount = 0;
         int gemCount = 0;
         int appleCount = 10;
+        int enemiesKilled = 0;
         bool hasKey = false;
         int health = 100;
         int lives = 3;

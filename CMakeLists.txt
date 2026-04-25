@@ -61,6 +61,7 @@ set(COMMON_SOURCES
         source/common/mesh/mesh.hpp
         source/common/mesh/mesh-utils.hpp
         source/common/mesh/mesh-utils.cpp
+        source/common/mesh/mesh.cpp
         source/common/mesh/skinned-vertex.hpp
         source/common/mesh/bone-info.hpp
         source/common/mesh/skinned-mesh.hpp
