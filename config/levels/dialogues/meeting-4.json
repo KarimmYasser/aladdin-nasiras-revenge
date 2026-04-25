@@ -1,0 +1,30 @@
+{
+    "_comment": "Fourth Genie meeting (Level 3 finale, just before the boss fight with the Wish Eater). Placeholder hookup — not wired into any level config yet.",
+
+    "meeting": 4,
+    "title": "Fourth Meeting",
+    "level": 3,
+
+    "trigger": {
+        "lampEntity":   "",
+        "radius":       4.5,
+        "oneShot":      true,
+        "revealEntity": ""
+    },
+
+    "onFinish": {
+        "removeEntities": [],
+        "revealEntities": []
+    },
+
+    "lines": [
+        { "speaker": "genie",   "text": "This is it. He's waiting for you." },
+        { "speaker": "aladdin", "text": "I'm ready." },
+        { "speaker": "genie",   "text": "Listen carefully… he will offer you a deal." },
+        { "speaker": "aladdin", "text": "What kind of deal?" },
+        { "speaker": "genie",   "text": "He'll promise to return Jasmine… if you give up your final wish." },
+        { "speaker": "aladdin", "text": "And if I refuse?" },
+        { "speaker": "genie",   "text": "Then you'll have to fight him at full strength… and risk losing everything." },
+        { "speaker": "aladdin", "text": "I'm not trading her life for a trick, I will fight him!!" }
+    ]
+}

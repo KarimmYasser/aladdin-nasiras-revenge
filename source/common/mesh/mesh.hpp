@@ -2,6 +2,8 @@
 
 #include <glad/gl.h>
 #include <cstddef>
+#include <cstdint>
+#include <string>
 #include <vector>
 #include "vertex.hpp"
 
@@ -12,69 +14,60 @@ namespace our {
     #define ATTRIB_LOC_TEXCOORD 2
     #define ATTRIB_LOC_NORMAL   3
 
+    /// One OBJ material group → one draw call with a matching material from JSON.
+    struct MeshSubmesh {
+        GLuint firstIndex = 0;   ///< Offset into the element buffer (in indices, not bytes)
+        GLsizei indexCount = 0; ///< Number of GLuint indices (multiple of 3)
+        std::string materialName; ///< tinyobj material name (e.g. mat0)
+    };
+
     class Mesh {
-        // Here, we store the object names of the 3 main components of a mesh:
-        // A vertex array object, A vertex buffer and an element buffer
         unsigned int VBO, EBO;
         unsigned int VAO;
-        // We need to remember the number of elements that will be draw by glDrawElements 
         GLsizei elementCount;
+        std::vector<MeshSubmesh> submeshes;
+        /// Cooked triangle soup for ReactPhysics3D (same indexing as GL). Kept for concave mesh colliders.
+        std::vector<float> physicsVertexPositions;
+        std::vector<uint32_t> physicsIndices;
+
     public:
+        /// Full constructor: optional per-material draw ranges and physics cook data.
+        Mesh(const std::vector<Vertex>& vertices,
+             const std::vector<unsigned int>& elements,
+             std::vector<MeshSubmesh> submeshesIn = {},
+             std::vector<float> physicsVertexPositionsIn = {},
+             std::vector<uint32_t> physicsIndicesIn = {});
 
-        // The constructor takes two vectors:
-        // - vertices which contain the vertex data.
-        // - elements which contain the indices of the vertices out of which each rectangle will be constructed.
-        // The mesh class does not keep a these data on the RAM. Instead, it should create
-        // a vertex buffer to store the vertex data on the VRAM,
-        // an element buffer to store the element data on the VRAM,
-        // a vertex array object to define how to read the vertex & element buffer during rendering 
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& elements)
-        {
-            //TODO: (Req 2) Write this function
-            // remember to store the number of elements in "elementCount" since you will need it for drawing
-            // For the attribute locations, use the constants defined above: ATTRIB_LOC_POSITION, ATTRIB_LOC_COLOR, etc
+        [[nodiscard]] GLsizei getElementCount() const { return elementCount; }
 
-            elementCount = (GLsizei)elements.size();
+        [[nodiscard]] bool hasSubmeshes() const { return !submeshes.empty(); }
+        [[nodiscard]] const std::vector<MeshSubmesh>& getSubmeshes() const { return submeshes; }
 
-            glGenVertexArrays(1, &VAO);
-            glGenBuffers(1, &VBO);
-            glGenBuffers(1, &EBO);
+        [[nodiscard]] bool hasPhysicsTriangleData() const {
+            return !physicsVertexPositions.empty() && !physicsIndices.empty();
+        }
+        [[nodiscard]] const std::vector<float>& getPhysicsVertexPositions() const { return physicsVertexPositions; }
+        [[nodiscard]] const std::vector<uint32_t>& getPhysicsIndices() const { return physicsIndices; }
+        [[nodiscard]] uint32_t getPhysicsVertexCount() const {
+            return static_cast<uint32_t>(physicsVertexPositions.size() / 3);
+        }
+        [[nodiscard]] uint32_t getPhysicsTriangleCount() const {
+            return static_cast<uint32_t>(physicsIndices.size() / 3);
+        }
 
+        void drawRange(GLsizei firstIndex, GLsizei indexCount) const {
+            if (indexCount <= 0) return;
             glBindVertexArray(VAO);
-
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(unsigned int), elements.data(), GL_STATIC_DRAW);
-
-            glEnableVertexAttribArray(ATTRIB_LOC_POSITION);
-            glVertexAttribPointer(ATTRIB_LOC_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-
-            glEnableVertexAttribArray(ATTRIB_LOC_COLOR);
-            glVertexAttribPointer(ATTRIB_LOC_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), (void*)offsetof(Vertex, color));
-
-            glEnableVertexAttribArray(ATTRIB_LOC_TEXCOORD);
-            glVertexAttribPointer(ATTRIB_LOC_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coord));
-
-            glEnableVertexAttribArray(ATTRIB_LOC_NORMAL);
-            glVertexAttribPointer(ATTRIB_LOC_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
+            const void* offset = reinterpret_cast<const void*>(static_cast<uintptr_t>(firstIndex) * sizeof(GLuint));
+            glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, offset);
             glBindVertexArray(0);
         }
 
-        // this function should render the mesh
-        void draw() 
-        {
-            //TODO: (Req 2) Write this function
-            glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_INT, nullptr);
-            glBindVertexArray(0);
+        void draw() const {
+            drawRange(0, elementCount);
         }
 
-        // this function should delete the vertex & element buffers and the vertex array object
-        ~Mesh(){
-            //TODO: (Req 2) Write this function
+        ~Mesh() {
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);
             glDeleteVertexArrays(1, &VAO);

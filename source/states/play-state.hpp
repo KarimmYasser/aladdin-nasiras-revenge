@@ -16,6 +16,7 @@
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/room-portal.hpp>
+#include <systems/dialogue.hpp>
 #include <systems/projectile.hpp>
 #include <audio/audio-system.hpp>
 #include <systems/animation-system.hpp>
@@ -43,6 +44,7 @@ class Playstate: public our::State {
     our::CheckpointSystem checkpointSystem;
     our::LevelExitSystem levelExitSystem;
     our::RoomPortalSystem roomPortalSystem;
+    our::DialogueSystem dialogueSystem;
     our::ProjectileSystem projectileSystem;
     our::AnimationSystem animationSystem;
 
@@ -69,6 +71,7 @@ class Playstate: public our::State {
     void onInitialize() override {
         // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
         roomPortalSystem.reset();
+        dialogueSystem.reset();
 
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
@@ -124,6 +127,13 @@ class Playstate: public our::State {
         return nullptr;
     }
 
+    our::Entity* findAladdinEntity() {
+        for (auto entity : world.getEntities()) {
+            if (entity->getComponent<our::AladdinControllerComponent>()) return entity;
+        }
+        return nullptr;
+    }
+
     void onDraw(double deltaTime) override {
         elapsedTime += (float)deltaTime;
         if(!physicsInitialized){
@@ -175,35 +185,67 @@ class Playstate: public our::State {
             return;
         }
 
-        // Here, we just run a bunch of systems to control the world logic
-        movementSystem.update(&world, (float)deltaTime);
-        aladdinController.update(&world, &physicsSystem, (float)deltaTime);
-        enemySystem.update(&world, &physicsSystem, (float)deltaTime);
-        physicsSystem.update(&world, (float)deltaTime);
-        projectileSystem.update(&world, &physicsSystem, (float)deltaTime);
-        aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
-        cameraController.update(&world, (float)deltaTime);
-        collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
-        hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
-        checkpointSystem.update(&world, &physicsSystem);
-        levelExitSystem.update(&world);
-        // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
-        animationSystem.update(&world, (float)deltaTime);
-        // And finally we use the renderer system to draw the scene
+        // Dialogue system gates gameplay — when a Genie meeting is playing
+        // the world is frozen and the player can only advance the lines or
+        // press ESC to skip.
+        glm::vec3 playerPos{0.0f};
+        if(auto* aladdinEntity = findAladdinEntity()){
+            playerPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+        }
+        // Capture "was active" BEFORE updating. If the player hits ESC to
+        // skip the conversation, DialogueSystem::update() ends it in-place
+        // (isActive() becomes false), and we must NOT let that same ESC
+        // press fall through to the menu-return branch below.
+        const bool dialogueFrozen = dialogueSystem.isActive();
+        dialogueSystem.update(&world, getApp()->getKeyboard(), getApp()->getMouse(),
+                              playerPos, (float)deltaTime);
+        const bool dialogueStillActive = dialogueSystem.isActive();
+
+        // Freeze gameplay this frame if a dialogue is (or just was) active —
+        // this covers: dialogue in progress, dialogue just started this
+        // frame, and dialogue just ended this frame (so the skip-ESC doesn't
+        // also trigger a jump etc.).
+        const bool freezeGameplay = dialogueFrozen || dialogueStillActive;
+        if(!freezeGameplay){
+            // Here, we just run a bunch of systems to control the world logic
+            movementSystem.update(&world, (float)deltaTime);
+            aladdinController.update(&world, &physicsSystem, (float)deltaTime);
+            enemySystem.update(&world, &physicsSystem, (float)deltaTime);
+            physicsSystem.update(&world, (float)deltaTime);
+            projectileSystem.update(&world, &physicsSystem, (float)deltaTime);
+            aladdinController.postPhysicsUpdate(&world, &physicsSystem, (float)deltaTime);
+            cameraController.update(&world, (float)deltaTime);
+            collectibleSystem.update(&world, &physicsSystem, (float)deltaTime);
+            hazardSystem.update(&world, &physicsSystem, (float)deltaTime);
+            checkpointSystem.update(&world, &physicsSystem);
+            levelExitSystem.update(&world);
+            // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
+            animationSystem.update(&world, (float)deltaTime);
+        }
+        // Always render so the frozen scene stays on screen behind the
+        // dialogue box.
         renderer.render(&world);
 
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();
 
+        // Keep HUD enemy progress synced with Aladdin's persistent kill count.
+        if (auto* aladdin = findAladdin()) {
+            enemiesKilled = aladdin->enemiesKilled;
+        }
+
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 
-        if(keyboard.justPressed(GLFW_KEY_ESCAPE)){
-            // If the escape key is pressed in this frame, go to the menu state
+        if(!freezeGameplay && keyboard.justPressed(GLFW_KEY_ESCAPE)){
+            // If the escape key is pressed in this frame, go to the menu state.
+            // NOTE: when a dialogue is active OR was just skipped this frame,
+            // freezeGameplay is true — so ESC is consumed by DialogueSystem
+            // (to skip the meeting) and never falls through to here.
             getApp()->changeState("menu");
         }
 
-        if (keyboard.justPressed(GLFW_KEY_V)) {
+        if (!freezeGameplay && keyboard.justPressed(GLFW_KEY_V)) {
             if (auto* a = findAladdin()) {
                 a->cameraMode = (a->cameraMode == our::AladdinCameraMode::ThirdPerson)
                     ? our::AladdinCameraMode::FirstPerson
@@ -212,18 +254,21 @@ class Playstate: public our::State {
         }
 
 #if !defined(NDEBUG)
-        // Debug shortcuts (enabled only in non-release builds)
-        if(keyboard.justPressed(GLFW_KEY_G)){
-            getApp()->changeState("gameover");
-        }
-        if(keyboard.justPressed(GLFW_KEY_F10)){
-            getApp()->changeState("victory");
-        }
-        if(keyboard.justPressed(GLFW_KEY_C)){
-            if(coinsCollected < totalCoins) coinsCollected++;
-        }
-        if(keyboard.justPressed(GLFW_KEY_K)){
-            if(enemiesKilled < totalEnemies) enemiesKilled++;
+        // Debug shortcuts (enabled only in non-release builds, and only
+        // when a dialogue isn't blocking input).
+        if(!freezeGameplay){
+            if(keyboard.justPressed(GLFW_KEY_G)){
+                getApp()->changeState("gameover");
+            }
+            if(keyboard.justPressed(GLFW_KEY_F10)){
+                getApp()->changeState("victory");
+            }
+            if(keyboard.justPressed(GLFW_KEY_C)){
+                if(coinsCollected < totalCoins) coinsCollected++;
+            }
+            if(keyboard.justPressed(GLFW_KEY_K)){
+                if(enemiesKilled < totalEnemies) enemiesKilled++;
+            }
         }
 #endif
     }
@@ -421,6 +466,10 @@ class Playstate: public our::State {
 
         // For debugging only (TODO: remove or disable in production builds)
         aladdinController.onImmediateGui(&world);
+
+        // Draw the Genie / Aladdin dialogue box last so it sits on top of
+        // the HUD. No-op when no conversation is active.
+        dialogueSystem.renderImGui();
     }
 
     void onDestroy() override {

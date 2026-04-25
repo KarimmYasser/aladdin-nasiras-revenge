@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../audio/audio-system.hpp"
+#include "../components/aladdin-controller.hpp"
 #include "../components/breakable.hpp"
 #include "../components/enemy.hpp"
 #include "../components/projectile.hpp"
@@ -53,6 +54,11 @@ public:
 
               if (enemy->health <= 0) {
                 enemy->currentState = EnemyComponent::State::DEAD;
+                if (projectile->owner) {
+                  if (auto* aladdin = projectile->owner->getComponent<AladdinControllerComponent>()) {
+                    aladdin->enemiesKilled++;
+                  }
+                }
                 AudioSystem::instance().playSound("assets/audio/death.wav");
               } else {
                 AudioSystem::instance().playSound("assets/audio/hit.wav");

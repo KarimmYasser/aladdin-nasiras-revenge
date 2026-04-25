@@ -1,0 +1,31 @@
+{
+    "_comment": "Third Genie meeting (Level 3). Placeholder hookup — not wired into any level config yet. The level-3 designer should fill in the lamp entity name and onFinish hooks.",
+
+    "meeting": 3,
+    "title": "Third Meeting",
+    "level": 3,
+
+    "trigger": {
+        "lampEntity":   "",
+        "radius":       4.5,
+        "oneShot":      true,
+        "revealEntity": ""
+    },
+
+    "onFinish": {
+        "removeEntities": [],
+        "revealEntities": []
+    },
+
+    "lines": [
+        { "speaker": "genie",   "text": "You're getting closer. I can feel him now." },
+        { "speaker": "aladdin", "text": "Then tell me everything." },
+        { "speaker": "genie",   "text": "He's called the Wish Eater. Every wish he takes makes him stronger." },
+        { "speaker": "aladdin", "text": "And Jasmine?" },
+        { "speaker": "genie",   "text": "He didn't just capture her… he bound her to his power." },
+        { "speaker": "aladdin", "text": "Meaning?" },
+        { "speaker": "genie",   "text": "As long as he exists, she cannot escape." },
+        { "speaker": "aladdin", "text": "Then I destroy him." },
+        { "speaker": "genie",   "text": "Be careful. He'll try to break you… make you doubt your own wishes." }
+    ]
+}

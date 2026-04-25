@@ -10,6 +10,19 @@
 
 #define MAX_LIGHTS 8
 
+namespace {
+
+void drawMeshRange(const our::Mesh* mesh, GLsizei firstIndex, GLsizei indexCount) {
+    if (!mesh) return;
+    if (indexCount < 0) {
+        mesh->draw();
+    } else {
+        mesh->drawRange(firstIndex, indexCount);
+    }
+}
+
+} // namespace
+
 namespace our {
 
     void ForwardRenderer::initialize(glm::ivec2 windowSize, const nlohmann::json& config){
@@ -196,19 +209,38 @@ namespace our {
                 // Also skip entities that still use the legacy AnimatorComponent
                 if (entity->getComponent<AnimatorComponent>()) continue;
 
-                // We construct a command from it
-                RenderCommand command;
-                command.localToWorld = meshRenderer->getOwner()->getLocalToWorldMatrix();
-                command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
-                command.mesh = meshRenderer->mesh;
-                command.material = meshRenderer->material;
+                auto pushCommand = [&](RenderCommand cmd) {
+                    if (!cmd.material || !cmd.mesh) return;
+                    if (cmd.material->transparent) {
+                        transparentCommands.push_back(cmd);
+                    } else {
+                        opaqueCommands.push_back(cmd);
+                    }
+                };
 
-                // if it is transparent, we add it to the transparent commands list
-                if(command.material->transparent){
-                    transparentCommands.push_back(command);
+                const glm::mat4 l2w = meshRenderer->getOwner()->getLocalToWorldMatrix();
+                const glm::vec3 center = glm::vec3(l2w * glm::vec4(0, 0, 0, 1));
+
+                if (meshRenderer->mesh && meshRenderer->mesh->hasSubmeshes()) {
+                    for (const auto& sm : meshRenderer->mesh->getSubmeshes()) {
+                        RenderCommand command{};
+                        command.localToWorld = l2w;
+                        command.center = center;
+                        command.mesh = meshRenderer->mesh;
+                        command.material = meshRenderer->resolveMaterialForSubmesh(sm.materialName);
+                        command.drawFirstIndex = static_cast<GLsizei>(sm.firstIndex);
+                        command.drawIndexCount = sm.indexCount;
+                        pushCommand(command);
+                    }
                 } else {
-                // Otherwise, we add it to the opaque command list
-                    opaqueCommands.push_back(command);
+                    RenderCommand command{};
+                    command.localToWorld = l2w;
+                    command.center = center;
+                    command.mesh = meshRenderer->mesh;
+                    command.material = meshRenderer->material;
+                    command.drawFirstIndex = 0;
+                    command.drawIndexCount = -1;
+                    pushCommand(command);
                 }
             }
         }
@@ -265,7 +297,7 @@ namespace our {
             for (const auto& command : opaqueCommands) {
                 shadowShader->set("light_space_matrix", lightSpaceMatrix);
                 shadowShader->set("model", command.localToWorld);
-                command.mesh->draw();
+                drawMeshRange(command.mesh, command.drawFirstIndex, command.drawIndexCount);
             }
 
             // Also render skinned meshes into the shadow map
@@ -372,7 +404,7 @@ namespace our {
                     }
                 }
             }
-            command.mesh->draw();
+            drawMeshRange(command.mesh, command.drawFirstIndex, command.drawIndexCount);
         }
         // If there is a sky material, draw the sky
         if(this->skyMaterial){
@@ -415,7 +447,7 @@ namespace our {
                     }
                 }
             }
-            command.mesh->draw();
+            drawMeshRange(command.mesh, command.drawFirstIndex, command.drawIndexCount);
         }
 
         // ── Skinned mesh pass ───────────────────────────────────────────────────

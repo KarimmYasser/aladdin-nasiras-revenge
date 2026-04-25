@@ -1,32 +1,87 @@
 #include "mesh-utils.hpp"
 
-// We will use "Tiny OBJ Loader" to read and process '.obj" files
+#include <glm/gtc/constants.hpp>
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobj/tiny_obj_loader.h>
 
 #include <iostream>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
+
+namespace {
+
+void pushCornerVertex(const tinyobj::attrib_t& attrib,
+                      const tinyobj::index_t& idx,
+                      std::unordered_map<our::Vertex, GLuint>& vertex_map,
+                      std::vector<our::Vertex>& vertices,
+                      std::vector<GLuint>& elements) {
+    our::Vertex vertex = {};
+
+    vertex.position = {
+        attrib.vertices[3 * size_t(idx.vertex_index) + 0],
+        attrib.vertices[3 * size_t(idx.vertex_index) + 1],
+        attrib.vertices[3 * size_t(idx.vertex_index) + 2],
+    };
+
+    if (idx.normal_index >= 0 &&
+        static_cast<size_t>(3 * idx.normal_index + 2) < attrib.normals.size()) {
+        vertex.normal = {
+            attrib.normals[3 * size_t(idx.normal_index) + 0],
+            attrib.normals[3 * size_t(idx.normal_index) + 1],
+            attrib.normals[3 * size_t(idx.normal_index) + 2],
+        };
+    } else {
+        vertex.normal = {0.0f, 1.0f, 0.0f};
+    }
+
+    if (idx.texcoord_index >= 0 &&
+        static_cast<size_t>(2 * idx.texcoord_index + 1) < attrib.texcoords.size()) {
+        vertex.tex_coord = {
+            attrib.texcoords[2 * size_t(idx.texcoord_index) + 0],
+            attrib.texcoords[2 * size_t(idx.texcoord_index) + 1],
+        };
+    } else {
+        vertex.tex_coord = {0.0f, 0.0f};
+    }
+
+    const size_t colorBase = static_cast<size_t>(3 * idx.vertex_index);
+    if (colorBase + 2 < attrib.colors.size()) {
+        vertex.color = {
+            static_cast<glm::uint8>(attrib.colors[colorBase + 0] * 255.0f),
+            static_cast<glm::uint8>(attrib.colors[colorBase + 1] * 255.0f),
+            static_cast<glm::uint8>(attrib.colors[colorBase + 2] * 255.0f),
+            255,
+        };
+    } else {
+        vertex.color = {255, 255, 255, 255};
+    }
+
+    auto it = vertex_map.find(vertex);
+    if (it == vertex_map.end()) {
+        auto new_vertex_index = static_cast<GLuint>(vertices.size());
+        vertex_map[vertex] = new_vertex_index;
+        elements.push_back(new_vertex_index);
+        vertices.push_back(vertex);
+    } else {
+        elements.push_back(it->second);
+    }
+}
+
+} // namespace
 
 our::Mesh* our::mesh_utils::loadOBJ(const std::string& filename) {
 
-    // The data that we will use to initialize our mesh
     std::vector<our::Vertex> vertices;
     std::vector<GLuint> elements;
-
-    // Since the OBJ can have duplicated vertices, we make them unique using this map
-    // The key is the vertex, the value is its index in the vector "vertices".
-    // That index will be used to populate the "elements" vector.
     std::unordered_map<our::Vertex, GLuint> vertex_map;
 
-    // The data loaded by Tiny OBJ Loader
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    // Resolve .mtl next to the .obj file (tinyobj defaults to cwd if this is omitted).
     std::string mtlBaseDir;
     const size_t pathSep = filename.find_last_of("/\\");
     if (pathSep != std::string::npos) {
@@ -42,85 +97,88 @@ our::Mesh* our::mesh_utils::loadOBJ(const std::string& filename) {
         std::cout << "WARN while loading obj file \"" << filename << "\": " << warn << std::endl;
     }
 
-    // An obj file can have multiple shapes where each shape can have its own material
-    // Ideally, we would load each shape into a separate mesh or store the start and end of it in the element buffer to be able to draw each shape separately
-    // But we ignored this fact since we don't plan to use multiple materials in the examples
-    for (const auto &shape : shapes) {
-        for (const auto &index : shape.mesh.indices) {
-            Vertex vertex = {};
+    std::vector<MeshSubmesh> submeshes;
+    std::string prevMtl;
+    size_t rangeStart = 0;
 
-            // Read the data for a vertex from the "attrib" object
-            vertex.position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
-            };
-
-            // OBJ faces may omit normals (f v/vt) or UVs (f v//vn); tinyobj uses -1 for missing indices.
-            if (index.normal_index >= 0 &&
-                static_cast<size_t>(3 * index.normal_index + 2) < attrib.normals.size()) {
-                vertex.normal = {
-                        attrib.normals[3 * index.normal_index + 0],
-                        attrib.normals[3 * index.normal_index + 1],
-                        attrib.normals[3 * index.normal_index + 2]
-                };
-            } else {
-                vertex.normal = {0.0f, 1.0f, 0.0f};
+    for (const auto& shape : shapes) {
+        size_t index_offset = 0;
+        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+            const int fv = shape.mesh.num_face_vertices[f];
+            int matId = -1;
+            if (f < shape.mesh.material_ids.size()) {
+                matId = shape.mesh.material_ids[f];
+            }
+            std::string mtlName = "default";
+            if (matId >= 0 && matId < static_cast<int>(materials.size())) {
+                mtlName = materials[size_t(matId)].name;
             }
 
-            if (index.texcoord_index >= 0 &&
-                static_cast<size_t>(2 * index.texcoord_index + 1) < attrib.texcoords.size()) {
-                vertex.tex_coord = {
-                        attrib.texcoords[2 * index.texcoord_index + 0],
-                        attrib.texcoords[2 * index.texcoord_index + 1]
-                };
-            } else {
-                vertex.tex_coord = {0.0f, 0.0f};
+            if (fv < 3) {
+                index_offset += size_t(fv);
+                continue;
             }
 
-            const size_t colorBase = static_cast<size_t>(3 * index.vertex_index);
-            if (colorBase + 2 < attrib.colors.size()) {
-                vertex.color = {
-                        static_cast<glm::uint8>(attrib.colors[colorBase + 0] * 255.0f),
-                        static_cast<glm::uint8>(attrib.colors[colorBase + 1] * 255.0f),
-                        static_cast<glm::uint8>(attrib.colors[colorBase + 2] * 255.0f),
-                        255
-                };
-            } else {
-                vertex.color = {255, 255, 255, 255};
+            for (int tri = 0; tri < fv - 2; tri++) {
+                if (mtlName != prevMtl) {
+                    if (elements.size() > rangeStart) {
+                        MeshSubmesh sm{};
+                        sm.firstIndex = static_cast<GLuint>(rangeStart);
+                        sm.indexCount = static_cast<GLsizei>(elements.size() - rangeStart);
+                        sm.materialName = prevMtl.empty() ? std::string("default") : prevMtl;
+                        submeshes.push_back(sm);
+                    }
+                    rangeStart = elements.size();
+                    prevMtl = mtlName;
+                }
+
+                const tinyobj::index_t& i0 = shape.mesh.indices[index_offset + 0];
+                const tinyobj::index_t& i1 = shape.mesh.indices[index_offset + size_t(tri + 1)];
+                const tinyobj::index_t& i2 = shape.mesh.indices[index_offset + size_t(tri + 2)];
+                pushCornerVertex(attrib, i0, vertex_map, vertices, elements);
+                pushCornerVertex(attrib, i1, vertex_map, vertices, elements);
+                pushCornerVertex(attrib, i2, vertex_map, vertices, elements);
             }
 
-            // See if we already stored a similar vertex
-            auto it = vertex_map.find(vertex);
-            if (it == vertex_map.end()) {
-                // if no, add it to the vertices and record its index
-                auto new_vertex_index = static_cast<GLuint>(vertices.size());
-                vertex_map[vertex] = new_vertex_index;
-                elements.push_back(new_vertex_index);
-                vertices.push_back(vertex);
-            } else {
-                // if yes, just add its index in the elements vector
-                elements.push_back(it->second);
-            }
+            index_offset += size_t(fv);
         }
     }
 
-    return new our::Mesh(vertices, elements);
+    if (elements.size() > rangeStart) {
+        MeshSubmesh sm{};
+        sm.firstIndex = static_cast<GLuint>(rangeStart);
+        sm.indexCount = static_cast<GLsizei>(elements.size() - rangeStart);
+        sm.materialName = prevMtl.empty() ? std::string("default") : prevMtl;
+        submeshes.push_back(sm);
+    }
+
+    if (elements.empty()) {
+        std::cerr << "OBJ has no triangle data: \"" << filename << "\"" << std::endl;
+        return nullptr;
+    }
+
+    std::vector<float> physicsPos;
+    physicsPos.reserve(vertices.size() * 3);
+    for (const auto& v : vertices) {
+        physicsPos.push_back(v.position.x);
+        physicsPos.push_back(v.position.y);
+        physicsPos.push_back(v.position.z);
+    }
+    std::vector<uint32_t> physicsIdx(elements.begin(), elements.end());
+
+    return new our::Mesh(vertices, elements, std::move(submeshes), std::move(physicsPos), std::move(physicsIdx));
 }
 
-// Create a sphere (the vertex order in the triangles are CCW from the outside)
-// Segments define the number of divisions on the both the latitude and the longitude
-our::Mesh* our::mesh_utils::sphere(const glm::ivec2& segments){
+our::Mesh* our::mesh_utils::sphere(const glm::ivec2& segments) {
     std::vector<our::Vertex> vertices;
-    std::vector<GLuint> elements;
+    std::vector<unsigned int> elements;
 
-    // We populate the sphere vertices by looping over its longitude and latitude
-    for(int lat = 0; lat <= segments.y; lat++){
+    for (int lat = 0; lat <= segments.y; lat++) {
         float v = (float)lat / segments.y;
         float pitch = v * glm::pi<float>() - glm::half_pi<float>();
         float cos = glm::cos(pitch), sin = glm::sin(pitch);
-        for(int lng = 0; lng <= segments.x; lng++){
-            float u = (float)lng/segments.x;
+        for (int lng = 0; lng <= segments.x; lng++) {
+            float u = (float)lng / segments.x;
             float yaw = u * glm::two_pi<float>();
             glm::vec3 normal = {cos * glm::cos(yaw), sin, cos * glm::sin(yaw)};
             glm::vec3 position = normal;
@@ -130,10 +188,10 @@ our::Mesh* our::mesh_utils::sphere(const glm::ivec2& segments){
         }
     }
 
-    for(int lat = 1; lat <= segments.y; lat++){
-        int start = lat*(segments.x+1);
-        for(int lng = 1; lng <= segments.x; lng++){
-            int prev_lng = lng-1;
+    for (int lat = 1; lat <= segments.y; lat++) {
+        int start = lat * (segments.x + 1);
+        for (int lng = 1; lng <= segments.x; lng++) {
+            int prev_lng = lng - 1;
             elements.push_back(lng + start);
             elements.push_back(lng + start - segments.x - 1);
             elements.push_back(prev_lng + start - segments.x - 1);

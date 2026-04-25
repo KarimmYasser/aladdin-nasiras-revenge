@@ -60,7 +60,10 @@ namespace our {
         float cameraFocusHeight = 1.5f;
 
         glm::vec3 velocity = {0, 0, 0};
+        /// Strict physics probe (contacts + feet ray). Used for jump and debug UI.
         bool isGrounded = false;
+        /// Seconds of "still considered on ground" after last strict hit; stabilizes walk vs air on bumpy mesh.
+        float groundedCoyoteTimer = 0.2f;
 
         bool isAttacking = false;
         float attackTimer = 0.0f;
@@ -73,6 +76,7 @@ namespace our {
         int coinCount = 0;
         int gemCount = 0;
         int appleCount = 10;
+        int enemiesKilled = 0;
         bool hasKey = false;
         int health = 100;
         int lives = 3;
@@ -147,6 +151,13 @@ namespace our {
                 facingYaw = e->localTransform.rotation.y - meshYawVisualOffset;
                 while (facingYaw > glm::pi<float>()) facingYaw -= 2.0f * glm::pi<float>();
                 while (facingYaw < -glm::pi<float>()) facingYaw += 2.0f * glm::pi<float>();
+                // Start the orbit camera lined up with the player's facing so the
+                // third-person view shows what Aladdin is looking at on level start.
+                cameraOrbitYaw = facingYaw;
+            }
+            // Allow explicit override from the level config (degrees).
+            if (data.contains("cameraOrbitYawDegrees")) {
+                cameraOrbitYaw = glm::radians(data.value("cameraOrbitYawDegrees", glm::degrees(cameraOrbitYaw)));
             }
         }
     };

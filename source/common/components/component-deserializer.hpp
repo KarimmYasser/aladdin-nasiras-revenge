@@ -16,6 +16,7 @@
 #include "level-exit.hpp"
 #include "room-portal.hpp"
 #include "light.hpp"
+#include "dialogue.hpp"
 #include "animator-component.hpp"
 #include "skinned-mesh-renderer.hpp"
 
@@ -57,6 +58,8 @@ namespace our {
             component = entity->addComponent<RoomPortalComponent>();
         } else if (type == LightComponent::getID()) {
             component = entity->addComponent<LightComponent>();
+        } else if (type == DialogueTriggerComponent::getID()) {
+            component = entity->addComponent<DialogueTriggerComponent>();
         } else if (type == AnimatorComponent::getID()) {
             component = entity->addComponent<AnimatorComponent>();
         } else if (type == SkinnedMeshRendererComponent::getID()) {

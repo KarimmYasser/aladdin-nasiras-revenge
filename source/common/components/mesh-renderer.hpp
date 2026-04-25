@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
 #include "../ecs/component.hpp"
 #include "../mesh/mesh.hpp"
 #include "../material/material.hpp"
@@ -7,17 +10,24 @@
 
 namespace our {
 
-    // This component denotes that any renderer should draw the given mesh using the given material at the transformation of the owning entity.
     class MeshRendererComponent : public Component {
     public:
-        Mesh* mesh; // The mesh that should be drawn
-        Material* material; // The material used to draw the mesh
-        bool visible = true; // When false, ForwardRenderer skips this mesh
+        Mesh* mesh = nullptr;
+        /// Default / fallback material when no per-OBJ-material mapping exists.
+        Material* material = nullptr;
+        /// Maps tinyobj material name (e.g. mat0) → LitMaterial from scene assets.
+        std::unordered_map<std::string, Material*> submeshMaterials;
 
-        // The ID of this component type is "Mesh Renderer"
+        bool visible = true;
+
         static std::string getID() { return "Mesh Renderer"; }
 
-        // Receives the mesh & material from the AssetLoader by the names given in the json object
+        Material* resolveMaterialForSubmesh(const std::string& objMaterialName) const {
+            auto it = submeshMaterials.find(objMaterialName);
+            if (it != submeshMaterials.end() && it->second) return it->second;
+            return material;
+        }
+
         void deserialize(const nlohmann::json& data) override;
     };
 

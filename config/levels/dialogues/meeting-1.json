@@ -1,0 +1,33 @@
+{
+    "_comment": "First Genie meeting (Level 2, Place 2). Triggered when Aladdin approaches the lamp. The Genie appears, speaks, then disappears. After the conversation ends, the lamp should be swapped for its 'used' variant and the Genie entity removed.",
+
+    "meeting": 1,
+    "title": "First Meeting",
+    "level": 2,
+    "place": 2,
+
+    "trigger": {
+        "lampEntity":   "p2-lamp-active",
+        "radius":       4.5,
+        "oneShot":      true,
+        "revealEntity": "p2-genie"
+    },
+
+    "onFinish": {
+        "removeEntities":   ["p2-lamp-active", "p2-genie"],
+        "revealEntities":   ["p2-lamp-used"],
+        "enableEntities":   ["portal-place2-to-3", "portal-place2-to-3-visual"]
+    },
+
+    "lines": [
+        { "speaker": "genie",   "text": "Aladdin… I don't have much time. Something went wrong." },
+        { "speaker": "aladdin", "text": "Genie? Where's Jasmine?" },
+        { "speaker": "genie",   "text": "She's been taken. Not by a thief… not by a guard… something older." },
+        { "speaker": "aladdin", "text": "Who took her?" },
+        { "speaker": "genie",   "text": "A being that feeds on wishes. He's been hiding beyond the lamp's magic." },
+        { "speaker": "aladdin", "text": "Why Jasmine?" },
+        { "speaker": "genie",   "text": "Because she matters to you. And your wishes are strong." },
+        { "speaker": "aladdin", "text": "Tell me where he is." },
+        { "speaker": "genie",   "text": "I can't see him clearly… but the closer you get, the stronger I become." }
+    ]
+}
