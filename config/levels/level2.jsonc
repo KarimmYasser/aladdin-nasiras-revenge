@@ -1,6 +1,6 @@
 {
     // =====================================================================
-    //  Aladdin — Level 2 (4 Places, step 3 of 4: PLACE 1 + 2 + 3 built)
+    //  Aladdin — Level 2 (4 Places complete)
     //
     //  All buildings use the EXACT scales and collider halfExtents from
     //  config/assets-test/app.jsonc (team-agreed sizes). Every building
@@ -25,20 +25,20 @@
     //  │  60×60 open arena, hidden safety walls         │
     //  │  Center (620, 0, 0). 3 slime enemies.          │
     //  │  Lamp at (605, 0.45, 0) — meeting near spawn   │
-    //  │  Portal (x≈646) → PLACE 4 (placeholder)        │
+    //  │  Portal (x≈646) → PLACE 4 arena                │
     //  │  Dialogue: config/levels/dialogues/meeting-2.json │
     //  └────────────────────────────────────────────────┘
     // =====================================================================
 
     "start-scene": "play",
     "window": {
-        "title": "Aladdin — Level 2 · Places 1–3 (Agrabah → Genie meetings)",
+        "title": "Aladdin — Level 2",
         "size": { "width": 1280, "height": 720 },
         "fullscreen": false
     },
     "game": {
         "total_coins": 14,
-        "total_enemies": 6,
+        "total_enemies": 11,
         "time_3star": 420,
         "time_2star": 540,
         "time_1star": 720
@@ -96,7 +96,8 @@
                 "carpet_tex":   "assets/models/Carpet/magic_carpet_diff.png",
 
                 // Genie (NPC for meetings in Place 2 & 3)
-                "genie_tex":   "assets/models/Genie/genie_diff.png"
+                "genie_tex":   "assets/models/Genie/genie_diff.png",
+                "key_tex":     "assets/models/Key/KeySwitch.png"
             },
             "meshes": {
                 "cube":   "assets/models/cube.obj",
@@ -130,7 +131,8 @@
                 "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
 
                 // Genie (NPC — appears near the lamp, disappears after dialogue)
-                "genie_mesh": "assets/models/Genie/genie.obj"
+                "genie_mesh": "assets/models/Genie/genie.obj",
+                "key_mesh": "assets/models/Key/model.obj"
             },
             "samplers": {
                 "default": {},
@@ -232,6 +234,12 @@
                     "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
                     "albedo_map": "apple_tex", "sampler": "default",
                     "shininess": 48.0, "ambient": 0.32
+                },
+                "lit-key": {
+                    "type": "lit", "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "key_tex", "sampler": "default",
+                    "shininess": 48.0, "ambient": 0.30
                 },
 
                 // Pots
@@ -592,7 +600,7 @@
             // ============================================================
             {
                 "name": "aladdin",
-                "position": [-50, 2.0, 10],
+                "position": [-50, -0.2, 0.0],
                 "rotation": [0, 270, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -622,7 +630,7 @@
                         "cameraOrbitYawDegrees": 270.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [-50, 2.0, 10]
+                        "respawnPosition": [-50, 0.0, 0.0]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
@@ -1086,6 +1094,16 @@
                     }
                 ]
             },
+            {
+                "name": "checkpoint-place2-entry",
+                "position": [435, 2.0, 0],
+                "scale": [0.35, 1.8, 0.35],
+                "components": [
+                    { "type": "Checkpoint", "radius": 3.0, "activeColor": [0.2, 1.0, 0.2] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.0, 2.0, 1.0], "isTrigger": true }
+                ]
+            },
 
             // ================================================================
             //  PLACE 2 — "Open 60×60 arena, hidden safety walls, first Genie
@@ -1250,10 +1268,20 @@
                         "blackoutDuration": 1.2,
                         "cooldownDuration": 2.5,
                         // Lands Aladdin just inside Place 3's west wall, facing east.
-                        "targetPosition": [595, 2.0, 0],
+                        "targetPosition": [950, 2.0, 260],
                         "setYaw": true,
                         "targetYaw": 90
                     }
+                ]
+            },
+            {
+                "name": "checkpoint-place3-entry",
+                "position": [950, 2.0, 260],
+                "scale": [0.35, 1.8, 0.35],
+                "components": [
+                    { "type": "Checkpoint", "radius": 3.0, "activeColor": [0.2, 1.0, 0.2] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.0, 2.0, 1.0], "isTrigger": true }
                 ]
             },
 
@@ -1261,8 +1289,8 @@
             //  PLACE 3 — "Open 60×60 arena, hidden safety walls, 3 slimes,
             //  second Genie meeting (apple-fight tutorial)".
             //
-            //  Center at x=620, z=0. Walkable interior: x ∈ [590, 650],
-            //  z ∈ [-30, 30]. Portal to Place 4 (future) sits on east wall.
+            //  Center at x=980, z=260. Walkable interior: x ∈ [950, 1010],
+            //  z ∈ [230, 290]. Portal to Place 4 sits on east wall.
             //
             //  Birds-eye (+X right, -Z north):
             //
@@ -1280,7 +1308,7 @@
             // ------ Place 3 ground + floor collider --------------------------
             {
                 "name": "place3-ground",
-                "position": [620, 0, 0],
+                "position": [980, 0, 260],
                 "rotation": [-90, 0, 0],
                 "scale": [60, 60, 1],
                 "components": [
@@ -1289,7 +1317,7 @@
             },
             {
                 "name": "place3-floor-collider",
-                "position": [620, -0.25, 0],
+                "position": [980, -0.25, 260],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [30, 0.3, 30], "friction": 0.85, "restitution": 0.0 }
@@ -1299,7 +1327,7 @@
             // ------ Place 3 lighting ----------------------------------------
             {
                 "name": "place3-fill",
-                "position": [620, 14, 0],
+                "position": [980, 14, 260],
                 "components": [
                     { "type": "Light", "light_type": "point",
                       "color": [1.0, 0.85, 0.68], "intensity": 3.0,
@@ -1308,7 +1336,7 @@
             },
             {
                 "name": "place3-lamp-rim",
-                "position": [605, 6, 0],
+                "position": [965, 6, 260],
                 "components": [
                     { "type": "Light", "light_type": "point",
                       "color": [0.55, 0.72, 1.0], "intensity": 1.6,
@@ -1319,7 +1347,7 @@
             // ------ Place 3 SAFETY BOUNDS (invisible walls, 60×60) ----------
             {
                 "name": "p3-bound-n",
-                "position": [620, 8, -30],
+                "position": [980, 8, 230],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
@@ -1327,7 +1355,7 @@
             },
             {
                 "name": "p3-bound-s",
-                "position": [620, 8, 30],
+                "position": [980, 8, 290],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [30, 8, 1], "friction": 0.8 }
@@ -1335,7 +1363,7 @@
             },
             {
                 "name": "p3-bound-w",
-                "position": [590, 8, 0],
+                "position": [950, 8, 260],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
@@ -1343,7 +1371,7 @@
             },
             {
                 "name": "p3-bound-e",
-                "position": [650, 8, 0],
+                "position": [1010, 8, 260],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 30], "friction": 0.8 }
@@ -1355,7 +1383,7 @@
             //  Same reveal/remove pattern as Place 2.
             {
                 "name": "p3-lamp-active",
-                "position": [605, 0.45, 0],
+                "position": [965, 0.45, 260],
                 "rotation": [0, -20, 0],
                 "scale": [3.0, 3.0, 3.0],
                 "components": [
@@ -1376,7 +1404,7 @@
             },
             {
                 "name": "p3-lamp-used",
-                "position": [605, 0.45, 0],
+                "position": [965, 0.45, 260],
                 "rotation": [0, 45, 0],
                 "scale": [3.0, 3.0, 3.0],
                 "components": [
@@ -1389,7 +1417,7 @@
             // ------ Place 3 GENIE (second meeting, hidden until near lamp) --
             {
                 "name": "p3-genie",
-                "position": [608, 0, -4],
+                "position": [968, 0, 256],
                 "rotation": [0, -150, 0],
                 "scale": [0.94, 0.94, 0.94],
                 "components": [
@@ -1400,7 +1428,7 @@
             // ------ Place 3 ENEMIES — 3 slimes (mesh: enemy2 = SlimeEnemy1) --
             {
                 "name": "p3-slime-1",
-                "position": [630, 0.95, -15],
+                "position": [990, 0.95, 245],
                 "rotation": [0, 200, 0],
                 "scale": [0.028, 0.028, 0.028],
                 "components": [
@@ -1414,7 +1442,7 @@
                         "health": 40,
                         "damage": 10,
                         "attackCooldown": 1.5,
-                        "waypoints": [[625, 0.95, -20], [640, 0.95, -20], [640, 0.95, -10], [625, 0.95, -10]]
+                        "waypoints": [[985, 0.95, 240], [1000, 0.95, 240], [1000, 0.95, 250], [985, 0.95, 250]]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
@@ -1422,7 +1450,7 @@
             },
             {
                 "name": "p3-slime-2",
-                "position": [638, 0.95, 10],
+                "position": [998, 0.95, 270],
                 "rotation": [0, 170, 0],
                 "scale": [0.028, 0.028, 0.028],
                 "components": [
@@ -1436,7 +1464,7 @@
                         "health": 40,
                         "damage": 10,
                         "attackCooldown": 1.5,
-                        "waypoints": [[635, 0.95, 5], [640, 0.95, 20], [625, 0.95, 20], [625, 0.95, 5]]
+                        "waypoints": [[995, 0.95, 265], [1000, 0.95, 280], [985, 0.95, 280], [985, 0.95, 265]]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
@@ -1444,7 +1472,7 @@
             },
             {
                 "name": "p3-slime-3",
-                "position": [625, 0.95, 22],
+                "position": [985, 0.95, 282],
                 "rotation": [0, 120, 0],
                 "scale": [0.028, 0.028, 0.028],
                 "components": [
@@ -1458,17 +1486,17 @@
                         "health": 40,
                         "damage": 10,
                         "attackCooldown": 1.5,
-                        "waypoints": [[620, 0.95, 22], [630, 0.95, 22], [630, 0.95, 14], [620, 0.95, 14]]
+                        "waypoints": [[980, 0.95, 282], [990, 0.95, 282], [990, 0.95, 274], [980, 0.95, 274]]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
                 ]
             },
 
-            // ------ Place 3 PORTAL (east end — placeholder for Place 4) -----
+            // ------ Place 3 PORTAL (east end — to Place 4 arena) -----
             {
                 "name": "portal-place3-to-4-visual",
-                "position": [646, 0.1, 0],
+                "position": [1006, 0.1, 260],
                 "rotation": [0, -90, 0],
                 "scale": [1.8, 1.8, 1.8],
                 "components": [
@@ -1477,19 +1505,191 @@
             },
             {
                 "name": "portal-place3-to-4",
-                "position": [646, 1.2, 0],
+                "position": [1006, 1.2, 260],
                 "components": [
                     {
                         "type": "Room Portal",
                         "radius": 3.5,
                         "blackoutDuration": 1.2,
                         "cooldownDuration": 2.5,
-                        // PLACEHOLDER — Place 4 not built yet. Keeps the player
-                        // safely inside Place 3 for now.
-                        "targetPosition": [620, 2.0, 0],
+                        "targetPosition": [710, 2.0, -260],
                         "setYaw": true,
                         "targetYaw": 90
                     }
+                ]
+            },
+            {
+                "name": "checkpoint-place4-entry",
+                "position": [710, 2.0, -260],
+                "scale": [0.35, 1.8, 0.35],
+                "components": [
+                    { "type": "Checkpoint", "radius": 3.0, "activeColor": [0.2, 1.0, 0.2] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1.0, 2.0, 1.0], "isTrigger": true }
+                ]
+            },
+
+            // ================================================================
+            //  PLACE 4 — Final arena (120x120), circular poor houses, 5 brutes
+            //  and a final key-locked portal to victory.
+            // ================================================================
+            {
+                "name": "place4-ground",
+                "position": [760, 0, -260],
+                "rotation": [-90, 0, 0],
+                "scale": [120, 120, 1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
+                ]
+            },
+            {
+                "name": "place4-floor-collider",
+                "position": [760, -0.25, -260],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [60, 0.3, 60], "friction": 0.85, "restitution": 0.0 }
+                ]
+            },
+            {
+                "name": "p4-fill",
+                "position": [760, 14, -260],
+                "components": [
+                    { "type": "Light", "light_type": "point",
+                      "color": [1.0, 0.82, 0.66], "intensity": 3.4,
+                      "attenuation": { "constant": 1.0, "linear": 0.05, "quadratic": 0.012 } }
+                ]
+            },
+
+            // Place 4 safety walls (120x120 => half-size 60)
+            { "name": "p4-bound-n", "position": [760, 8, -320],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [60, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "p4-bound-s", "position": [760, 8, -200],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [60, 8, 1], "friction": 0.8 }
+                ] },
+            { "name": "p4-bound-w", "position": [700, 8, -260],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 60], "friction": 0.8 }
+                ] },
+            { "name": "p4-bound-e", "position": [820, 8, -260],
+                "components": [
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [1, 8, 60], "friction": 0.8 }
+                ] },
+
+            // Circular wall of poor desert buildings (radius ≈ 88, 16 pieces)
+            { "name": "p4-ring-poor-01", "position": [848.0, 0, -260.0], "rotation": [0, 90, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-02", "position": [841.3, 0, -226.3], "rotation": [0, 112.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-03", "position": [822.2, 0, -197.8], "rotation": [0, 135, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-04", "position": [793.7, 0, -178.7], "rotation": [0, 157.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-05", "position": [760.0, 0, -172.0], "rotation": [0, 180, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-06", "position": [726.3, 0, -178.7], "rotation": [0, 202.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-07", "position": [697.8, 0, -197.8], "rotation": [0, 225, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-08", "position": [678.7, 0, -226.3], "rotation": [0, 247.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-09", "position": [672.0, 0, -260.0], "rotation": [0, 270, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-10", "position": [678.7, 0, -293.7], "rotation": [0, 292.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-11", "position": [697.8, 0, -322.2], "rotation": [0, 315, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-12", "position": [726.3, 0, -341.3], "rotation": [0, 337.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-13", "position": [760.0, 0, -348.0], "rotation": [0, 0, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-14", "position": [793.7, 0, -341.3], "rotation": [0, 22.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-15", "position": [822.2, 0, -322.2], "rotation": [0, 45, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+            { "name": "p4-ring-poor-16", "position": [841.3, 0, -293.7], "rotation": [0, 67.5, 0], "scale": [6.0, 6.0, 6.0], "components": [ { "type": "Mesh Renderer", "mesh": "env_poor_desert_house", "material": "lit-env-poor-house" }, { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false }, { "type": "Collider", "shape": "box", "halfExtents": [14.5, 26, 18.5], "friction": 0.55 } ] },
+
+            // Place 4 enemies — 5 strong BigTrash enemies
+            {
+                "name": "p4-big-trash-1",
+                "position": [742, 0.95, -280],
+                "rotation": [0, 40, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 4.6, "chaseSpeed": 7.2, "detectionRange": 30.0, "attackRange": 2.8, "health": 110, "damage": 24, "attackCooldown": 1.2, "waypoints": [[730, 0.95, -290], [755, 0.95, -290], [755, 0.95, -270], [730, 0.95, -270]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 64.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p4-big-trash-2",
+                "position": [782, 0.95, -278],
+                "rotation": [0, 180, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 4.8, "chaseSpeed": 7.4, "detectionRange": 30.0, "attackRange": 2.8, "health": 110, "damage": 24, "attackCooldown": 1.2, "waypoints": [[770, 0.95, -288], [796, 0.95, -288], [796, 0.95, -266], [770, 0.95, -266]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 64.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p4-big-trash-3",
+                "position": [760, 0.95, -250],
+                "rotation": [0, 260, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 4.9, "chaseSpeed": 7.6, "detectionRange": 32.0, "attackRange": 2.9, "health": 120, "damage": 26, "attackCooldown": 1.15, "waypoints": [[744, 0.95, -256], [776, 0.95, -256], [776, 0.95, -238], [744, 0.95, -238]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 66.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p4-big-trash-4",
+                "position": [726, 0.95, -236],
+                "rotation": [0, 300, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 4.7, "chaseSpeed": 7.3, "detectionRange": 30.0, "attackRange": 2.8, "health": 110, "damage": 24, "attackCooldown": 1.2, "waypoints": [[718, 0.95, -250], [740, 0.95, -250], [740, 0.95, -226], [718, 0.95, -226]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 64.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "p4-big-trash-5",
+                "position": [792, 0.95, -234],
+                "rotation": [0, 120, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 4.8, "chaseSpeed": 7.5, "detectionRange": 31.0, "attackRange": 2.9, "health": 115, "damage": 25, "attackCooldown": 1.15, "waypoints": [[780, 0.95, -246], [804, 0.95, -246], [804, 0.95, -224], [780, 0.95, -224]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 65.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+
+            // Place 4 key pickup (required to open final portal)
+            {
+                "name": "p4-golden-key",
+                "position": [760, 1.2, -260],
+                "rotation": [0, 30, 0],
+                "scale": [0.008, 0.008, 0.008],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "key_mesh", "material": "lit-key" },
+                    { "type": "Collectible", "collectibleType": "key", "value": 1, "rotationSpeed": 2.5, "bobbingHeight": 0.2, "collectionRadius": 2.0 }
+                ]
+            },
+
+            // Final portal visual
+            {
+                "name": "portal-place4-final-visual",
+                "position": [816, 0.1, -260],
+                "rotation": [0, -90, 0],
+                "scale": [1.9, 1.9, 1.9],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-1" }
+                ]
+            },
+            // Final key-locked exit to victory
+            {
+                "name": "portal-place4-final",
+                "position": [816, 1.2, -260],
+                "components": [
+                    { "type": "LevelExit", "radius": 4.0, "requiresKey": true, "nextState": "victory" }
                 ]
             }
         ]
