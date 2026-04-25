@@ -224,7 +224,7 @@ class Playstate: public our::State {
         }
         // Always render so the frozen scene stays on screen behind the
         // dialogue box.
-        renderer.render(&world);
+        renderer.render(&world, getApp()->getFrameBufferSize());
 
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();

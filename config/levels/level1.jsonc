@@ -1,9 +1,9 @@
 {
-    "start-scene": "play",
+    "start-scene": "menu",
     "window": {
         "title": "Aladdin — Level 1 (Three Places)",
         "size": { "width": 1280, "height": 720 },
-        "fullscreen": false
+        "fullscreen": true
     },
     "game": {
         "total_coins": 12,

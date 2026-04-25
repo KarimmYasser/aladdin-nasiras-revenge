@@ -36,7 +36,7 @@ class RendererTestState: public our::State {
 
     void onDraw(double deltaTime) override {
         cameraController.update(&world, (float)deltaTime);
-        renderer.render(&world);
+        renderer.render(&world, getApp()->getFrameBufferSize());
     }
 
     void onDestroy() override {

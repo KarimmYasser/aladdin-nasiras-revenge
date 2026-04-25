@@ -193,7 +193,24 @@ namespace our {
         if(shadowSkinnedShader){ delete shadowSkinnedShader; shadowSkinnedShader = nullptr; }
     }
 
-    void ForwardRenderer::render(World* world){
+    void ForwardRenderer::render(World* world, glm::ivec2 windowSize){
+        // If the window size changed, we need to update our internal state and recreate postprocessing textures
+        if(this->windowSize != windowSize){
+            this->windowSize = windowSize;
+            if(postprocessMaterial){
+                delete colorTarget;
+                delete depthTarget;
+                colorTarget = texture_utils::empty(GL_RGBA8, windowSize);
+                depthTarget = texture_utils::empty(GL_DEPTH_COMPONENT24, windowSize);
+                postprocessMaterial->texture = colorTarget;
+                
+                glBindFramebuffer(GL_FRAMEBUFFER, postprocessFrameBuffer);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTarget->getOpenGLName(), 0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTarget->getOpenGLName(), 0);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+        }
+
         // First of all, we search for a camera and for all the mesh renderers
         CameraComponent* camera = nullptr;
         // Clear light list every frame before collecting fresh ones
