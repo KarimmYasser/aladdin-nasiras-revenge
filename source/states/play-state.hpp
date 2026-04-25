@@ -54,6 +54,10 @@ class Playstate: public our::State {
     int enemiesKilled = 0;
     int totalEnemies = 0;
     float elapsedTime = 0.0f;
+    bool isPaused = false;
+    bool showSettings = false;
+    int masterVolume = 100;
+    float mouseSensitivity = 0.003f;
 
     // -- Health --
     static constexpr int kDefaultMaxHealth = 100;
@@ -110,6 +114,14 @@ class Playstate: public our::State {
         coinsCollected = 0;
         enemiesKilled = 0;
         elapsedTime = 0.0f;
+        isPaused = false;
+        showSettings = false;
+
+        // Sync settings with current app config
+        masterVolume = (int)(our::AudioSystem::instance().getMasterVolume() * 100.0f);
+        if (appConfig.contains("game")) {
+            mouseSensitivity = appConfig["game"].value("mouseSensitivity", 0.003f);
+        }
 
         // Load UI icons
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
@@ -135,7 +147,7 @@ class Playstate: public our::State {
     }
 
     void onDraw(double deltaTime) override {
-        elapsedTime += (float)deltaTime;
+        if (!isPaused) elapsedTime += (float)deltaTime;
         if(!physicsInitialized){
             physicsInitialized = physicsSystem.initialize();
             if(!physicsInitialized){
@@ -227,7 +239,13 @@ class Playstate: public our::State {
         // this covers: dialogue in progress, dialogue just started this
         // frame, and dialogue just ended this frame (so the skip-ESC doesn't
         // also trigger a jump etc.).
-        const bool freezeGameplay = dialogueFrozen || dialogueStillActive;
+        const bool freezeGameplay = dialogueFrozen || dialogueStillActive || isPaused;
+        
+        // Handle cursor state based on pause/dialogue
+        if (freezeGameplay) {
+            glfwSetInputMode(getApp()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
         if(!freezeGameplay){
             // Here, we just run a bunch of systems to control the world logic
             movementSystem.update(&world, (float)deltaTime);
@@ -260,12 +278,12 @@ class Playstate: public our::State {
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 
-        if(!freezeGameplay && keyboard.justPressed(GLFW_KEY_ESCAPE)){
-            // If the escape key is pressed in this frame, go to the menu state.
-            // NOTE: when a dialogue is active OR was just skipped this frame,
-            // freezeGameplay is true — so ESC is consumed by DialogueSystem
-            // (to skip the meeting) and never falls through to here.
-            getApp()->changeState("menu");
+        if(!dialogueFrozen && !dialogueStillActive && keyboard.justPressed(GLFW_KEY_ESCAPE)){
+            if (showSettings) {
+                showSettings = false;
+            } else {
+                isPaused = !isPaused;
+            }
         }
 
         if (!freezeGameplay && keyboard.justPressed(GLFW_KEY_V)) {
@@ -494,6 +512,135 @@ class Playstate: public our::State {
         // Draw the Genie / Aladdin dialogue box last so it sits on top of
         // the HUD. No-op when no conversation is active.
         dialogueSystem.renderImGui();
+
+        // ── PAUSE MENU OVERLAY ──
+        if (isPaused) {
+            // Darken the SCENE (Background), not the menu
+            ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(screenWidth, screenHeight), IM_COL32(0, 0, 0, 200));
+
+            if (!showSettings) {
+                ImGui::SetNextWindowPos(ImVec2(screenWidth * 0.5f, screenHeight * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::SetNextWindowSize(ImVec2(480, 0)); // Bigger window
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(30, 30)); // More breathing room
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.02f, 0.12f, 0.98f)); // More opaque
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.8f, 0.2f, 0.8f));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
+                ImGui::Begin("Pause Menu", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+
+                ImGui::SetWindowFontScale(3.0f); // Bigger Title
+                float pauseW = ImGui::CalcTextSize("PAUSED").x;
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - pauseW) * 0.5f);
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.2f, 1.0f));
+                ImGui::Text("PAUSED");
+                ImGui::PopStyleColor();
+                ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::Spacing();
+
+                ImGui::SetWindowFontScale(1.8f); // Bigger buttons
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.1f, 0.9f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
+
+                float btnW = 380.0f;
+                float btnH = 60.0f;
+                
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+                if (ImGui::Button("CONTINUE", ImVec2(btnW, btnH))) {
+                    isPaused = false;
+                }
+
+                ImGui::Spacing();
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+                if (ImGui::Button("SETTINGS", ImVec2(btnW, btnH))) {
+                    showSettings = true;
+                }
+
+                ImGui::Spacing();
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+                if (ImGui::Button("MAIN MENU", ImVec2(btnW, btnH))) {
+                    getApp()->changeState("menu");
+                }
+
+                ImGui::Spacing();
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - btnW) * 0.5f);
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.1f, 0.1f, 0.9f)); // Slightly brighter red
+                if (ImGui::Button("QUIT GAME", ImVec2(btnW, btnH))) {
+                    glfwSetWindowShouldClose(getApp()->getWindow(), true);
+                }
+                ImGui::PopStyleColor();
+
+                ImGui::PopStyleColor(3); // Button colors
+                ImGui::PopStyleVar(); // FrameRounding
+                ImGui::End();
+                ImGui::PopStyleColor(2); // WindowBg, Border
+                ImGui::PopStyleVar(3); // WindowRounding, WindowPadding, WindowBorderSize
+            } else {
+                // ── Settings Panel ──
+                float panelW = 520.0f; // Bigger Settings
+                ImGui::SetNextWindowPos(ImVec2(screenWidth * 0.5f, screenHeight * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::SetNextWindowSize(ImVec2(panelW, 0));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(35, 25));
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.02f, 0.12f, 1.0f)); // Fully opaque
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.8f, 0.2f, 0.8f));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
+                ImGui::Begin("PauseSettings", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+
+                ImGui::SetWindowFontScale(2.2f);
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.2f, 1.0f));
+                float sTitleW = ImGui::CalcTextSize("SETTINGS").x;
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - sTitleW) * 0.5f);
+                ImGui::Text("SETTINGS");
+                ImGui::PopStyleColor();
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                // Sound
+                ImGui::SetWindowFontScale(1.6f);
+                ImGui::Text("Volume");
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.1f, 0.25f, 0.9f));
+                ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+                ImGui::SetNextItemWidth(panelW - 70.0f);
+                if (ImGui::SliderInt("##PVolume", &masterVolume, 0, 100, "%d%%")) {
+                    our::AudioSystem::instance().setMasterVolume((float)masterVolume / 100.0f);
+                }
+                ImGui::PopStyleColor(2);
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                // Controls
+                ImGui::Text("Mouse Sensitivity");
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.1f, 0.25f, 0.9f));
+                ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+                ImGui::SetNextItemWidth(panelW - 70.0f);
+                if (ImGui::SliderFloat("##PSens", &mouseSensitivity, 0.0001f, 0.01f, "%.4f")) {
+                    getApp()->getConfig()["game"]["mouseSensitivity"] = mouseSensitivity;
+                }
+                ImGui::PopStyleColor(2);
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                // Back button
+                ImGui::SetWindowFontScale(1.8f);
+                ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180.0f) * 0.5f);
+                if (ImGui::Button("CLOSE", ImVec2(180, 50))) {
+                    showSettings = false;
+                }
+
+                ImGui::End();
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(3);
+            }
+        }
     }
 
     void onDestroy() override {
