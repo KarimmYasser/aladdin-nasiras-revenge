@@ -384,7 +384,9 @@
                       "thirdPersonPitchDegrees": -10.0,
                       "health": 100, "lives": 3, "respawnPosition": [0, 2.0, 0] },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
+                    // { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
+                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65,
+                      "centerOffset": [0, 1.245, 0], "friction": 0.55 }
                 ]
             },
 
