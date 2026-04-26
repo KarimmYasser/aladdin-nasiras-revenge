@@ -22,6 +22,7 @@
 #include <systems/animation-system.hpp>
 
 #include <imgui.h>
+#include <algorithm>
 #include <sstream>
 #include <iomanip>
 #include <texture/texture2d.hpp>
@@ -71,6 +72,78 @@ class Playstate: public our::State {
     our::Texture2D* coinIcon = nullptr;
     our::Texture2D* heartIcon = nullptr;
     our::Texture2D* enemyIcon = nullptr;
+    bool showPositionDebug = false;
+    float gameOverFallY = -25.0f;
+
+    void clearContinueSnapshot() {
+        auto& cfg = getApp()->getConfig();
+        cfg["continue-session"]["active"] = false;
+        cfg["continue-session"]["resume-requested"] = false;
+    }
+
+    void saveContinueSnapshot() {
+        auto& cfg = getApp()->getConfig();
+        auto& session = cfg["continue-session"];
+        session["active"] = true;
+        session["resume-requested"] = false;
+        session["level-config"] = cfg.value("active-level-config", std::string(""));
+        session["elapsed-time"] = elapsedTime;
+        session["coins-collected"] = coinsCollected;
+        session["enemies-killed"] = enemiesKilled;
+
+        if (auto* aladdinEntity = findAladdinEntity()) {
+            glm::vec3 p = aladdinEntity->localTransform.position;
+            session["player-position"] = {p.x, p.y, p.z};
+        }
+        if (auto* aladdin = findAladdin()) {
+            session["health"] = aladdin->health;
+            session["lives"] = aladdin->lives;
+            session["has-key"] = aladdin->hasKey;
+            session["apple-count"] = aladdin->appleCount;
+            session["gem-count"] = aladdin->gemCount;
+            session["coin-count"] = aladdin->coinCount;
+        }
+    }
+
+    void applyContinueSnapshotIfRequested() {
+        auto& cfg = getApp()->getConfig();
+        if(!cfg.contains("continue-session") || !cfg["continue-session"].is_object()) return;
+        auto& session = cfg["continue-session"];
+        if(!session.value("active", false) || !session.value("resume-requested", false)) return;
+
+        if (auto* aladdinEntity = findAladdinEntity()) {
+            if (session.contains("player-position") && session["player-position"].is_array() && session["player-position"].size() >= 3) {
+                glm::vec3 p = {
+                    session["player-position"][0].get<float>(),
+                    session["player-position"][1].get<float>(),
+                    session["player-position"][2].get<float>()
+                };
+                aladdinEntity->localTransform.position = p;
+                if (auto* rbComp = aladdinEntity->getComponent<our::RigidBodyComponent>(); rbComp && rbComp->bodyHandle) {
+                    auto t = rbComp->bodyHandle->getTransform();
+                    t.setPosition(reactphysics3d::Vector3(p.x, p.y, p.z));
+                    rbComp->bodyHandle->setTransform(t);
+                    rbComp->bodyHandle->setLinearVelocity(reactphysics3d::Vector3(0, 0, 0));
+                }
+            }
+        }
+
+        if (auto* aladdin = findAladdin()) {
+            aladdin->health = session.value("health", aladdin->health);
+            aladdin->lives = session.value("lives", aladdin->lives);
+            aladdin->hasKey = session.value("has-key", aladdin->hasKey);
+            aladdin->appleCount = session.value("apple-count", aladdin->appleCount);
+            aladdin->gemCount = session.value("gem-count", aladdin->gemCount);
+            aladdin->coinCount = session.value("coin-count", aladdin->coinCount);
+            aladdin->enemiesKilled = session.value("enemies-killed", aladdin->enemiesKilled);
+        }
+
+        elapsedTime = session.value("elapsed-time", elapsedTime);
+        coinsCollected = session.value("coins-collected", coinsCollected);
+        enemiesKilled = session.value("enemies-killed", enemiesKilled);
+
+        session["resume-requested"] = false;
+    }
 
     void onInitialize() override {
         // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
@@ -108,6 +181,7 @@ class Playstate: public our::State {
             time3Star = game.value("time_3star", 60);
             time2Star = game.value("time_2star", 90);
             time1Star = game.value("time_1star", 120);
+            gameOverFallY = game.value("game_over_fall_y", -25.0f);
         }
 
         // Reset gameplay state
@@ -127,6 +201,7 @@ class Playstate: public our::State {
         coinIcon = our::texture_utils::loadImage("assets/textures/coin_icon.png");
         heartIcon = our::texture_utils::loadImage("assets/textures/heart_icon.png");
         enemyIcon = our::texture_utils::loadImage("assets/textures/monkey.png");
+        applyContinueSnapshotIfRequested();
 
         // Start background music
         our::AudioSystem::instance().playMusic("assets/audio/bg.wav");
@@ -269,15 +344,36 @@ class Playstate: public our::State {
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();
 
-        // Sync local stats with Aladdin's persistent component stats for HUD/Victory
+        // Keep HUD enemy progress synced with Aladdin's persistent kill count.
         if (auto* aladdin = findAladdin()) {
-            coinsCollected = aladdin->coinCount;
             enemiesKilled = aladdin->enemiesKilled;
+            if (aladdin->lives <= 0) {
+                clearContinueSnapshot();
+                getApp()->changeState("gameover");
+                return;
+            }
+        }
+
+        if (auto* aladdinEntity = findAladdinEntity()) {
+            if (aladdinEntity->localTransform.position.y < gameOverFallY) {
+                if (auto* aladdin = findAladdin()) {
+                    aladdin->health = 0;
+                    aladdin->lives = 0;
+                }
+                clearContinueSnapshot();
+                getApp()->changeState("gameover");
+                return;
+            }
         }
 
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
 
+
+        // if(!freezeGameplay && keyboard.justPressed(GLFW_KEY_ESCAPE)){
+        //     // Save enough state to support a "Continue" path from the main menu.
+        //     saveContinueSnapshot();
+        //     getApp()->changeState("menu");
         if(!dialogueFrozen && !dialogueStillActive && keyboard.justPressed(GLFW_KEY_ESCAPE)){
             if (showSettings) {
                 showSettings = false;
@@ -292,6 +388,9 @@ class Playstate: public our::State {
                     ? our::AladdinCameraMode::FirstPerson
                     : our::AladdinCameraMode::ThirdPerson;
             }
+        }
+        if (!freezeGameplay && keyboard.justPressed(GLFW_KEY_M)) {
+            showPositionDebug = !showPositionDebug;
         }
 
 #if !defined(NDEBUG)
@@ -480,9 +579,30 @@ class Playstate: public our::State {
         ImGui::Begin("##Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.4f));
-        ImGui::Text("WASD: Move | V: 1st/3rd cam | F10: win (dbg) | ESC: Menu");
+        ImGui::Text("WASD: Move | V: 1st/3rd cam | M: coord debug | F10: win (dbg) | ESC: Menu");
         ImGui::PopStyleColor();
         ImGui::End();
+
+        if (showPositionDebug) {
+            glm::vec3 worldPos{0.0f, 0.0f, 0.0f};
+            if (auto* aladdinEntity = findAladdinEntity()) {
+                worldPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(screenWidth - 320, screenHeight - 110));
+            ImGui::SetNextWindowSize(ImVec2(300, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.55f));
+            ImGui::Begin("##PositionDebug", nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav);
+            ImGui::TextColored(ImVec4(0.6f, 0.9f, 1.0f, 1.0f), "DEBUG COORDINATES");
+            ImGui::Text("X: %.2f", worldPos.x);
+            ImGui::Text("Y: %.2f", worldPos.y);
+            ImGui::Text("Z: %.2f", worldPos.z);
+            ImGui::End();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+        }
 
         // ═══════════════════════════════════════════════════════
         //  AIMING CROSSHAIR

@@ -470,20 +470,42 @@ namespace our {
                 }
 
                 // ── 5. Sync State & Animation (Moved here to use actual physics velocity) ──
+                // Debounced grounded:
+                //   - `groundedRaw` is the strict (contacts + foot ray) probe; on concave
+                //     triangle meshes (level 3) it can flip false for 1-2 frames as the
+                //     capsule micro-separates over bumps, even when truly standing still.
+                //   - `groundedSmooth` is what we use for animation/logic. We extend the
+                //     coyote window on uneven terrain and additionally require the
+                //     character to be airborne for `airborneAnimDelay` seconds (or truly
+                //     falling faster than `fallAnimMinDownSpeed`) before switching to the
+                //     jump/fall animation.
                 bool groundedSmooth = aladdin->isGrounded;
+                bool airborneForAnim = false;
                 if (rbComp && rbComp->bodyHandle) {
                     aladdin->velocity = physicsSystem->getPhysicsWorld().getLinearVelocity(entity);
                     auto& physicsWorld = physicsSystem->getPhysicsWorld();
                     const bool groundedRaw =
                         computeGroundedFromPhysics(entity, physicsWorld, swordHitbox);
-                    aladdin->isGrounded = groundedRaw;
 
                     const float vy = aladdin->velocity.y;
-                    constexpr float kCoyoteSeconds = 0.18f;
-                    constexpr float kFallVyKillCoyote = -3.4f;
+                    constexpr float kCoyoteSeconds = 0.30f;          // longer to absorb concave-mesh flicker
+                    constexpr float kFallVyKillCoyote = -6.0f;       // only a real fall kills coyote
                     constexpr float kCoyoteMaxRiseVy = 2.8f;
+                    constexpr float kFallVyKillMinAirborne = 0.06f;  // ignore single-frame vy spikes
 
-                    if (vy < kFallVyKillCoyote) {
+                    // Track continuous airborne time (used to debounce the fall animation
+                    // on uneven mesh; the component already exposes this knob via ImGui).
+                    if (groundedRaw) {
+                        aladdin->airborneTimer = 0.0f;
+                    } else {
+                        aladdin->airborneTimer += deltaTime;
+                    }
+
+                    // Only let a strong downward velocity kill the coyote if we've been
+                    // airborne for more than a frame or two — otherwise a brief vy spike
+                    // from walking off a small bump nukes the grace window.
+                    if (vy < kFallVyKillCoyote &&
+                        aladdin->airborneTimer > kFallVyKillMinAirborne) {
                         aladdin->groundedCoyoteTimer = 0.0f;
                     } else if (groundedRaw) {
                         aladdin->groundedCoyoteTimer = kCoyoteSeconds;
@@ -499,9 +521,24 @@ namespace our {
                         (groundedRaw && !isMovingUp) ||
                         (aladdin->groundedCoyoteTimer > 0.0f && vy > kFallVyKillCoyote &&
                          vy < kCoyoteMaxRiseVy);
-                    
-                    // Sync the component's grounded state
+
+                    // Sync the component's grounded state (strict, used for jump input)
                     aladdin->isGrounded = groundedRaw && !isMovingUp;
+
+                    // Animation-side debounce: only treat as airborne for the animator if
+                    //   (a) we've been off the ground long enough (uneven-mesh tolerance),
+                    //   (b) we're actually falling fast, OR
+                    //   (c) we're rising from a takeoff — i.e. the jump force was just
+                    //       applied. Without (c), the animator briefly snaps back to
+                    //       idle/walk in the few frames between `isJumpPreparing` ending
+                    //       and `airborneTimer` exceeding the debounce, which looks like
+                    //       a stuttery double jump.
+                    constexpr float kRisingFromJumpVy = 2.0f;
+                    airborneForAnim =
+                        !groundedSmooth &&
+                        (aladdin->airborneTimer > aladdin->airborneAnimDelay ||
+                         vy < aladdin->fallAnimMinDownSpeed ||
+                         vy > kRisingFromJumpVy);
                 }
 
                 Animator* animPtr = nullptr;
@@ -523,7 +560,7 @@ namespace our {
                         targetClip = "kick";
                         loop = false;
                         playbackSpeed = 1.8f; 
-                    } else if (aladdin->isJumpPreparing || !groundedSmooth) {
+                    } else if (aladdin->isJumpPreparing || airborneForAnim) {
                         targetClip = "jump";
                         loop = false;
                         animPtr->setSuppressRootMotion(true); 
@@ -815,6 +852,8 @@ namespace our {
             ImGui::DragFloat("Speed", &aladdin->speed, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Jump Force", &aladdin->jumpForce, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Rotation Speed", &aladdin->rotationSpeed, 0.1f, 0.0f, 20.0f);
+            ImGui::DragFloat("Airborne Anim Delay", &aladdin->airborneAnimDelay, 0.005f, 0.0f, 0.5f);
+            ImGui::DragFloat("Fall Anim Min Down Speed", &aladdin->fallAnimMinDownSpeed, 0.05f, -20.0f, 0.0f);
 
             ImGui::Separator();
             ImGui::Text("Camera Follow:");

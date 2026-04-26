@@ -1,20 +1,20 @@
 {
-    "_comment": "Third Genie meeting (Level 3). Placeholder hookup — not wired into any level config yet. The level-3 designer should fill in the lamp entity name and onFinish hooks.",
+    "_comment": "Third Genie meeting (Level 3, Map 2 / Raby). Triggered at l3-map2-lamp-active; Genie entity l3-map2-genie is revealed then removed by DialogueSystem on finish; lamp swaps to l3-map2-lamp-used.",
 
     "meeting": 3,
     "title": "Third Meeting",
     "level": 3,
 
     "trigger": {
-        "lampEntity":   "",
-        "radius":       4.5,
-        "oneShot":      true,
-        "revealEntity": ""
+        "lampEntity": "l3-map2-lamp-active",
+        "radius": 5.5,
+        "oneShot": true,
+        "revealEntity": "l3-map2-genie"
     },
 
     "onFinish": {
-        "removeEntities": [],
-        "revealEntities": []
+        "removeEntities": ["l3-map2-lamp-active", "l3-map2-genie"],
+        "revealEntities": ["l3-map2-lamp-used"]
     },
 
     "lines": [

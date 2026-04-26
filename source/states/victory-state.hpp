@@ -24,7 +24,16 @@ class VictoryState : public our::State {
     our::Texture2D* coinIcon = nullptr;
     our::Texture2D* enemyIcon = nullptr;
 
+    void clearContinueSnapshot() {
+        auto& cfg = getApp()->getConfig();
+        cfg["continue-session"]["active"] = false;
+        cfg["continue-session"]["resume-requested"] = false;
+    }
+
     void onInitialize() override {
+        // Completing a run should invalidate any in-progress "Continue" entry.
+        clearContinueSnapshot();
+
         // Create the background material
         bgMaterial = new our::TexturedMaterial();
         bgMaterial->shader = new our::ShaderProgram();

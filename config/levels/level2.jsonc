@@ -30,7 +30,7 @@
     //  └────────────────────────────────────────────────┘
     // =====================================================================
 
-    "start-scene": "menu",
+    "start-scene": "play",
     "window": {
         "title": "Aladdin — Level 2",
         "size": { "width": 1280, "height": 720 },
@@ -755,14 +755,6 @@
             // position y=8) so Aladdin cannot jump over them. Thickness in z
             // is 2.2 so fast movement never tunnels through.
             {
-                "name": "corridor-wall-n-visual",
-                "position": [110, 3.5, -8],
-                "scale": [100, 7, 0.6],
-                "components": [
-                    { "type": "Mesh Renderer", "mesh": "cube", "material": "lit-wall" }
-                ]
-            },
-            {
                 "name": "corridor-wall-n",
                 "position": [110, 7, -8],
                 "scale": [100, 14, 0.6],
@@ -1129,7 +1121,7 @@
             // ------ Place 2 ground + floor collider --------------------------
             {
                 "name": "place2-ground",
-                "position": [460, 0, 0.01],
+                "position": [460, -0.03, 0.1],
                 "rotation": [-90, 0, 0],
                 "scale": [60, 60, 1],
                 "components": [
@@ -1138,7 +1130,7 @@
             },
             {
                 "name": "place2-floor-collider",
-                "position": [460, -0.25, 0.01],
+                "position": [460, -0.25, 0.1],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
                     { "type": "Collider", "shape": "box", "halfExtents": [30, 0.3, 30], "friction": 0.85, "restitution": 0.0 }
