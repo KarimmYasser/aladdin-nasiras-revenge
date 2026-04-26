@@ -177,6 +177,14 @@ int our::Application::run(int run_for_frames) {
     // Create a window with the given "WindowConfiguration" attributes.
     // If it should be fullscreen, monitor should point to one of the monitors (e.g. primary monitor), otherwise it should be null
     GLFWmonitor* monitor = win_config.isFullscreen ? glfwGetPrimaryMonitor() : nullptr;
+    
+    // If we are in fullscreen, we should use the monitor's native resolution to avoid stretching
+    if(win_config.isFullscreen && monitor){
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        win_config.size.x = mode->width;
+        win_config.size.y = mode->height;
+    }
+
     // The last parameter "share" can be used to share the resources (OpenGL objects) between multiple windows.
     window = glfwCreateWindow(win_config.size.x, win_config.size.y, win_config.title.c_str(), monitor, nullptr);
     if(!window) {

@@ -9,6 +9,8 @@
 #include <glm/glm.hpp>
 #include <cfloat>
 #include <iostream>
+#include <imgui.h>
+#include "../components/camera.hpp"
 
 namespace our {
 
@@ -31,6 +33,11 @@ namespace our {
             for(auto entity : world->getEntities()) {
                 EnemyComponent* enemy = entity->getComponent<EnemyComponent>();
                 if(!enemy) continue;
+                
+                // Update Health Bar Timer
+                if (enemy->healthBarTimer > 0.0f) {
+                    enemy->healthBarTimer -= deltaTime;
+                }
 
                 if(enemy->currentState == EnemyComponent::State::DEAD) {
                     auto* rbComp = entity->getComponent<RigidBodyComponent>();
@@ -183,6 +190,67 @@ namespace our {
                         entity->localTransform.rotation.y = glm::atan(lookDir.x, lookDir.z);
                     }
                 }
+            }
+        }
+
+        void onImmediateGui(World* world) {
+            Entity* cameraEntity = nullptr;
+            CameraComponent* camera = nullptr;
+            for(auto entity : world->getEntities()){
+                camera = entity->getComponent<CameraComponent>();
+                if(camera) {
+                    cameraEntity = entity;
+                    break;
+                }
+            }
+            if(!cameraEntity || !camera) return;
+
+            glm::mat4 V = camera->getViewMatrix();
+            ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+            glm::mat4 P = camera->getProjectionMatrix(glm::ivec2((int)screenSize.x, (int)screenSize.y));
+            glm::mat4 VP = P * V;
+
+            for(auto entity : world->getEntities()){
+                EnemyComponent* enemy = entity->getComponent<EnemyComponent>();
+                if(!enemy || enemy->healthBarTimer <= 0.0f || enemy->currentState == EnemyComponent::State::DEAD) continue;
+
+                // Position above enemy head
+                glm::vec3 worldPos = entity->localTransform.position + glm::vec3(0, 2.5f, 0);
+                glm::vec4 clipPos = VP * glm::vec4(worldPos, 1.0f);
+
+                if(clipPos.w <= 0.0f) continue; // Behind camera
+
+                glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+                if(ndcPos.x < -1.0f || ndcPos.x > 1.0f || ndcPos.y < -1.0f || ndcPos.y > 1.0f) continue;
+
+                ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+                ImVec2 screenPos = ImVec2(
+                    (ndcPos.x + 1.0f) * 0.5f * screenSize.x,
+                    (1.0f - ndcPos.y) * 0.5f * screenSize.y // Invert Y for screen space
+                );
+
+                // Render small floating health bar
+                float width = 60.0f;
+                float height = 6.0f;
+                ImDrawList* drawList = ImGui::GetForegroundDrawList();
+                
+                ImVec2 p1 = ImVec2(screenPos.x - width*0.5f, screenPos.y - height*0.5f);
+                ImVec2 p2 = ImVec2(screenPos.x + width*0.5f, screenPos.y + height*0.5f);
+                
+                // Background (dark)
+                drawList->AddRectFilled(p1, p2, IM_COL32(0, 0, 0, 180));
+                
+                // Foreground (Health)
+                float healthFrac = glm::clamp((float)enemy->health / (float)enemy->maxHealth, 0.0f, 1.0f);
+                ImVec2 p2_health = ImVec2(p1.x + width * healthFrac, p2.y);
+                
+                ImU32 healthColor = IM_COL32(255, 0, 0, 255); // Red for enemies
+                if (healthFrac > 0.5f) healthColor = IM_COL32(255, 200, 0, 255); // Orange/Yellow
+                
+                drawList->AddRectFilled(p1, p2_health, healthColor);
+                
+                // Border
+                drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 200));
             }
         }
     };

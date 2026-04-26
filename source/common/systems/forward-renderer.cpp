@@ -155,11 +155,15 @@ namespace our {
         shadowShader->attach("assets/shaders/shadow.frag", GL_FRAGMENT_SHADER);
         shadowShader->link();
 
-        // Skinned mesh shader: same fragment shader as lit objects, custom vertex shader.
         skinnedShader = new ShaderProgram();
         skinnedShader->attach("assets/shaders/skinned.vert", GL_VERTEX_SHADER);
         skinnedShader->attach("assets/shaders/light.frag",   GL_FRAGMENT_SHADER);
         skinnedShader->link();
+
+        shadowSkinnedShader = new ShaderProgram();
+        shadowSkinnedShader->attach("assets/shaders/shadow_skinned.vert", GL_VERTEX_SHADER);
+        shadowSkinnedShader->attach("assets/shaders/shadow.frag",         GL_FRAGMENT_SHADER);
+        shadowSkinnedShader->link();
     }
 
     void ForwardRenderer::destroy(){
@@ -186,9 +190,27 @@ namespace our {
         if(shadowDepthTexture) { glDeleteTextures(1, &shadowDepthTexture); shadowDepthTexture = 0; }
         if(shadowShader)       { delete shadowShader; shadowShader = nullptr; }
         if(skinnedShader)      { delete skinnedShader; skinnedShader = nullptr; }
+        if(shadowSkinnedShader){ delete shadowSkinnedShader; shadowSkinnedShader = nullptr; }
     }
 
-    void ForwardRenderer::render(World* world){
+    void ForwardRenderer::render(World* world, glm::ivec2 windowSize){
+        // If the window size changed, we need to update our internal state and recreate postprocessing textures
+        if(this->windowSize != windowSize){
+            this->windowSize = windowSize;
+            if(postprocessMaterial){
+                delete colorTarget;
+                delete depthTarget;
+                colorTarget = texture_utils::empty(GL_RGBA8, windowSize);
+                depthTarget = texture_utils::empty(GL_DEPTH_COMPONENT24, windowSize);
+                postprocessMaterial->texture = colorTarget;
+                
+                glBindFramebuffer(GL_FRAMEBUFFER, postprocessFrameBuffer);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTarget->getOpenGLName(), 0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTarget->getOpenGLName(), 0);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+        }
+
         // First of all, we search for a camera and for all the mesh renderers
         CameraComponent* camera = nullptr;
         // Clear light list every frame before collecting fresh ones
@@ -301,18 +323,35 @@ namespace our {
             }
 
             // Also render skinned meshes into the shadow map
+            shadowSkinnedShader->use();
             for (auto entity : world->getEntities()) {
+                Animator* animator = nullptr;
+                SkinnedMesh* mesh = nullptr;
+                bool visible = true;
+
                 if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) {
-                    if (!smr->skinnedMesh || !smr->visible) continue;
-                    glm::mat4 model = entity->getLocalToWorldMatrix();
-                    shadowShader->set("light_space_matrix", lightSpaceMatrix);
-                    shadowShader->set("model", model);
-                    
-                    // Note: This uses a non-skinned shadow shader for simplicity,
-                    // which casts a shadow based on the T-pose/mesh bounds.
-                    // For full animated shadows, a skinned shadow shader would be needed.
-                    smr->skinnedMesh->draw();
+                    animator = &smr->animator;
+                    mesh = smr->skinnedMesh;
+                    visible = smr->visible;
+                } else if (auto* animComp = entity->getComponent<AnimatorComponent>()) {
+                    animator = &animComp->animator;
+                    mesh = animComp->skinnedMesh;
                 }
+
+                if (!mesh || !visible) continue;
+
+                glm::mat4 model = entity->getLocalToWorldMatrix();
+                shadowSkinnedShader->set("light_space_matrix", lightSpaceMatrix);
+                shadowSkinnedShader->set("model", model);
+                
+                const auto& mats = animator->getFinalBoneMatrices();
+                if (!mats.empty()) {
+                    GLint loc = shadowSkinnedShader->getUniformLocation("finalBoneMatrices[0]");
+                    if (loc != -1) {
+                        glUniformMatrix4fv(loc, (GLsizei)std::min((size_t)mats.size(), (size_t)64), GL_FALSE, &mats[0][0][0]);
+                    }
+                }
+                mesh->draw();
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);

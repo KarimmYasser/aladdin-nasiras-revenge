@@ -26,10 +26,11 @@ namespace our {
         void loadClips(const std::vector<AnimationClip>& clips);
 
         // Start playing a clip by name.
-        // loop=true  → clip restarts when it ends
-        // loop=false → clip freezes on the last frame
-        // speed      → playback speed multiplier
-        void play(const std::string& name, bool loop = true, float speed = 1.0f);
+        // loop=true              → clip restarts when it ends
+        // loop=false             → clip freezes on the last frame
+        // speed                  → playback speed multiplier
+        // crossFadeOverride < 0  → use default crossFadeDuration
+        void play(const std::string& name, bool loop = true, float speed = 1.0f, float crossFadeOverride = -1.0f);
 
         // Advance time and recompute finalBoneMatrices. Call every frame.
         void update(float deltaTime);
@@ -49,6 +50,9 @@ namespace our {
         // Set/Get the playback speed multiplier
         void setPlaybackSpeed(float speed) { mPlaybackSpeed = speed; }
         float getPlaybackSpeed() const { return mPlaybackSpeed; }
+
+        // Set the crossfade duration in seconds
+        void setCrossFadeDuration(float duration) { mCrossFadeDuration = duration; }
 
         // Root motion suppression (prevents double-jumping if animation has baked movement)
         void setSuppressRootMotion(bool suppress) { mSuppressRootMotion = suppress; }

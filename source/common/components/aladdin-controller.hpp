@@ -23,7 +23,9 @@ namespace our {
         // Movement configuration
         float speed = 5.0f;               // Horizontal movement speed
         float jumpForce = 8.0f;           // Initial upward force when jumping
+        float jumpPlaybackSpeed = 1.2f;   // Speed multiplier for jump animation
         float rotationSpeed = 10.0f;      // How fast the character turns towards movement direction
+        float animationCrossFadeDuration = 0.35f; // Duration of blending between animations
         
         // Camera Follow configuration
         bool enableCameraFollow = false;
@@ -71,6 +73,9 @@ namespace our {
         /// Minimum downward speed to force jump/fall animation immediately.
         float fallAnimMinDownSpeed = -2.7f;
 
+        bool isJumpPreparing = false;
+        float jumpDelayTimer = 0.0f;
+
         bool isAttacking = false;
         float attackTimer = 0.0f;
         std::vector<Entity*> hitEntities;
@@ -103,7 +108,9 @@ namespace our {
             if (!data.is_object()) return;
             speed = data.value("speed", speed);
             jumpForce = data.value("jumpForce", jumpForce);
+            jumpPlaybackSpeed = data.value("jumpPlaybackSpeed", jumpPlaybackSpeed);
             rotationSpeed = data.value("rotationSpeed", rotationSpeed);
+            animationCrossFadeDuration = data.value("animationCrossFadeDuration", animationCrossFadeDuration);
 
             health = data.value("health", health);
             lives = data.value("lives", lives);

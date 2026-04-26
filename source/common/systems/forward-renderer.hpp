@@ -63,6 +63,7 @@ namespace our
 
         // Skinned mesh shader (skinned.vert + light.frag)
         ShaderProgram* skinnedShader = nullptr;
+        ShaderProgram* shadowSkinnedShader = nullptr;
 
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.
@@ -71,7 +72,7 @@ namespace our
         // Clean up the renderer
         void destroy();
         // This function should be called every frame to draw the given world
-        void render(World* world);
+        void render(World* world, glm::ivec2 windowSize);
 
 
     };

@@ -34,7 +34,7 @@
     "window": {
         "title": "Aladdin — Level 2",
         "size": { "width": 1280, "height": 720 },
-        "fullscreen": false
+        "fullscreen": true
     },
     "game": {
         "total_coins": 14,
