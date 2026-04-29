@@ -45,13 +45,16 @@ namespace our {
          */
         static bool computeGroundedFromPhysics(Entity* entity, PhysicsWorld& physicsWorld, Entity* swordHitbox) {
             constexpr float kMinUpDotContact = 0.50f;
-            constexpr float kRayLength = 1.5f;
+            constexpr float kProbeStartAboveFeet = 0.12f;
+            constexpr float kRayLength = 0.42f;
             constexpr float kMinUpDotRay = 0.50f;
 
             const bool fromContacts = physicsWorld.isGrounded(entity, kMinUpDotContact);
 
             float halfHeight = 0.0f;
+            float centerOffsetY = 0.0f;
             if (auto* collider = entity->getComponent<ColliderComponent>()) {
+                centerOffsetY = collider->centerOffset.y;
                 switch (collider->shape) {
                     case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
                     case ColliderShape::Sphere:  halfHeight = collider->radius; break;
@@ -60,7 +63,9 @@ namespace our {
                 }
             }
 
-            const glm::vec3 origin = entity->localTransform.position - glm::vec3(0.0f, halfHeight - 0.08f, 0.0f);
+            // Probe from slightly above the collider's bottom (feet), accounting for collider center offset.
+            const float feetY = entity->localTransform.position.y + centerOffsetY - halfHeight;
+            const glm::vec3 origin(entity->localTransform.position.x, feetY + kProbeStartAboveFeet, entity->localTransform.position.z);
             const RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), kRayLength);
             const bool fromRay = groundHit.hasHit && groundHit.entity &&
                 groundHit.entity != entity && groundHit.entity != swordHitbox &&
@@ -614,11 +619,6 @@ namespace our {
 
                     if (groundedSmooth) {
                         animPtr->setSuppressRootMotion(false); // Reset when on ground
-                    }
-
-                    if (!animPtr->hasClip(targetClip)) {
-                        if (animPtr->hasClip("walk") && targetClip == "idle") targetClip = "walk";
-                        else if (!animPtr->getClips().empty()) targetClip = animPtr->getClips().begin()->first;
                     }
 
                     float currentSpeed = animPtr->getPlaybackSpeed();

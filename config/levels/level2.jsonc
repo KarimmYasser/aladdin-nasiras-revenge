@@ -387,17 +387,17 @@
                 "name": "place1-ground",
                 "position": [130, 0, 0],
                 "rotation": [-90, 0, 0],
-                "scale": [420, 200, 1],
+                "scale": [420, 200, 0.02],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "plane", "material": "lit-ground" }
                 ]
             },
             {
                 "name": "place1-floor-collider",
-                "position": [130, -0.25, 0],
+                "position": [130, 0.01, 0],
                 "components": [
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [210, 0.3, 100], "friction": 0.85, "restitution": 0.0 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [210, 0.01, 100], "friction": 0.85, "restitution": 0.0 }
                 ]
             },
 
@@ -600,7 +600,7 @@
             // ============================================================
             {
                 "name": "aladdin",
-                "position": [-50, -0.2, 0.0],
+                "position": [-50, 0.02, 0.0],
                 "rotation": [0, 270, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -633,7 +633,12 @@
                         "respawnPosition": [-50, 0.0, 0.0]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
+                    // centerOffset.y = height/2 + radius = 0.825 + 0.42 = 1.245
+                    // Pushes the capsule UP so its bottom rests on the entity origin (= model's feet),
+                    // otherwise the capsule center would sit at the entity origin and physics would
+                    // resolve the model floating ~1.245 units above the ground.
+                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65,
+                      "centerOffset": [0, 1.245, 0], "friction": 0.55 }
                 ]
             },
             {
