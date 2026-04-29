@@ -1664,7 +1664,7 @@
                 "name": "p4-golden-key",
                 "position": [760, 1.2, -260],
                 "rotation": [0, 30, 0],
-                "scale": [1.0, 1.0, 1.0],
+                "scale": [0.008, 0.008, 0.008],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "key_mesh", "material": "lit-key" },
                     { "type": "Collectible", "collectibleType": "key", "value": 1, "rotationSpeed": 2.5, "bobbingHeight": 0.2, "collectionRadius": 2.0 }
