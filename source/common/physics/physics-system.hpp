@@ -116,41 +116,48 @@ namespace our {
             // The physics engine just finished calculating gravity, collisions, and movement.
             // Now we grab those new positions and push them back to the visual Transform
             // components so the Forward Renderer draws them in the correct spot.
+            const bool didStepPhysics = (stepsCount > 0);
             for (auto entity : ecsWorld->getEntities()) {
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 auto* transform = &entity->localTransform;
 
                 // We only need to sync DYNAMIC bodies. Static and kinematic bodies are handled differently.
                 if (rbComp && rbComp->bodyHandle && transform && rbComp->type == RigidBodyType::Dynamic) {
-                    // Get the newly calculated transform from ReactPhysics3D
-                    const reactphysics3d::Transform& physicsTransform = rbComp->bodyHandle->getTransform();
+                    if (didStepPhysics) {
+                        // Get the newly calculated transform from ReactPhysics3D
+                        const reactphysics3d::Transform& physicsTransform = rbComp->bodyHandle->getTransform();
 
-                    // 1. Sync Position
-                    const reactphysics3d::Vector3& pos = physicsTransform.getPosition();
-                    transform->position = glm::vec3(pos.x, pos.y, pos.z);
+                        // 1. Sync Position
+                        const reactphysics3d::Vector3& pos = physicsTransform.getPosition();
+                        transform->position = glm::vec3(pos.x, pos.y, pos.z);
 
-                    // 2. Sync Rotation
-                    // If rotation is locked in physics, gameplay code is expected to control visual facing,
-                    // so we preserve ECS rotation and only sync position/velocity from physics.
-                    if (!rbComp->lockRotation) {
-                        const reactphysics3d::Quaternion& rp3dQuat = physicsTransform.getOrientation();
+                        // 2. Sync Rotation
+                        // If rotation is locked in physics, gameplay code is expected to control visual facing,
+                        // so we preserve ECS rotation and only sync position/velocity from physics.
+                        if (!rbComp->lockRotation) {
+                            const reactphysics3d::Quaternion& rp3dQuat = physicsTransform.getOrientation();
 
-                        // Construct GLM quaternion from RP3D quaternion (w, x, y, z order)
-                        glm::quat glmQuat(rp3dQuat.w, rp3dQuat.x, rp3dQuat.y, rp3dQuat.z);
+                            // Construct GLM quaternion from RP3D quaternion (w, x, y, z order)
+                            glm::quat glmQuat(rp3dQuat.w, rp3dQuat.x, rp3dQuat.y, rp3dQuat.z);
 
-                        // Validate quaternion before conversion
-                        if (glm::isnan(glmQuat.w) || glm::isnan(glmQuat.x) || glm::isnan(glmQuat.y) || glm::isnan(glmQuat.z)) {
-                            Logger::error("PhysicsSystem", "Invalid quaternion for entity '", entity->name,
-                                         "' - NaN component detected");
-                            continue;
+                            // Validate quaternion before conversion
+                            if (glm::isnan(glmQuat.w) || glm::isnan(glmQuat.x) || glm::isnan(glmQuat.y) || glm::isnan(glmQuat.z)) {
+                                Logger::error("PhysicsSystem", "Invalid quaternion for entity '", entity->name,
+                                             "' - NaN component detected");
+                                continue;
+                            }
+
+                            // Keep Transform rotation in radians (engine convention)
+                            transform->rotation = glm::eulerAngles(glmQuat);
                         }
 
-                        // Keep Transform rotation in radians (engine convention)
-                        transform->rotation = glm::eulerAngles(glmQuat);
+                        // 3. Sync Linear Velocity
+                        rbComp->velocity = physicsWorld.getLinearVelocity(entity);
+                    } else {
+                        // No fixed-step happened this render frame: predict dynamic motion
+                        // from last known velocity to avoid visible jitter at variable FPS.
+                        transform->position += rbComp->velocity * deltaTime;
                     }
-
-                    // 3. Sync Linear Velocity
-                    rbComp->velocity = physicsWorld.getLinearVelocity(entity);
                 }
             }
         }
