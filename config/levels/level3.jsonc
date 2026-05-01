@@ -1,1766 +1,1081 @@
 {
-  // Level 3 — Two-map flow:
-  //   Map 1: Desert Town
-  //   Map 2: Desert fort (ancient_desert_fort)
-  // Portal teleports Map 1 -> Map 2; LevelExit in Map 2.
-  //
-  // Meshes use large model units; uniform scale ~0.0025. Tune transform / spawn / portal with M debug.
-  // "submeshMaterials" maps tinyobj MTL names to scene lit materials.
-  // Desert_Town ground.001 uses tilted normals (~34° from +Y in +Z) — pitch corrects it to horizontal XZ.
+    // Level 3 — Three-area flow:
+    //   Map 1: Desert Town
+    //   Map 2: Desert fort (ancient_desert_fort)
+    //   Map 3: Ancient Desert Arena
+    // Portal: Map 1 -> Map 2; Map 2 -> Map 3; LevelExit (victory) on Map 3.
+    //
+    // Meshes use large model units; uniform scale ~0.0025. Tune transform / spawn / portal with M debug.
+    // "submeshMaterials" maps tinyobj MTL names to scene lit materials.
+    // Desert_Town ground.001 uses tilted normals (~34° from +Y in +Z) — pitch corrects it to horizontal XZ.
 
-  "start-scene": "play",
-  "window": {
-    "title": "Aladdin — Level 3 (Desert Town -> Desert Fort)",
-    "size": { "width": 1280, "height": 720 },
-    "fullscreen": false,
-  },
-  "game": {
-    "total_coins": 10,
-    "total_enemies": 6,
-    "time_3star": 300,
-    "time_2star": 420,
-    "time_1star": 600,
-    "game_over_fall_y": -55,
-  },
-
-  "scene": {
-    "renderer": {
-      "sky": "assets/textures/sky.jpg",
-      "postprocess": "assets/shaders/postprocess/vignette.frag",
+    "start-scene": "play",
+    "window": {
+        "title": "Aladdin — Level 3 (Town -> Fort -> Arena)",
+        "size": { "width": 1280, "height": 720 },
+        "fullscreen": false
     },
-    "assets": {
-      "shaders": {
-        "tinted": {
-          "vs": "assets/shaders/tinted.vert",
-          "fs": "assets/shaders/tinted.frag",
-        },
-        "textured": {
-          "vs": "assets/shaders/textured.vert",
-          "fs": "assets/shaders/textured.frag",
-        },
-        "light": {
-          "vs": "assets/shaders/light.vert",
-          "fs": "assets/shaders/light.frag",
-        },
-        "skinned": {
-          "vs": "assets/shaders/skinned.vert",
-          "fs": "assets/shaders/light.frag",
-        },
-      },
-      "textures": {
-        "l3_dt_stairs_side": "assets/models/Maps/level 3/Desert_Town/images/stairs-side_albedo.jpg",
-        "l3_dt_stairs": "assets/models/Maps/level 3/Desert_Town/images/stairs_albedo.jpg",
-        "l3_dt_ladder": "assets/models/Maps/level 3/Desert_Town/images/ladder_albedo.jpg",
-        "l3_dt_watering": "assets/models/Maps/level 3/Desert_Town/images/watering_albedo.jpg",
-        "l3_dt_well": "assets/models/Maps/level 3/Desert_Town/images/well_albedo.jpg",
-        "l3_dt_shelter": "assets/models/Maps/level 3/Desert_Town/images/shelter_albedo.jpg",
-        "l3_dt_vase": "assets/models/Maps/level 3/Desert_Town/images/vase_albedo.jpg",
-        "l3_dt_cover": "assets/models/Maps/level 3/Desert_Town/images/cover_albedo.jpg",
-        "l3_dt_trapgate": "assets/models/Maps/level 3/Desert_Town/images/trapgate_albedo.jpg",
-        "l3_dt_fence_001": "assets/models/Maps/level 3/Desert_Town/images/fence.001_albedo.jpg",
-        "l3_dt_haypile_001": "assets/models/Maps/level 3/Desert_Town/images/haypile.001_albedo.jpg",
-        "l3_dt_carpet1_001": "assets/models/Maps/level 3/Desert_Town/images/carpet1.001_albedo.jpg",
-        "l3_dt_house_square": "assets/models/Maps/level 3/Desert_Town/images/house-square_albedo.jpg",
-        "l3_dt_log": "assets/models/Maps/level 3/Desert_Town/images/log_albedo.jpg",
-        "l3_dt_trapdoor": "assets/models/Maps/level 3/Desert_Town/images/trapdoor_albedo.jpg",
-        "l3_dt_window1": "assets/models/Maps/level 3/Desert_Town/images/window1_albedo.jpg",
-        "l3_dt_support": "assets/models/Maps/level 3/Desert_Town/images/support_albedo.jpg",
-        "l3_dt_door": "assets/models/Maps/level 3/Desert_Town/images/door_albedo.jpg",
-        "l3_dt_window2": "assets/models/Maps/level 3/Desert_Town/images/window2_albedo.jpg",
-        "l3_dt_house_corner": "assets/models/Maps/level 3/Desert_Town/images/house-corner_albedo.jpg",
-        "l3_dt_house_high": "assets/models/Maps/level 3/Desert_Town/images/house-high_albedo.jpg",
-        "l3_dt_house_long": "assets/models/Maps/level 3/Desert_Town/images/house-long_albedo.jpg",
-        "l3_dt_wall_segment": "assets/models/Maps/level 3/Desert_Town/images/wall-segment_albedo.jpg",
-        "l3_dt_wall_spike": "assets/models/Maps/level 3/Desert_Town/images/wall-spike_albedo.jpg",
-        "l3_dt_wall_pillar": "assets/models/Maps/level 3/Desert_Town/images/wall-pillar_albedo.jpg",
-        "l3_dt_gate_border": "assets/models/Maps/level 3/Desert_Town/images/gate-border_albedo.jpg",
-        "l3_dt_gate_door": "assets/models/Maps/level 3/Desert_Town/images/gate-door_albedo.jpg",
-        "l3_dt_ground_001": "assets/models/Maps/level 3/Desert_Town/images/ground.001_albedo.jpg",
-
-        "l3_df_barrel": "assets/models/Maps/level 3/ancient_desert_fort/barral.png",
-        "l3_df_cannon": "assets/models/Maps/level 3/ancient_desert_fort/cannon.png",
-        "l3_df_floor": "assets/models/Maps/level 3/ancient_desert_fort/floor.png",
-        "l3_df_ground": "assets/models/Maps/level 3/ancient_desert_fort/ground.png",
-        "l3_df_land": "assets/models/Maps/level 3/ancient_desert_fort/land.png",
-        "l3_df_leafG": "assets/models/Maps/level 3/ancient_desert_fort/leafG.png",
-        "l3_df_leafY": "assets/models/Maps/level 3/ancient_desert_fort/leafY.png",
-        "l3_df_metal": "assets/models/Maps/level 3/ancient_desert_fort/metal.png",
-        "l3_df_plam": "assets/models/Maps/level 3/ancient_desert_fort/plam.png",
-        "l3_df_stone": "assets/models/Maps/level 3/ancient_desert_fort/stone.png",
-        "l3_df_wall": "assets/models/Maps/level 3/ancient_desert_fort/wall.png",
-        "l3_df_wood": "assets/models/Maps/level 3/ancient_desert_fort/wood.png",
-
-        "portal_tex_0": "assets/models/Portal/0.png",
-        "portal_tex_1": "assets/models/Portal/1.png",
-        "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
-        "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
-        "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-        "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
-        "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
-        "genie_tex": "assets/models/Genie/genie_diff.png",
-
-        "apple_tex": "assets/models/Apple/Handle1Tex.png",
-        "health_bottle_tex": "assets/models/Health Bottle/Texture/Bottle.png",
-        "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
-        "pot_small_tex": "assets/models/Pots/Pot 2/Txm_tsubo02.png",
-        "pot_aotubo_tex": "assets/models/Pots/Pot 3/D_aotubo00.png",
-      },
-      "meshes": {
-        "desert_town": "assets/models/Maps/level 3/Desert_Town/Desert_Town.obj",
-        "desert_fort": "assets/models/Maps/level 3/ancient_desert_fort/Desert_fort.obj",
-        "portal_highelf": "assets/models/Portal/highelfportal.obj",
-        "coin_mesh": "assets/models/Coin/Coin.obj",
-        "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
-        "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-        "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
-        "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
-        "genie_mesh": "assets/models/Genie/genie.obj",
-
-        "apple_mesh": "assets/models/Apple/apple.obj",
-        "health_bottle_mesh": "assets/models/Health Bottle/Health Bottle.obj",
-        "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
-        "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
-        "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj",
-      },
-      "samplers": {
-        "default": {},
-        "repeat": { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" },
-      },
-      "materials": {
-        "lit-l3-dt-stairs-side": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_stairs_side",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-stairs": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_stairs",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-ladder": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_ladder",
-          "sampler": "default",
-          "shininess": 22.0,
-          "ambient": 0.36,
-        },
-        "lit-l3-dt-watering": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_watering",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-well": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_well",
-          "sampler": "default",
-          "shininess": 28.0,
-          "ambient": 0.36,
-        },
-        "lit-l3-dt-shelter": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_shelter",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-vase": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_vase",
-          "sampler": "default",
-          "shininess": 40.0,
-          "ambient": 0.34,
-        },
-        "lit-l3-dt-cover": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_cover",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-trapgate": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_trapgate",
-          "sampler": "default",
-          "shininess": 26.0,
-          "ambient": 0.35,
-        },
-        "lit-l3-dt-fence-001": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_fence_001",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-haypile-001": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_haypile_001",
-          "sampler": "default",
-          "shininess": 12.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-dt-carpet1-001": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_carpet1_001",
-          "sampler": "default",
-          "shininess": 16.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-house-square": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_house_square",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-log": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_log",
-          "sampler": "default",
-          "shininess": 14.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-dt-trapdoor": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_trapdoor",
-          "sampler": "default",
-          "shininess": 22.0,
-          "ambient": 0.36,
-        },
-        "lit-l3-dt-window1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_window1",
-          "sampler": "default",
-          "shininess": 48.0,
-          "ambient": 0.32,
-        },
-        "lit-l3-dt-support": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_support",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-door": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_door",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-window2": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_window2",
-          "sampler": "default",
-          "shininess": 48.0,
-          "ambient": 0.32,
-        },
-        "lit-l3-dt-house-corner": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_house_corner",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-house-high": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_house_high",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-house-long": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_house_long",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-wall-segment": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_wall_segment",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-dt-wall-spike": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_wall_spike",
-          "sampler": "default",
-          "shininess": 30.0,
-          "ambient": 0.34,
-        },
-        "lit-l3-dt-wall-pillar": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_wall_pillar",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-gate-border": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_gate_border",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.36,
-        },
-        "lit-l3-dt-gate-door": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_gate_door",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.37,
-        },
-        "lit-l3-dt-ground-001": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_dt_ground_001",
-          "sampler": "default",
-          "shininess": 12.0,
-          "ambient": 0.42,
-        },
-
-        "lit-l3-df-barrel": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_barrel",
-          "sampler": "default",
-          "shininess": 16.0,
-          "ambient": 0.38,
-        },
-        "lit-l3-df-cannon": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_cannon",
-          "sampler": "default",
-          "shininess": 48.0,
-          "ambient": 0.34,
-        },
-        "lit-l3-df-floor": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_floor",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-df-ground": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_ground",
-          "sampler": "default",
-          "shininess": 14.0,
-          "ambient": 0.42,
-        },
-        "lit-l3-df-land": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_land",
-          "sampler": "default",
-          "shininess": 12.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-df-leaf-g": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_leafG",
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.45,
-        },
-        "lit-l3-df-leaf-y": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_leafY",
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.45,
-        },
-        "lit-l3-df-metal": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_metal",
-          "sampler": "default",
-          "shininess": 56.0,
-          "ambient": 0.32,
-        },
-        "lit-l3-df-plam": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_plam",
-          "sampler": "default",
-          "shininess": 14.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-df-stone": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_stone",
-          "sampler": "default",
-          "shininess": 16.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-df-wall": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_wall",
-          "sampler": "default",
-          "shininess": 14.0,
-          "ambient": 0.4,
-        },
-        "lit-l3-df-wood": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "l3_df_wood",
-          "sampler": "default",
-          "shininess": 12.0,
-          "ambient": 0.42,
-        },
-        "lit-l3-df-roof": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.38,
-          "albedo_tint": [0.8, 0.8, 0.8],
-        },
-        "lit-l3-df-wood-001": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 12.0,
-          "ambient": 0.4,
-          "albedo_tint": [1.0, 1.0, 1.0],
-        },
-        "lit-l3-df-wood-042": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 36.0,
-          "ambient": 0.36,
-          "albedo_tint": [1.0, 1.0, 1.0],
-        },
-
-        "lit-portal-0": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "portal_tex_0",
-          "sampler": "default",
-          "shininess": 40.0,
-          "ambient": 0.35,
-        },
-        "lit-portal-1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "portal_tex_1",
-          "sampler": "default",
-          "shininess": 40.0,
-          "ambient": 0.35,
-        },
-        "coin-mat": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "coin_tex",
-          "sampler": "default",
-          "shininess": 16.0,
-          "ambient": 0.35,
-        },
-        "lit-apple": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": true },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "apple_tex",
-          "sampler": "default",
-          "shininess": 48.0,
-          "ambient": 0.32,
-        },
-        "health-bottle-mat": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "health_bottle_tex",
-          "sampler": "default",
-          "shininess": 48.0,
-          "ambient": 0.4,
-        },
-        "lit-pot": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": true },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "pot_tex",
-          "sampler": "default",
-          "shininess": 28.0,
-          "ambient": 0.32,
-        },
-        "lit-pot-small": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": true },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "pot_small_tex",
-          "sampler": "default",
-          "shininess": 28.0,
-          "ambient": 0.32,
-        },
-        "lit-pot-aotubo": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": true },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "pot_aotubo_tex",
-          "sampler": "default",
-          "shininess": 30.0,
-          "ambient": 0.32,
-        },
-        "lit-enemy1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy1_tex",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.32,
-        },
-        "lit-enemy2": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy2_tex",
-          "sampler": "default",
-          "shininess": 36.0,
-          "ambient": 0.32,
-        },
-        "lit-enemy3": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy3_tex",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.32,
-        },
-        "lit-aladdin": {
-          "type": "lit",
-          "shader": "skinned",
-          "albedo_map": "aladdin_skin",
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.28,
-          "albedo_tint": [1, 1, 1],
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-        },
-        "lit-env-lamp": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 82.0,
-          "ambient": 0.42,
-          "albedo_tint": [1.0, 0.82, 0.32],
-        },
-        "lit-env-lamp-used": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.22,
-          "albedo_tint": [0.45, 0.38, 0.22],
-        },
-        "lit-genie": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "genie_tex",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.36,
-          "albedo_tint": [0.72, 0.92, 1.0],
-        },
-      },
+    "game": {
+        "total_coins": 10,
+        "total_enemies": 14,
+        "time_3star": 300,
+        "time_2star": 420,
+        "time_1star": 600,
+        "game_over_fall_y": -55
     },
 
-    "world": [
-      {
-        "name": "Camera",
-        "position": [40, 22, 28],
-        "rotation": [-22, 0, 0],
-        "components": [
-          {
-            "type": "Camera",
-            "cameraType": "perspective",
-            "near": 0.1,
-            "far": 2500,
-            "fovY": 58,
-          },
-        ],
-      },
-      {
-        "name": "sun",
-        "rotation": [-38, -125, 0],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "directional",
-            "color": [1.0, 0.96, 0.88],
-            "intensity": 1.45,
-          },
-        ],
-      },
-      {
-        "name": "fill-map1",
-        "position": [26, 150, 18],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "point",
-            "color": [0.95, 0.95, 1.0],
-            "intensity": 2.8,
-            "attenuation": {
-              "constant": 1.0,
-              "linear": 0.05,
-              "quadratic": 0.012,
+    "scene": {
+        "renderer": {
+            "sky": "assets/textures/sky.jpg",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets": {
+            "shaders": {
+                "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" },
+                "textured": { "vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag" },
+                "light": { "vs": "assets/shaders/light.vert", "fs": "assets/shaders/light.frag" },
+                "skinned": { "vs": "assets/shaders/skinned.vert", "fs": "assets/shaders/light.frag" }
             },
-          },
-        ],
-      },
-      {
-        "name": "desert-town",
-        "position": [26, 150, 18],
-        "rotation": [-34, 0, 0],
-        "scale": [0.05, 0.05, 0.05],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "desert_town",
-            "material": "lit-l3-dt-ground-001",
-            "submeshMaterials": {
-              "stairs-side": "lit-l3-dt-stairs-side",
-              "stairs": "lit-l3-dt-stairs",
-              "ladder": "lit-l3-dt-ladder",
-              "watering": "lit-l3-dt-watering",
-              "well": "lit-l3-dt-well",
-              "shelter": "lit-l3-dt-shelter",
-              "vase": "lit-l3-dt-vase",
-              "cover": "lit-l3-dt-cover",
-              "trapgate": "lit-l3-dt-trapgate",
-              "fence.001": "lit-l3-dt-fence-001",
-              "haypile.001": "lit-l3-dt-haypile-001",
-              "carpet1.001": "lit-l3-dt-carpet1-001",
-              "house-square": "lit-l3-dt-house-square",
-              "log": "lit-l3-dt-log",
-              "trapdoor": "lit-l3-dt-trapdoor",
-              "window1": "lit-l3-dt-window1",
-              "support": "lit-l3-dt-support",
-              "door": "lit-l3-dt-door",
-              "window2": "lit-l3-dt-window2",
-              "house-corner": "lit-l3-dt-house-corner",
-              "house-high": "lit-l3-dt-house-high",
-              "house-long": "lit-l3-dt-house-long",
-              "wall-segment": "lit-l3-dt-wall-segment",
-              "wall-spike": "lit-l3-dt-wall-spike",
-              "wall-pillar": "lit-l3-dt-wall-pillar",
-              "gate-border": "lit-l3-dt-gate-border",
-              "gate-door": "lit-l3-dt-gate-door",
-              "ground.001": "lit-l3-dt-ground-001",
+            "textures": {
+                "l3_dt_stairs_side": "assets/models/Maps/level 3/Desert_Town/images/stairs-side_albedo.jpg",
+                "l3_dt_stairs": "assets/models/Maps/level 3/Desert_Town/images/stairs_albedo.jpg",
+                "l3_dt_ladder": "assets/models/Maps/level 3/Desert_Town/images/ladder_albedo.jpg",
+                "l3_dt_watering": "assets/models/Maps/level 3/Desert_Town/images/watering_albedo.jpg",
+                "l3_dt_well": "assets/models/Maps/level 3/Desert_Town/images/well_albedo.jpg",
+                "l3_dt_shelter": "assets/models/Maps/level 3/Desert_Town/images/shelter_albedo.jpg",
+                "l3_dt_vase": "assets/models/Maps/level 3/Desert_Town/images/vase_albedo.jpg",
+                "l3_dt_cover": "assets/models/Maps/level 3/Desert_Town/images/cover_albedo.jpg",
+                "l3_dt_trapgate": "assets/models/Maps/level 3/Desert_Town/images/trapgate_albedo.jpg",
+                "l3_dt_fence_001": "assets/models/Maps/level 3/Desert_Town/images/fence.001_albedo.jpg",
+                "l3_dt_haypile_001": "assets/models/Maps/level 3/Desert_Town/images/haypile.001_albedo.jpg",
+                "l3_dt_carpet1_001": "assets/models/Maps/level 3/Desert_Town/images/carpet1.001_albedo.jpg",
+                "l3_dt_house_square": "assets/models/Maps/level 3/Desert_Town/images/house-square_albedo.jpg",
+                "l3_dt_log": "assets/models/Maps/level 3/Desert_Town/images/log_albedo.jpg",
+                "l3_dt_trapdoor": "assets/models/Maps/level 3/Desert_Town/images/trapdoor_albedo.jpg",
+                "l3_dt_window1": "assets/models/Maps/level 3/Desert_Town/images/window1_albedo.jpg",
+                "l3_dt_support": "assets/models/Maps/level 3/Desert_Town/images/support_albedo.jpg",
+                "l3_dt_door": "assets/models/Maps/level 3/Desert_Town/images/door_albedo.jpg",
+                "l3_dt_window2": "assets/models/Maps/level 3/Desert_Town/images/window2_albedo.jpg",
+                "l3_dt_house_corner": "assets/models/Maps/level 3/Desert_Town/images/house-corner_albedo.jpg",
+                "l3_dt_house_high": "assets/models/Maps/level 3/Desert_Town/images/house-high_albedo.jpg",
+                "l3_dt_house_long": "assets/models/Maps/level 3/Desert_Town/images/house-long_albedo.jpg",
+                "l3_dt_wall_segment": "assets/models/Maps/level 3/Desert_Town/images/wall-segment_albedo.jpg",
+                "l3_dt_wall_spike": "assets/models/Maps/level 3/Desert_Town/images/wall-spike_albedo.jpg",
+                "l3_dt_wall_pillar": "assets/models/Maps/level 3/Desert_Town/images/wall-pillar_albedo.jpg",
+                "l3_dt_gate_border": "assets/models/Maps/level 3/Desert_Town/images/gate-border_albedo.jpg",
+                "l3_dt_gate_door": "assets/models/Maps/level 3/Desert_Town/images/gate-door_albedo.jpg",
+                "l3_dt_ground_001": "assets/models/Maps/level 3/Desert_Town/images/ground.001_albedo.jpg",
+
+                "l3_df_barrel": "assets/models/Maps/level 3/ancient_desert_fort/barral.png",
+                "l3_df_cannon": "assets/models/Maps/level 3/ancient_desert_fort/cannon.png",
+                "l3_df_floor": "assets/models/Maps/level 3/ancient_desert_fort/floor.png",
+                "l3_df_ground": "assets/models/Maps/level 3/ancient_desert_fort/ground.png",
+                "l3_df_land": "assets/models/Maps/level 3/ancient_desert_fort/land.png",
+                "l3_df_leafG": "assets/models/Maps/level 3/ancient_desert_fort/leafG.png",
+                "l3_df_leafY": "assets/models/Maps/level 3/ancient_desert_fort/leafY.png",
+                "l3_df_metal": "assets/models/Maps/level 3/ancient_desert_fort/metal.png",
+                "l3_df_plam": "assets/models/Maps/level 3/ancient_desert_fort/plam.png",
+                "l3_df_stone": "assets/models/Maps/level 3/ancient_desert_fort/stone.png",
+                "l3_df_wall": "assets/models/Maps/level 3/ancient_desert_fort/wall.png",
+                "l3_df_wood": "assets/models/Maps/level 3/ancient_desert_fort/wood.png",
+
+                "portal_tex_0": "assets/models/Portal/0.png",
+                "portal_tex_1": "assets/models/Portal/1.png",
+                "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
+                "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
+                "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
+                "genie_tex": "assets/models/Genie/genie_diff.png",
+                "genie_jafar_tex0": "assets/models/Genie_Jafar/5_material000_1_0_0_baseColor.png",
+                "genie_jafar_tex1": "assets/models/Genie_Jafar/5_material001_1_0_0_baseColor.png",
+                "genie_jafar_tex2": "assets/models/Genie_Jafar/5_material002_1_0_0_baseColor.png",
+                "genie_jafar_tex3": "assets/models/Genie_Jafar/5_material003_1_0_0_baseColor.png",
+
+                "apple_tex": "assets/models/Apple/Handle1Tex.png",
+                "health_bottle_tex": "assets/models/Health Bottle/Texture/Bottle.png",
+                "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
+                "pot_small_tex": "assets/models/Pots/Pot 2/Txm_tsubo02.png",
+                "pot_aotubo_tex": "assets/models/Pots/Pot 3/D_aotubo00.png",
+
+                "l3_arena_wall": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/wall.png",
+                "l3_arena_wall3": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/wall3.png",
+                "l3_arena_floor3": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/floor3.png",
+                "l3_arena_wood": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/wood.png",
+                "l3_arena_sand": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/sand.png.001.png",
+                "l3_arena_plam": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/plam.png",
+                "l3_arena_leafG": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/leafG.png",
+                "l3_arena_leafY": "assets/models/Maps/level 3/Ancient_Desert_Arena/images/leafY.png"
             },
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "concaveMesh",
-            "mesh": "desert_town",
-            "friction": 0.9,
-            "restitution": 0.0,
-          },
-        ],
-      },
-      {
-        "name": "fill-map2",
-        "position": [620, 8, 4],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "point",
-            "color": [0.95, 0.98, 1.0],
-            "intensity": 3.2,
-            "attenuation": {
-              "constant": 1.0,
-              "linear": 0.04,
-              "quadratic": 0.01,
+            "meshes": {
+                "desert_town": "assets/models/Maps/level 3/Desert_Town/Desert_Town.obj",
+                "desert_fort": "assets/models/Maps/level 3/ancient_desert_fort/Desert_fort.obj",
+                "ancient_desert_arena": "assets/models/Maps/level 3/Ancient_Desert_Arena/Ancient_Desert_Arena.obj",
+                "portal_highelf": "assets/models/Portal/highelfportal.obj",
+                "coin_mesh": "assets/models/Coin/Coin.obj",
+                "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
+                "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
+                "genie_mesh": "assets/models/Genie/genie.obj",
+                "genie_jafar_mesh": "assets/models/Genie_Jafar/genie_jafar.obj",
+                "jafar_mesh": "assets/models/Jafar/jafar.obj",
+
+                "apple_mesh": "assets/models/Apple/apple.obj",
+                "health_bottle_mesh": "assets/models/Health Bottle/Health Bottle.obj",
+                "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
+                "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
+                "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj"
             },
-          },
-        ],
-      },
-      {
-        "name": "desert-fort",
-        "position": [600, -3.0, 2.5],
-        "rotation": [0, 0, 0],
-        "scale": [0.0025, 0.0025, 0.0025],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "desert_fort",
-            "material": "lit-l3-df-ground",
-            "submeshMaterials": {
-              "barrel": "lit-l3-df-barrel",
-              "cannon": "lit-l3-df-cannon",
-              "floor": "lit-l3-df-floor",
-              "ground": "lit-l3-df-ground",
-              "land": "lit-l3-df-land",
-              "leaf_G": "lit-l3-df-leaf-g",
-              "leaf_Y": "lit-l3-df-leaf-y",
-              "metal": "lit-l3-df-metal",
-              "plam": "lit-l3-df-plam",
-              "roof": "lit-l3-df-roof",
-              "stone": "lit-l3-df-stone",
-              "wall": "lit-l3-df-wall",
-              "wood": "lit-l3-df-wood",
-              "wood.001": "lit-l3-df-wood-001",
-              "wood.042__0": "lit-l3-df-wood-042",
+            "samplers": {
+                "default": {},
+                "repeat": { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" }
             },
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "concaveMesh",
-            "mesh": "desert_fort",
-            "friction": 0.92,
-            "restitution": 0.0,
-          },
-        ],
-      },
-      {
-        "name": "portal-map1-to-map2-visual",
-        "position": [46, 6.2, -6],
-        "rotation": [0, 0, 0],
-        "scale": [2.1, 2.1, 2.1],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "portal_highelf",
-            "material": "lit-portal-0",
-          },
-        ],
-      },
-      {
-        "name": "portal-map1-to-map2",
-        "position": [46, 7.35, -6],
-        "components": [
-          {
-            "type": "Room Portal",
-            "radius": 4.0,
-            "blackoutDuration": 1.2,
-            "cooldownDuration": 2.5,
-            "targetPosition": [612, -2.5, 4.0],
-            "setYaw": true,
-            "targetYaw": 90,
-          },
-        ],
-      },
-      {
-        "name": "portal-map2-victory-visual",
-        "position": [628, -3.5, -16],
-        "rotation": [0, -90, 0],
-        "scale": [2.2, 2.2, 2.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "portal_highelf",
-            "material": "lit-portal-1",
-          },
-        ],
-      },
-      {
-        "name": "portal-map2-victory",
-        "position": [628, -2.3, -16],
-        "components": [
-          {
-            "type": "LevelExit",
-            "radius": 4.2,
-            "requiresKey": false,
-            "nextState": "victory",
-          },
-        ],
-      },
+            "materials": {
+                "lit-l3-dt-stairs-side": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_stairs_side", "sampler": "default", "shininess": 24.0, "ambient": 0.38 },
+                "lit-l3-dt-stairs": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_stairs", "sampler": "default", "shininess": 24.0, "ambient": 0.38 },
+                "lit-l3-dt-ladder": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_ladder", "sampler": "default", "shininess": 22.0, "ambient": 0.36 },
+                "lit-l3-dt-watering": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_watering", "sampler": "default", "shininess": 20.0, "ambient": 0.38 },
+                "lit-l3-dt-well": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_well", "sampler": "default", "shininess": 28.0, "ambient": 0.36 },
+                "lit-l3-dt-shelter": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_shelter", "sampler": "default", "shininess": 18.0, "ambient": 0.38 },
+                "lit-l3-dt-vase": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_vase", "sampler": "default", "shininess": 40.0, "ambient": 0.34 },
+                "lit-l3-dt-cover": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_cover", "sampler": "default", "shininess": 20.0, "ambient": 0.38 },
+                "lit-l3-dt-trapgate": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_trapgate", "sampler": "default", "shininess": 26.0, "ambient": 0.35 },
+                "lit-l3-dt-fence-001": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_fence_001", "sampler": "default", "shininess": 18.0, "ambient": 0.38 },
+                "lit-l3-dt-haypile-001": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_haypile_001", "sampler": "default", "shininess": 12.0, "ambient": 0.4 },
+                "lit-l3-dt-carpet1-001": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_carpet1_001", "sampler": "default", "shininess": 16.0, "ambient": 0.38 },
+                "lit-l3-dt-house-square": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_house_square", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-log": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_log", "sampler": "default", "shininess": 14.0, "ambient": 0.4 },
+                "lit-l3-dt-trapdoor": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_trapdoor", "sampler": "default", "shininess": 22.0, "ambient": 0.36 },
+                "lit-l3-dt-window1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_window1", "sampler": "default", "shininess": 48.0, "ambient": 0.32 },
+                "lit-l3-dt-support": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_support", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-door": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_door", "sampler": "default", "shininess": 18.0, "ambient": 0.38 },
+                "lit-l3-dt-window2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_window2", "sampler": "default", "shininess": 48.0, "ambient": 0.32 },
+                "lit-l3-dt-house-corner": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_house_corner", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-house-high": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_house_high", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-house-long": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_house_long", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-wall-segment": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_wall_segment", "sampler": "default", "shininess": 18.0, "ambient": 0.38 },
+                "lit-l3-dt-wall-spike": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_wall_spike", "sampler": "default", "shininess": 30.0, "ambient": 0.34 },
+                "lit-l3-dt-wall-pillar": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_wall_pillar", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-gate-border": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_gate_border", "sampler": "default", "shininess": 24.0, "ambient": 0.36 },
+                "lit-l3-dt-gate-door": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_gate_door", "sampler": "default", "shininess": 20.0, "ambient": 0.37 },
+                "lit-l3-dt-ground-001": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_ground_001", "sampler": "default", "shininess": 12.0, "ambient": 0.42 },
 
-      // ------ Map 2 — third Genie meeting
-      {
-        "name": "l3-map2-lamp-active",
-        "position": [658.0, -4.0, 14.0],
-        "rotation": [0, 20, 0],
-        "scale": [3.0, 3.0, 3.0],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "env_aladdin_lamp",
-            "material": "lit-env-lamp",
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [2.2, 2.5, 2.2],
-            "friction": 0.5,
-          },
-          {
-            "type": "Dialogue Trigger",
-            "script": "config/levels/dialogues/meeting-3.json",
-            "style": "config/levels/dialogues/style.json",
-            "radius": 5.5,
-            "oneShot": true,
-            "revealEntity": "l3-map2-genie",
-            "removeEntitiesOnFinish": ["l3-map2-lamp-active"],
-            "revealEntitiesOnFinish": ["l3-map2-lamp-used"],
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-lamp-used",
-        "position": [658.0, -4.0, 14.0],
-        "rotation": [0, 60, 0],
-        "scale": [3.0, 3.0, 3.0],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "env_aladdin_lamp",
-            "material": "lit-env-lamp-used",
-            "visible": false,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [2.2, 2.5, 2.2],
-            "friction": 0.5,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-genie",
-        "position": [664.5, -4.8, 2.0],
-        "rotation": [0, -40, 0],
-        "scale": [0.94, 0.94, 0.94],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "genie_mesh",
-            "material": "lit-genie",
-            "visible": false,
-          },
-        ],
-      },
+                "lit-l3-df-barrel": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_barrel", "sampler": "default", "shininess": 16.0, "ambient": 0.38 },
+                "lit-l3-df-cannon": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_cannon", "sampler": "default", "shininess": 48.0, "ambient": 0.34 },
+                "lit-l3-df-floor": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_floor", "sampler": "default", "shininess": 18.0, "ambient": 0.4 },
+                "lit-l3-df-ground": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_ground", "sampler": "default", "shininess": 14.0, "ambient": 0.42 },
+                "lit-l3-df-land": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_land", "sampler": "default", "shininess": 12.0, "ambient": 0.4 },
+                "lit-l3-df-leaf-g": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_leafG", "sampler": "default", "shininess": 10.0, "ambient": 0.45 },
+                "lit-l3-df-leaf-y": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_leafY", "sampler": "default", "shininess": 10.0, "ambient": 0.45 },
+                "lit-l3-df-metal": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_metal", "sampler": "default", "shininess": 56.0, "ambient": 0.32 },
+                "lit-l3-df-plam": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_plam", "sampler": "default", "shininess": 14.0, "ambient": 0.4 },
+                "lit-l3-df-stone": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_stone", "sampler": "default", "shininess": 16.0, "ambient": 0.4 },
+                "lit-l3-df-wall": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_wall", "sampler": "default", "shininess": 14.0, "ambient": 0.4 },
+                "lit-l3-df-wood": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_df_wood", "sampler": "default", "shininess": 12.0, "ambient": 0.42 },
+                "lit-l3-df-roof": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "sampler": "default", "shininess": 18.0, "ambient": 0.38, "albedo_tint": [0.8, 0.8, 0.8] },
+                "lit-l3-df-wood-001": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "sampler": "default", "shininess": 12.0, "ambient": 0.4, "albedo_tint": [1.0, 1.0, 1.0] },
+                "lit-l3-df-wood-042": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "sampler": "default", "shininess": 36.0, "ambient": 0.36, "albedo_tint": [1.0, 1.0, 1.0] },
 
-      // ================================================================
-      // Seed content — tweak with M debug coordinates.
-      // ================================================================
+                "lit-l3-arena-wall": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_wall", "sampler": "default", "shininess": 16.0, "ambient": 0.38 },
+                "lit-l3-arena-wall3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_wall3", "sampler": "default", "shininess": 18.0, "ambient": 0.36 },
+                "lit-l3-arena-floor3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_floor3", "sampler": "default", "shininess": 14.0, "ambient": 0.4 },
+                "lit-l3-arena-wood": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_wood", "sampler": "default", "shininess": 12.0, "ambient": 0.4 },
+                "lit-l3-arena-sand": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_sand", "sampler": "default", "shininess": 8.0, "ambient": 0.42 },
+                "lit-l3-arena-plam": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_plam", "sampler": "default", "shininess": 14.0, "ambient": 0.4 },
+                "lit-l3-arena-leaf-g": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_leafG", "sampler": "default", "shininess": 10.0, "ambient": 0.45 },
+                "lit-l3-arena-leaf-y": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_arena_leafY", "sampler": "default", "shininess": 10.0, "ambient": 0.45 },
 
-      // --- Map 1 enemies ---
-      {
-        "name": "l3-map1-enemy-trash-1",
-        "position": [52, -27, -360],
-        "rotation": [0, 180, 0],
-        "scale": [0.035, 0.035, 0.035],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy3_mesh",
-            "material": "lit-enemy3",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.0,
-            "chaseSpeed": 5.2,
-            "detectionRange": 23.0,
-            "attackRange": 2.0,
-            "health": 50,
-            "damage": 13,
-            "attackCooldown": 1.45,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 40.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.52,
-            "height": 1.2,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-enemy-trash-2",
-        "position": [-4, -30, -363],
-        "rotation": [0, 180, 0],
-        "scale": [0.035, 0.035, 0.035],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy3_mesh",
-            "material": "lit-enemy3",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.0,
-            "chaseSpeed": 5.2,
-            "detectionRange": 23.0,
-            "attackRange": 2.0,
-            "health": 50,
-            "damage": 13,
-            "attackCooldown": 1.45,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 40.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.52,
-            "height": 1.2,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-enemy-brute-1",
-        "position": [18, -29, -271],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy1_mesh",
-            "material": "lit-enemy1",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 2.8,
-            "chaseSpeed": 4.8,
-            "detectionRange": 24.0,
-            "attackRange": 2.5,
-            "health": 70,
-            "damage": 16,
-            "attackCooldown": 1.5,
-            "waypoints": [
-              [40.0, 5.8, 1.5],
-              [40.0, 5.8, 6.5],
-            ],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 60.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.65,
-            "height": 1.5,
-            "friction": 0.65,
-          },
-        ],
-      },
+                "lit-portal-0": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_0",
+                    "sampler": "default",
+                    "shininess": 40.0,
+                    "ambient": 0.35
+                },
+                "lit-portal-1": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "portal_tex_1",
+                    "sampler": "default",
+                    "shininess": 40.0,
+                    "ambient": 0.35
+                },
+                "coin-mat": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "coin_tex",
+                    "sampler": "default",
+                    "shininess": 16.0,
+                    "ambient": 0.35
+                },
+                "lit-apple": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "apple_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.32
+                },
+                "health-bottle-mat": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "health_bottle_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.4
+                },
+                "lit-pot": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-small": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_small_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-aotubo": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_aotubo_tex",
+                    "sampler": "default",
+                    "shininess": 30.0,
+                    "ambient": 0.32
+                },
+                "lit-enemy1": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy1_tex",
+                    "sampler": "default",
+                    "shininess": 20.0,
+                    "ambient": 0.32
+                },
+                "lit-enemy2": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy2_tex",
+                    "sampler": "default",
+                    "shininess": 36.0,
+                    "ambient": 0.32
+                },
+                "lit-enemy3": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy3_tex",
+                    "sampler": "default",
+                    "shininess": 18.0,
+                    "ambient": 0.32
+                },
+                "lit-aladdin": {
+                    "type": "lit",
+                    "shader": "skinned",
+                    "albedo_map": "aladdin_skin",
+                    "sampler": "default",
+                    "shininess": 10.0,
+                    "ambient": 0.28,
+                    "albedo_tint": [1, 1, 1],
+                    "pipelineState": {
+                        "faceCulling": { "enabled": false },
+                        "depthTesting": { "enabled": true }
+                    }
+                },
+                "lit-env-lamp": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 82.0,
+                    "ambient": 0.42,
+                    "albedo_tint": [1.0, 0.82, 0.32]
+                },
+                "lit-env-lamp-used": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "sampler": "default",
+                    "shininess": 10.0,
+                    "ambient": 0.22,
+                    "albedo_tint": [0.45, 0.38, 0.22]
+                },
+                "lit-genie": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "genie_tex",
+                    "sampler": "default",
+                    "shininess": 24.0,
+                    "ambient": 0.36,
+                    "albedo_tint": [0.72, 0.92, 1.0]
+                },
+                "lit-genie-jafar-0": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex0", "sampler": "default", "shininess": 28.0, "ambient": 0.34 },
+                "lit-genie-jafar-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex1", "sampler": "default", "shininess": 36.0, "ambient": 0.32 },
+                "lit-genie-jafar-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex2", "sampler": "default", "shininess": 48.0, "ambient": 0.3 },
+                "lit-genie-jafar-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex3", "sampler": "default", "shininess": 56.0, "ambient": 0.3 },
+                "lit-jafar-0": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex0", "sampler": "default", "shininess": 26.0, "ambient": 0.34 },
+                "lit-jafar-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex1", "sampler": "default", "shininess": 32.0, "ambient": 0.32 },
+                "lit-jafar-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex2", "sampler": "default", "shininess": 40.0, "ambient": 0.32 },
+                "lit-jafar-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex3", "sampler": "default", "shininess": 44.0, "ambient": 0.3 },
+                "lit-jafar-4": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "enemy3_tex", "sampler": "default", "shininess": 16.0, "ambient": 0.3 },
+                "lit-jafar-5": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_tex", "sampler": "default", "shininess": 36.0, "ambient": 0.34 }
+            }
+        },
 
-      // --- Map 2 enemies ---
-      {
-        "name": "l3-map2-enemy-trash-1",
-        "position": [618.0, -4.2, 18.0],
-        "rotation": [0, 180, 0],
-        "scale": [0.035, 0.035, 0.035],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy3_mesh",
-            "material": "lit-enemy3",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.0,
-            "chaseSpeed": 5.2,
-            "detectionRange": 23.0,
-            "attackRange": 2.0,
-            "health": 50,
-            "damage": 13,
-            "attackCooldown": 1.45,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 40.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.52,
-            "height": 1.2,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-slime-1",
-        "position": [640.0, -4.2, 52.0],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy2_mesh",
-            "material": "lit-enemy2",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.8,
-            "chaseSpeed": 5.8,
-            "detectionRange": 21.0,
-            "attackRange": 2.1,
-            "health": 48,
-            "damage": 12,
-            "attackCooldown": 1.4,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 42.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.55,
-            "height": 1.25,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-brute-1",
-        "position": [630.0, -4.2, 38.0],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy1_mesh",
-            "material": "lit-enemy1",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 2.8,
-            "chaseSpeed": 4.8,
-            "detectionRange": 24.0,
-            "attackRange": 2.5,
-            "health": 70,
-            "damage": 16,
-            "attackCooldown": 1.5,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 60.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.65,
-            "height": 1.5,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-slime-2",
-        "position": [648.0, -4.2, -28.0],
-        "rotation": [0, 80, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy2_mesh",
-            "material": "lit-enemy2",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.8,
-            "chaseSpeed": 5.8,
-            "detectionRange": 21.0,
-            "attackRange": 2.1,
-            "health": 48,
-            "damage": 12,
-            "attackCooldown": 1.4,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 42.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.55,
-            "height": 1.25,
-            "friction": 0.65,
-          },
-        ],
-      },
+        "world": [
+            {
+                "name": "Camera",
+                "position": [40, 22, 28],
+                "rotation": [-22, 0, 0],
+                "components": [
+                    { "type": "Camera", "cameraType": "perspective", "near": 0.1, "far": 2500, "fovY": 58 }
+                ]
+            },
+            {
+                "name": "sun",
+                "rotation": [-38, -125, 0],
+                "components": [
+                    { "type": "Light", "light_type": "directional", "color": [1.0, 0.96, 0.88], "intensity": 1.45 }
+                ]
+            },
+            {
+                "name": "fill-map1",
+                "position": [26, 150, 18],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color": [0.95, 0.95, 1.0],
+                        "intensity": 2.8,
+                        "attenuation": { "constant": 1.0, "linear": 0.05, "quadratic": 0.012 }
+                    }
+                ]
+            },
+            {
+                "name": "desert-town",
+                "position": [26, 150, 18],
+                "rotation": [-34, 0, 0],
+                "scale": [0.05, 0.05, 0.05],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "desert_town",
+                        "material": "lit-l3-dt-ground-001",
+                        "submeshMaterials": {
+                            "stairs-side": "lit-l3-dt-stairs-side",
+                            "stairs": "lit-l3-dt-stairs",
+                            "ladder": "lit-l3-dt-ladder",
+                            "watering": "lit-l3-dt-watering",
+                            "well": "lit-l3-dt-well",
+                            "shelter": "lit-l3-dt-shelter",
+                            "vase": "lit-l3-dt-vase",
+                            "cover": "lit-l3-dt-cover",
+                            "trapgate": "lit-l3-dt-trapgate",
+                            "fence.001": "lit-l3-dt-fence-001",
+                            "haypile.001": "lit-l3-dt-haypile-001",
+                            "carpet1.001": "lit-l3-dt-carpet1-001",
+                            "house-square": "lit-l3-dt-house-square",
+                            "log": "lit-l3-dt-log",
+                            "trapdoor": "lit-l3-dt-trapdoor",
+                            "window1": "lit-l3-dt-window1",
+                            "support": "lit-l3-dt-support",
+                            "door": "lit-l3-dt-door",
+                            "window2": "lit-l3-dt-window2",
+                            "house-corner": "lit-l3-dt-house-corner",
+                            "house-high": "lit-l3-dt-house-high",
+                            "house-long": "lit-l3-dt-house-long",
+                            "wall-segment": "lit-l3-dt-wall-segment",
+                            "wall-spike": "lit-l3-dt-wall-spike",
+                            "wall-pillar": "lit-l3-dt-wall-pillar",
+                            "gate-border": "lit-l3-dt-gate-border",
+                            "gate-door": "lit-l3-dt-gate-door",
+                            "ground.001": "lit-l3-dt-ground-001"
+                        }
+                    },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    {
+                        "type": "Collider",
+                        "shape": "concaveMesh",
+                        "mesh": "desert_town",
+                        "friction": 0.9,
+                        "restitution": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "fill-map2",
+                "position": [620, 8, 4],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color": [0.95, 0.98, 1.0],
+                        "intensity": 3.2,
+                        "attenuation": { "constant": 1.0, "linear": 0.04, "quadratic": 0.010 }
+                    }
+                ]
+            },
+            {
+                "name": "desert-fort",
+                "position": [600, -3.0, 2.5],
+                "rotation": [0, 0, 0],
+                "scale": [0.0025, 0.0025, 0.0025],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "desert_fort",
+                        "material": "lit-l3-df-ground",
+                        "submeshMaterials": {
+                            "barrel": "lit-l3-df-barrel",
+                            "cannon": "lit-l3-df-cannon",
+                            "floor": "lit-l3-df-floor",
+                            "ground": "lit-l3-df-ground",
+                            "land": "lit-l3-df-land",
+                            "leaf_G": "lit-l3-df-leaf-g",
+                            "leaf_Y": "lit-l3-df-leaf-y",
+                            "metal": "lit-l3-df-metal",
+                            "plam": "lit-l3-df-plam",
+                            "roof": "lit-l3-df-roof",
+                            "stone": "lit-l3-df-stone",
+                            "wall": "lit-l3-df-wall",
+                            "wood": "lit-l3-df-wood",
+                            "wood.001": "lit-l3-df-wood-001",
+                            "wood.042__0": "lit-l3-df-wood-042"
+                        }
+                    },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    {
+                        "type": "Collider",
+                        "shape": "concaveMesh",
+                        "mesh": "desert_fort",
+                        "friction": 0.92,
+                        "restitution": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "fill-map3",
+                "position": [1230, 48, -330],
+                "components": [
+                    {
+                        "type": "Light",
+                        "light_type": "point",
+                        "color": [1.0, 0.97, 0.92],
+                        "intensity": 3.4,
+                        "attenuation": { "constant": 1.0, "linear": 0.035, "quadratic": 0.008 }
+                    }
+                ]
+            },
+            // Arena: scale 20x (0.15->3). Pitch -50 on X levels floor3 (same tilt pattern as Desert_Town ground).
+            {
+                "name": "desert-arena",
+                "position": [1200, 336.6, 2],
+                "rotation": [-50, 0, 0],
+                "scale": [3, 3, 3],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "ancient_desert_arena",
+                        "material": "lit-l3-arena-floor3",
+                        "submeshMaterials": {
+                            "wall": "lit-l3-arena-wall",
+                            "wall3": "lit-l3-arena-wall3",
+                            "floor3": "lit-l3-arena-floor3",
+                            "wood": "lit-l3-arena-wood",
+                            "sand": "lit-l3-arena-sand",
+                            "plam": "lit-l3-arena-plam",
+                            "leaf G": "lit-l3-arena-leaf-g",
+                            "leaf Y": "lit-l3-arena-leaf-y"
+                        }
+                    },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    {
+                        "type": "Collider",
+                        "shape": "concaveMesh",
+                        "mesh": "ancient_desert_arena",
+                        "friction": 0.9,
+                        "restitution": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "portal-map1-to-map2-visual",
+                "position": [46, 6.2, -6],
+                "rotation": [0, 0, 0],
+                "scale": [2.1, 2.1, 2.1],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-0" }
+                ]
+            },
+            {
+                "name": "portal-map1-to-map2",
+                "position": [46, 7.35, -6],
+                "components": [
+                    {
+                        "type": "Room Portal",
+                        "radius": 4.0,
+                        "blackoutDuration": 1.2,
+                        "cooldownDuration": 2.5,
+                        "targetPosition": [612, -2.5, 4.0],
+                        "setYaw": true,
+                        "targetYaw": 90
+                    }
+                ]
+            },
+            {
+                "name": "portal-map2-to-map3-visual",
+                "position": [628, -3.5, -16],
+                "rotation": [0, -90, 0],
+                "scale": [2.2, 2.2, 2.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-0" }
+                ]
+            },
+            {
+                "name": "portal-map2-to-map3",
+                "position": [628, -2.3, -16],
+                "components": [
+                    {
+                        "type": "Room Portal",
+                        "radius": 4.2,
+                        "blackoutDuration": 1.2,
+                        "cooldownDuration": 2.5,
+                        "targetPosition": [1030, 2, -255],
+                        "setYaw": true,
+                        "targetYaw": 90
+                    }
+                ]
+            },
+            {
+                "name": "portal-map3-victory-visual",
+                "position": [1480, -3.0, -200],
+                "rotation": [0, -90, 0],
+                "scale": [2.2, 2.2, 2.2],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-1" }
+                ]
+            },
+            {
+                "name": "portal-map3-victory",
+                "position": [1480, -1.5, -200],
+                "components": [
+                    { "type": "LevelExit", "radius": 4.2, "requiresKey": false, "nextState": "victory" }
+                ]
+            },
 
-      // --- Map 1 coins ---
-      {
-        "name": "l3-map1-coin-1",
-        "position": [45, -29, -296],
-        "rotation": [0, 20, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-2",
-        "position": [-15, -28, -333],
-        "rotation": [0, -10, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-3",
-        "position": [-4, -29, -402],
-        "rotation": [0, 35, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-4",
-        "position": [67, -29, -326],
-        "rotation": [0, 20, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-5",
-        "position": [43, -29, -233],
-        "rotation": [0, -10, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-6",
-        "position": [2.5, -29, -200],
-        "rotation": [0, 35, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
+            // ------ Map 3 — fourth Genie meeting (Ancient Desert Arena)
+            {
+                "name": "l3-map3-lamp-active",
+                "position": [1050, -3.0, -270],
+                "rotation": [0, 25, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 },
+                    {
+                        "type": "Dialogue Trigger",
+                        "script": "config/levels/dialogues/meeting-4.json",
+                        "style": "config/levels/dialogues/style.json",
+                        "radius": 6.5,
+                        "oneShot": true,
+                        "revealEntity": "l3-map3-genie",
+                        "removeEntitiesOnFinish": ["l3-map3-lamp-active"],
+                        "revealEntitiesOnFinish": ["l3-map3-lamp-used"]
+                    }
+                ]
+            },
+            {
+                "name": "l3-map3-lamp-used",
+                "position": [1050, -3.0, -270],
+                "rotation": [0, 65, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp-used", "visible": false },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie",
+                "position": [1090.28, -2.35, -282.22],
+                "rotation": [0, -40, 0],
+                "scale": [0.94, 0.94, 0.94],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
+                ]
+            },
 
-      // --- Map 1 breakable pots (Desert Town — positions from debug overlay) ---
-      {
-        "name": "l3-map1-pot-1",
-        "position": [-55.79, -29.31, -347.52],
-        "rotation": [0, 22, 0],
-        "scale": [1.35, 1.35, 1.35],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "pot_mesh",
-            "material": "lit-pot",
-          },
-          { "type": "Breakable", "loot": [{ "type": "health", "value": 25 }] },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [0.68, 0.74, 0.68],
-            "friction": 0.55,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-pot-2",
-        "position": [-35.74, -28.47, -375.64],
-        "rotation": [0, -15, 0],
-        "scale": [0.02, 0.02, 0.02],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "pot_small_mesh",
-            "material": "lit-pot-small",
-          },
-          {
-            "type": "Breakable",
-            "loot": [
-              { "type": "apple", "value": 2 },
-              { "type": "coin", "value": 1 },
-            ],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "centerOffset": [0, 0.596, 0],
-            "halfExtents": [0.62, 0.596, 0.62],
-            "friction": 0.55,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-pot-3",
-        "position": [-66.85, -28.85, -311.77],
-        "rotation": [0, 40, 0],
-        "scale": [0.012, 0.012, 0.012],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "pot_aotubo_mesh",
-            "material": "lit-pot-aotubo",
-          },
-          { "type": "Breakable", "loot": [] },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "centerOffset": [0, 0.628, 0],
-            "halfExtents": [0.611, 0.622, 0.611],
-            "friction": 0.55,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-pot-4",
-        "position": [-7.14, -29.11, -209.02],
-        "rotation": [0, -30, 0],
-        "scale": [1.35, 1.35, 1.35],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "pot_mesh",
-            "material": "lit-pot",
-          },
-          { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [0.68, 0.74, 0.68],
-            "friction": 0.55,
-          },
-        ],
-      },
+            // ------ Map 2 — third Genie meeting
+            {
+                "name": "l3-map2-lamp-active",
+                "position": [658.0, -4.0, 14.0],
+                "rotation": [0, 20, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp" },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 },
+                    {
+                        "type": "Dialogue Trigger",
+                        "script": "config/levels/dialogues/meeting-3.json",
+                        "style": "config/levels/dialogues/style.json",
+                        "radius": 5.5,
+                        "oneShot": true,
+                        "revealEntity": "l3-map2-genie",
+                        "removeEntitiesOnFinish": ["l3-map2-lamp-active"],
+                        "revealEntitiesOnFinish": ["l3-map2-lamp-used"]
+                    }
+                ]
+            },
+            {
+                "name": "l3-map2-lamp-used",
+                "position": [658.0, -4.0, 14.0],
+                "rotation": [0, 60, 0],
+                "scale": [3.0, 3.0, 3.0],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "env_aladdin_lamp", "material": "lit-env-lamp-used", "visible": false },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [2.2, 2.5, 2.2], "friction": 0.5 }
+                ]
+            },
+            {
+                "name": "l3-map2-genie",
+                "position": [664.5, -4.8, 2.0],
+                "rotation": [0, -40, 0],
+                "scale": [0.94, 0.94, 0.94],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
+                ]
+            },
 
-      // --- Map 2 coins ---
-      {
-        "name": "l3-map2-coin-1",
-        "position": [618.0, -3.2, 6.0],
-        "rotation": [0, 0, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-2",
-        "position": [632.0, -3.2, 42.0],
-        "rotation": [0, -25, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-3",
-        "position": [652.0, -3.2, 28.0],
-        "rotation": [0, 15, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-4",
-        "position": [624.0, -3.2, -8.0],
-        "rotation": [0, 45, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
+            // --- Map 1 enemies ---
+            {
+                "name": "l3-map1-enemy-trash-1",
+                "position": [52, -27, -360],
+                "rotation": [0, 180, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map1-enemy-trash-2",
+                "position": [-4, -30, -363],
+                "rotation": [0, 180, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map1-enemy-brute-1",
+                "position": [18, -29, -271],
+                "rotation": [0, 180, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 24.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5,
+                      "waypoints": [[40.0, 5.8, 1.5], [40.0, 5.8, 6.5]] },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
 
-      {
-        "name": "aladdin",
-        "position": [64.0, -15.2, -406.0],
-        "rotation": [0, 200, 0],
-        "scale": [21.0, 21.0, 21.0],
-        "components": [
-          {
-            "type": "Skinned Mesh Renderer",
-            "model": "assets/models/Aladdin/aladdin/Idle.fbx",
-            "animations": [
-              "assets/models/Aladdin/aladdin/walk.fbx",
-              "assets/models/Aladdin/aladdin/jump.fbx",
-              "assets/models/Aladdin/aladdin/kick.fbx",
-            ],
-            "material": "lit-aladdin",
-            "clip": "idle",
-          },
-          {
-            "type": "Aladdin Controller",
-            "speed": 14.0,
-            "jumpForce": 11.0,
-            "rotationSpeed": 10.0,
-            "enableCameraFollow": true,
-            "cameraMode": "third",
-            "cameraOffset": [0.0, 4.45, 6.0],
-            "cameraSmoothing": 8.0,
-            "firstPersonCameraOffset": [0.0, 1.38, 0.22],
-            "firstPersonPitchDegrees": 0.0,
-            "thirdPersonPitchDegrees": -10.0,
-            "cameraOrbitYawDegrees": 200.0,
-            "health": 100,
-            "lives": 3,
-            // "respawnPosition": [83.0, 0.2, -404.0]
-            "respawnPosition": [64.0, -15.2, -406.0],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 72.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.42,
-            "height": 1.65,
-            "friction": 0.55,
-          },
-        ],
-      },
-    ],
-  },
+            // --- Map 2 enemies ---
+            {
+                "name": "l3-map2-enemy-trash-1",
+                "position": [618.0, -4.2, 18.0],
+                "rotation": [0, 180, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map2-enemy-slime-1",
+                "position": [640.0, -4.2, 52.0],
+                "rotation": [0, 180, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    { "type": "Enemy", "patrolSpeed": 3.8, "chaseSpeed": 5.8, "detectionRange": 21.0, "attackRange": 2.1, "health": 48, "damage": 12, "attackCooldown": 1.4 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 42.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.55, "height": 1.25, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map2-enemy-brute-1",
+                "position": [630.0, -4.2, 38.0],
+                "rotation": [0, 180, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
+                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 24.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map2-enemy-slime-2",
+                "position": [648.0, -4.2, -28.0],
+                "rotation": [0, 80, 0],
+                "scale": [0.028, 0.028, 0.028],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    { "type": "Enemy", "patrolSpeed": 3.8, "chaseSpeed": 5.8, "detectionRange": 21.0, "attackRange": 2.1, "health": 48, "damage": 12, "attackCooldown": 1.4 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 42.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.55, "height": 1.25, "friction": 0.65 }
+                ]
+            },
+
+            // --- Map 3 — Genie Jafar (boss-tier; positions from M debug) ---
+            // {
+            //     "name": "l3-map3-genie-jafar-1",
+            //     "position": [1090.28, -2.35, -282.22],
+            //     "rotation": [90, 0, 0],
+            //     "scale": [0.42, 0.42, 0.42],
+            //     "components": [
+            //         {
+            //             "type": "Mesh Renderer",
+            //             "mesh": "genie_jafar_mesh",
+            //             "material": "lit-genie-jafar-0",
+            //             "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+            //         },
+            //         { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+            //         { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+            //         { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+            //     ]
+            // },
+            {
+                "name": "l3-map3-genie-jafar-2",
+                "position": [1174.12, -2.16, -339.69],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie-jafar-3",
+                "position": [1194.53, -2.28, -303.32],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie-jafar-4",
+                "position": [1242.3, -2.12, -349.14],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie-jafar-5",
+                "position": [1324.38, -2.15, -340.11],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie-jafar-6",
+                "position": [1317.49, -2.01, -381.4],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-genie-jafar-7",
+                "position": [1300.46, -1.86, -425.52],
+                "rotation": [90, 0, 0],
+                "scale": [0.42, 0.42, 0.42],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "genie_jafar_mesh",
+                        "material": "lit-genie-jafar-0",
+                        "submeshMaterials": { "mat0": "lit-genie-jafar-0", "mat1": "lit-genie-jafar-1", "mat2": "lit-genie-jafar-2", "mat3": "lit-genie-jafar-3" }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.75, "height": 1.9, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map3-jafar",
+                "position": [1400.04, -1.85, -421.0],
+                "rotation": [90, 0, 0],
+                "scale": [1.25, 1.25, 1.25],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "jafar_mesh",
+                        "material": "lit-jafar-0",
+                        "submeshMaterials": {
+                            "mat0": "lit-jafar-0",
+                            "mat1": "lit-jafar-1",
+                            "mat2": "lit-jafar-2",
+                            "mat3": "lit-jafar-3",
+                            "mat4": "lit-jafar-4",
+                            "mat5": "lit-jafar-5"
+                        }
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 50.0, "attackRange": 3.2, "health": 250, "damage": 29, "attackCooldown": 1.55 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 100.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.78, "height": 1.95, "friction": 0.65 }
+                ]
+            },
+
+            // --- Map 1 coins ---
+            { "name": "l3-map1-coin-1", "position": [45, -29, -296], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map1-coin-2", "position": [-15, -28, -333], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map1-coin-3", "position": [-4, -29, -402], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map1-coin-4", "position": [67, -29, -326], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map1-coin-5", "position": [43, -29, -233], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map1-coin-6", "position": [2.5, -29, -200], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+
+            // --- Map 1 breakable pots (Desert Town — positions from debug overlay) ---
+            {
+                "name": "l3-map1-pot-1",
+                "position": [-55.79, -29.31, -347.52],
+                "rotation": [0, 22, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-2",
+                "position": [-35.74, -28.47, -375.64],
+                "rotation": [0, -15, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }, { "type": "coin", "value": 1 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-3",
+                "position": [-66.85, -28.85, -311.77],
+                "rotation": [0, 40, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "Breakable", "loot": [] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-4",
+                "position": [-7.14, -29.11, -209.02],
+                "rotation": [0, -30, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+
+            // --- Map 2 coins ---
+            { "name": "l3-map2-coin-1", "position": [618.0, -3.2, 6.0], "rotation": [0, 0, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map2-coin-2", "position": [632.0, -3.2, 42.0], "rotation": [0, -25, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map2-coin-3", "position": [652.0, -3.2, 28.0], "rotation": [0, 15, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map2-coin-4", "position": [624.0, -3.2, -8.0], "rotation": [0, 45, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+
+            // --- Map 3 coins ---
+            { "name": "l3-map3-coin-1", "position": [1107, 1, -291], "rotation": [0, 0, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map3-coin-2", "position": [1250, -2, -354], "rotation": [0, -25, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map3-coin-3", "position": [1355, 1, -400], "rotation": [0, 15, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+            { "name": "l3-map3-coin-4", "position": [1414, -1, -453], "rotation": [0, 45, 0], "scale": [5.2, 5.2, 5.2],
+                "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+
+            // --- Map 1 breakable pots (Desert Town — positions from debug overlay) ---
+            {
+                "name": "l3-map3-pot-1",
+                "position": [1307, -2, -338],
+                "rotation": [0, 22, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map3-pot-2",
+                "position": [1270, -2, -412],
+                "rotation": [0, -15, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }, { "type": "coin", "value": 1 }, { "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map3-pot-3",
+                "position": [1145, 0, -306],
+                "rotation": [0, 40, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "Breakable", "loot": [{ "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map3-pot-4",
+                "position": [1396, -2, -377],
+                "rotation": [0, -30, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }, { "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+
+            {
+                "name": "aladdin",
+                // "position": [64.0, -15.2, -405.0],
+                "position": [1030, 10, -255],
+                "rotation": [0, 270, 0],
+                "scale": [21.0, 21.0, 21.0],
+                "components": [
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Aladdin/aladdin/Idle.fbx",
+                        "animations": [
+                            "assets/models/Aladdin/aladdin/walk.fbx",
+                            "assets/models/Aladdin/aladdin/jump.fbx",
+                            "assets/models/Aladdin/aladdin/kick.fbx"
+                        ],
+                        "material": "lit-aladdin",
+                        "clip": "idle"
+                    },
+                    {
+                        "type": "Aladdin Controller",
+                        "speed": 14.0,
+                        "jumpForce": 11.0,
+                        "rotationSpeed": 10.0,
+                        "enableCameraFollow": true,
+                        "cameraMode": "third",
+                        "cameraOffset": [0.0, 4.45, 6.0],
+                        "cameraSmoothing": 8.0,
+                        "firstPersonCameraOffset": [0.0, 1.38, 0.22],
+                        "firstPersonPitchDegrees": 0.0,
+                        "thirdPersonPitchDegrees": -10.0,
+                        "cameraOrbitYawDegrees": 200.0,
+                        "health": 100,
+                        "lives": 3,
+                        // "respawnPosition": [64.0, -15.2, -405.0]
+                        "respawnPosition": [1030, 10, -255]
+                    },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
+                    // { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
+                    { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65,
+                      "centerOffset": [0, 1.245, 0], "friction": 0.55 }
+                ]
+            }
+        ]
+    }
 }
