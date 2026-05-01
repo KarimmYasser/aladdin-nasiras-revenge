@@ -8,12 +8,15 @@
 #include "mesh/mesh-utils.hpp"
 #include "material/material.hpp"
 #include "deserialize-utils.hpp"
+#include <unordered_set>
+#include <type_traits>
 
 namespace our {
 
     // This will load a single shader defined by "desc"
     template<>
     void AssetLoader<ShaderProgram>::deserializeSingle(const std::string& name, const nlohmann::json& desc) {
+        if(has(name)) return;
         std::string vsPath = desc.value("vs", "");
         std::string fsPath = desc.value("fs", "");
         auto shader = new ShaderProgram();
@@ -36,6 +39,7 @@ namespace our {
     // This will load a single texture
     template<>
     void AssetLoader<Texture2D>::deserializeSingle(const std::string& name, const nlohmann::json& desc) {
+        if(has(name)) return;
         std::string path = desc.get<std::string>();
         assets[name] = texture_utils::loadImage(path);
     }
@@ -53,6 +57,7 @@ namespace our {
     // This will load a single sampler
     template<>
     void AssetLoader<Sampler>::deserializeSingle(const std::string& name, const nlohmann::json& desc) {
+        if(has(name)) return;
         auto sampler = new Sampler();
         sampler->deserialize(desc);
         assets[name] = sampler;
@@ -71,6 +76,7 @@ namespace our {
     // This will load a single mesh
     template<>
     void AssetLoader<Mesh>::deserializeSingle(const std::string& name, const nlohmann::json& desc) {
+        if(has(name)) return;
         std::string path = desc.get<std::string>();
         assets[name] = mesh_utils::loadOBJ(path);
     }
@@ -88,6 +94,7 @@ namespace our {
     // This will load a single material
     template<>
     void AssetLoader<Material>::deserializeSingle(const std::string& name, const nlohmann::json& desc) {
+        if(has(name)) return;
         std::string type = desc.value("type", "");
         auto material = createMaterialFromType(type);
         material->deserialize(desc);
@@ -124,6 +131,27 @@ namespace our {
         AssetLoader<Sampler>::clear();
         AssetLoader<Mesh>::clear();
         AssetLoader<Material>::clear();
+    }
+
+    void evictUnusedAssets(const nlohmann::json& neededAssets){
+        if(!neededAssets.is_object()) return;
+
+        auto cleanup = [&](auto* type_ptr, const std::string& key){
+            using T = std::remove_pointer_t<decltype(type_ptr)>;
+            std::unordered_set<std::string> needed;
+            if(neededAssets.contains(key) && neededAssets[key].is_object()){
+                for(auto& [name, _] : neededAssets[key].items()) needed.insert(name);
+            }
+            for(const auto& name : AssetLoader<T>::getKeys()){
+                if(needed.find(name) == needed.end()) AssetLoader<T>::evict(name);
+            }
+        };
+
+        cleanup((ShaderProgram*)nullptr, "shaders");
+        cleanup((Texture2D*)nullptr, "textures");
+        cleanup((Sampler*)nullptr, "samplers");
+        cleanup((Mesh*)nullptr, "meshes");
+        cleanup((Material*)nullptr, "materials");
     }
 
 }

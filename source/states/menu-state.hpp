@@ -13,6 +13,8 @@
 #include <iostream>
 #include <vector>
 #include <json/json.hpp>
+#include <save-system.hpp>
+#include <level-cache.hpp>
 
 // This state shows how to use some of the abstractions we created to make a menu.
 class Menustate: public our::State {
@@ -35,6 +37,8 @@ class Menustate: public our::State {
     bool hasContinueSession = false;
     std::vector<std::string> levelNames;
     std::vector<std::string> levelConfigs;
+    int unlockedLevels = 1;
+    bool debugMode = false;
 
     enum class MenuAction : int {
         Play = 0,
@@ -89,28 +93,43 @@ class Menustate: public our::State {
             };
         }
         if (selectedLevelIndex >= (int)levelConfigs.size()) selectedLevelIndex = 0;
+
+        // Prefetch all level configs so they're instant when selected
+        for (const auto& configPath : levelConfigs) {
+            our::LevelCache::prefetch(configPath);
+        }
     }
 
     void loadAndEnterLevel(const std::string& levelPath, bool fromContinue) {
         auto& cfg = getApp()->getConfig();
-        std::ifstream f(levelPath);
-        if(f){
-            try {
-                nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
-                if(level.contains("scene")) cfg["scene"] = level["scene"];
-                if(level.contains("game")) cfg["game"] = level["game"];
-                cfg["active-level-config"] = levelPath;
-                if (!fromContinue) {
-                    cfg["continue-session"]["active"] = false;
-                    cfg["continue-session"]["resume-requested"] = false;
-                } else {
-                    cfg["continue-session"]["resume-requested"] = true;
-                }
-            } catch(const std::exception& e) {
-                std::cerr << "Failed to parse level config " << levelPath << ": " << e.what() << std::endl;
-            }
+        const nlohmann::json* cached = our::LevelCache::get(levelPath);
+        nlohmann::json level;
+        
+        if (cached) {
+            level = *cached;
         } else {
-            std::cerr << "Could not open level config: " << levelPath << std::endl;
+            std::ifstream f(levelPath);
+            if(f){
+                try {
+                    level = nlohmann::json::parse(f, nullptr, true, true);
+                } catch(const std::exception& e) {
+                    std::cerr << "Failed to parse level config " << levelPath << ": " << e.what() << std::endl;
+                    return;
+                }
+            } else {
+                std::cerr << "Could not open level config: " << levelPath << std::endl;
+                return;
+            }
+        }
+
+        if(level.contains("scene")) cfg["scene"] = level["scene"];
+        if(level.contains("game")) cfg["game"] = level["game"];
+        cfg["active-level-config"] = levelPath;
+        if (!fromContinue) {
+            cfg["continue-session"]["active"] = false;
+            cfg["continue-session"]["resume-requested"] = false;
+        } else {
+            cfg["continue-session"]["resume-requested"] = true;
         }
         getApp()->changeState("loading");
     }
@@ -188,6 +207,9 @@ class Menustate: public our::State {
         hasContinueSession = cfg.contains("continue-session") &&
                              cfg["continue-session"].is_object() &&
                              cfg["continue-session"].value("active", false);
+        
+        unlockedLevels = our::SaveSystem::getUnlockedLevels();
+        debugMode = our::SaveSystem::getDebugMode();
         loadLevelListFromConfig();
 
         // Start menu background music
@@ -204,12 +226,13 @@ class Menustate: public our::State {
         if(showLevelSelect){
             const int levelsCount = (int)levelConfigs.size();
             if (levelsCount > 0) {
+                int activeLevels = debugMode ? levelsCount : unlockedLevels;
                 if (keyboard.justPressed(GLFW_KEY_DOWN)) {
-                    selectedLevelIndex = (selectedLevelIndex + 1) % levelsCount;
+                    selectedLevelIndex = (selectedLevelIndex + 1) % activeLevels;
                     our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
                 }
                 if (keyboard.justPressed(GLFW_KEY_UP)) {
-                    selectedLevelIndex = (selectedLevelIndex - 1 + levelsCount) % levelsCount;
+                    selectedLevelIndex = (selectedLevelIndex - 1 + activeLevels) % activeLevels;
                     our::AudioSystem::instance().playSound("assets/audio/buttonSelect.mp3");
                 }
                 if (keyboard.justPressed(GLFW_KEY_SPACE) || keyboard.justPressed(GLFW_KEY_ENTER)) {
@@ -355,26 +378,35 @@ class Menustate: public our::State {
 
             ImGui::SetWindowFontScale(1.2f);
             for (int i = 0; i < (int)levelNames.size(); i++) {
-                bool chosen = (selectedLevelIndex == i);
-                if (chosen) {
-                    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                bool isLocked = !debugMode && (i + 1 > unlockedLevels);
+
+                if (isLocked) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.7f));
+                    std::string lockedName = levelNames[i] + " [LOCKED]";
+                    ImGui::Button(lockedName.c_str(), ImVec2(panelW - 60.0f, 40.0f));
+                    ImGui::PopStyleColor();
+                } else {
+                    bool chosen = (selectedLevelIndex == i);
+                    if (chosen) {
+                        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    }
+                    if (ImGui::Button(levelNames[i].c_str(), ImVec2(panelW - 60.0f, 40.0f))) {
+                        selectedLevelIndex = i;
+                        loadAndEnterLevel(levelConfigs[i], false);
+                    }
+                    if (ImGui::IsItemHovered()) selectedLevelIndex = i;
+                    if ((chosen || ImGui::IsItemHovered()) && markerIcon) {
+                        ImVec2 min = ImGui::GetItemRectMin();
+                        ImVec2 max = ImGui::GetItemRectMax();
+                        float coinY = min.y + (40.0f - 28.0f) * 0.5f;
+                        ImGui::GetWindowDrawList()->AddImage(
+                            (void*)(intptr_t)markerIcon->getOpenGLName(),
+                            ImVec2(max.x + 8.0f, coinY),
+                            ImVec2(max.x + 36.0f, coinY + 28.0f)
+                        );
+                    }
+                    if (chosen) ImGui::PopStyleColor();
                 }
-                if (ImGui::Button(levelNames[i].c_str(), ImVec2(panelW - 60.0f, 40.0f))) {
-                    selectedLevelIndex = i;
-                    loadAndEnterLevel(levelConfigs[i], false);
-                }
-                if (ImGui::IsItemHovered()) selectedLevelIndex = i;
-                if ((chosen || ImGui::IsItemHovered()) && markerIcon) {
-                    ImVec2 min = ImGui::GetItemRectMin();
-                    ImVec2 max = ImGui::GetItemRectMax();
-                    float coinY = min.y + (40.0f - 28.0f) * 0.5f;
-                    ImGui::GetWindowDrawList()->AddImage(
-                        (void*)(intptr_t)markerIcon->getOpenGLName(),
-                        ImVec2(max.x + 8.0f, coinY),
-                        ImVec2(max.x + 36.0f, coinY + 28.0f)
-                    );
-                }
-                if (chosen) ImGui::PopStyleColor();
                 ImGui::Spacing();
             }
 
@@ -477,6 +509,10 @@ class Menustate: public our::State {
                     glfwSetWindowMonitor(window, nullptr, 100, 100, 1280, 720, 0);
                 }
                 getApp()->getConfig()["window"]["fullscreen"] = isFullscreen;
+            }
+            ImGui::Spacing();
+            if (ImGui::Checkbox(" Debug Mode (Unlock All Levels)", &debugMode)) {
+                our::SaveSystem::setDebugMode(debugMode);
             }
             ImGui::PopStyleColor(2);
 

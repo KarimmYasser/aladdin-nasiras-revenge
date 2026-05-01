@@ -45,7 +45,16 @@ class LoadingState : public our::State {
             for (const auto& category : categories) {
                 if (assets.contains(category) && assets[category].is_object()) {
                     for (auto& [name, desc] : assets[category].items()) {
-                        tasks.push_back({category, name, desc});
+                        bool alreadyLoaded = false;
+                        if (category == "shaders") alreadyLoaded = our::AssetLoader<our::ShaderProgram>::has(name);
+                        else if (category == "textures") alreadyLoaded = our::AssetLoader<our::Texture2D>::has(name);
+                        else if (category == "samplers") alreadyLoaded = our::AssetLoader<our::Sampler>::has(name);
+                        else if (category == "meshes") alreadyLoaded = our::AssetLoader<our::Mesh>::has(name);
+                        else if (category == "materials") alreadyLoaded = our::AssetLoader<our::Material>::has(name);
+                        
+                        if (!alreadyLoaded) {
+                            tasks.push_back({category, name, desc});
+                        }
                     }
                 }
             }

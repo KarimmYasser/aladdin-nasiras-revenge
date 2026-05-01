@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <vector>
 #include <json/json.hpp>
 
 namespace our {
@@ -34,6 +35,28 @@ namespace our {
             }
             return nullptr;
         };
+
+        // Returns true if an asset with the given name is already loaded (cache check)
+        static bool has(const std::string& name) {
+            return assets.find(name) != assets.end();
+        }
+
+        // Delete and remove a single asset by name (selective eviction)
+        static void evict(const std::string& name) {
+            if (auto it = assets.find(name); it != assets.end()) {
+                delete it->second;
+                assets.erase(it);
+            }
+        }
+
+        // Return all currently loaded asset names
+        static std::vector<std::string> getKeys() {
+            std::vector<std::string> keys;
+            keys.reserve(assets.size());
+            for (auto& [k, _] : assets) keys.push_back(k);
+            return keys;
+        }
+
         // This function deletes all the assets held by this class and clear the assets map 
         static void clear(){
             for(auto& [name, asset] : assets){
@@ -60,4 +83,6 @@ namespace our {
     void deserializeAllAssets(const nlohmann::json& assetData);
     // This will call "AssetLoader<T>::clear" for all the different asset types T
     void clearAllAssets();
+    // Evict only assets that are NOT needed by the next level (selective cleanup)
+    void evictUnusedAssets(const nlohmann::json& neededAssets);
 }

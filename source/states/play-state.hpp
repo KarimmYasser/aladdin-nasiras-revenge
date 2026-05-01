@@ -15,11 +15,21 @@
 #include <systems/level-exit.hpp>
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
+#include <level-cache.hpp>
 #include <systems/room-portal.hpp>
 #include <systems/dialogue.hpp>
 #include <systems/projectile.hpp>
 #include <audio/audio-system.hpp>
+#include <save-system.hpp>
 #include <systems/animation-system.hpp>
+#include <components/camera.hpp>
+#include <components/level-exit.hpp>
+#include <components/room-portal.hpp>
+#include <components/collectible.hpp>
+#include <components/mesh-renderer.hpp>
+#include <components/enemy.hpp>
+#include <components/rigid-body.hpp>
+#include <components/collider.hpp>
 
 #include <imgui.h>
 #include <algorithm>
@@ -56,6 +66,76 @@ class Playstate: public our::State {
     int totalEnemies = 0;
     float elapsedTime = 0.0f;
     bool isPaused = false;
+    bool showMinimap = false;
+
+    // Minimap resources
+    struct InterestPoint {
+        glm::vec3 position;
+        std::string type; // "portal", "exit", "key", "player", "enemy"
+    };
+    std::vector<InterestPoint> landmarks;
+    std::vector<std::pair<glm::vec2, glm::vec2>> floorRects;
+    std::vector<std::pair<glm::vec2, glm::vec2>> obstacleRects;
+    glm::vec2 levelMin = glm::vec2(-100, -100);
+    glm::vec2 levelMax = glm::vec2(100, 100);
+
+    void captureLevelMap() {
+        landmarks.clear();
+        floorRects.clear();
+        obstacleRects.clear();
+        levelMin = glm::vec2(1e9);
+        levelMax = glm::vec2(-1e9);
+
+        for (auto entity : world.getEntities()) {
+            glm::vec3 pos = entity->localTransform.position;
+            
+            // Track Floor Rects (schematic layout)
+            if (entity->getComponent<our::MeshRendererComponent>()) {
+                glm::vec2 size = glm::vec2(entity->localTransform.scale.x, entity->localTransform.scale.z);
+                if (entity->name.find("ground") != std::string::npos || entity->name.find("place") != std::string::npos || entity->name.find("castle") != std::string::npos) {
+                    floorRects.push_back({glm::vec2(pos.x - size.x*0.5f, pos.z - size.y*0.5f), size});
+                    levelMin.x = std::min(levelMin.x, pos.x - size.x);
+                    levelMin.y = std::min(levelMin.y, pos.z - size.y);
+                    levelMax.x = std::max(levelMax.x, pos.x + size.x);
+                    levelMax.y = std::max(levelMax.y, pos.z + size.y);
+                }
+            }
+
+            // Track Obstacles (Static Colliders)
+            if (auto* rb = entity->getComponent<our::RigidBodyComponent>()) {
+                if (rb->type == our::RigidBodyType::Static) {
+                    if (auto* col = entity->getComponent<our::ColliderComponent>()) {
+                        if (col->shape == our::ColliderShape::Box) {
+                            glm::vec2 size = glm::vec2(col->halfExtents.x * 2.0f, col->halfExtents.z * 2.0f);
+                            obstacleRects.push_back({glm::vec2(pos.x - col->halfExtents.x, pos.z - col->halfExtents.z), size});
+                            
+                            // Expand bounds for obstacles too!
+                            levelMin.x = std::min(levelMin.x, pos.x - col->halfExtents.x);
+                            levelMin.y = std::min(levelMin.y, pos.z - col->halfExtents.z);
+                            levelMax.x = std::max(levelMax.x, pos.x + col->halfExtents.x);
+                            levelMax.y = std::max(levelMax.y, pos.z + col->halfExtents.z);
+                        }
+                    }
+                }
+            }
+
+            // Track Interest Points
+            if (entity->getComponent<our::LevelExitComponent>()) landmarks.push_back({pos, "exit"});
+            else if (entity->getComponent<our::RoomPortalComponent>()) landmarks.push_back({pos, "portal"});
+            else if (entity->getComponent<our::EnemyComponent>()) landmarks.push_back({pos, "enemy"});
+            else if (entity->getComponent<our::CollectibleComponent>()) {
+                if (entity->getComponent<our::CollectibleComponent>()->type == our::CollectibleComponent::Type::KEY) landmarks.push_back({pos, "key"});
+            }
+        }
+        
+        // Final sanity check for bounds
+        if (levelMin.x > 1e8) { levelMin = {-50, -50}; levelMax = {50, 50}; }
+        else {
+            // Add some padding
+            levelMin -= 20.0f;
+            levelMax += 20.0f;
+        }
+    }
     bool showSettings = false;
     int masterVolume = 100;
     float mouseSensitivity = 0.003f;
@@ -205,6 +285,18 @@ class Playstate: public our::State {
 
         // Start background music
         our::AudioSystem::instance().playMusic("assets/audio/bg.wav");
+        
+        // Capture the map for the current level layout
+        captureLevelMap();
+
+        // Prefetch the next level config in advance
+        auto& appCfg = getApp()->getConfig();
+        std::string currentLevel = appCfg.value("active-level-config", "");
+        std::replace(currentLevel.begin(), currentLevel.end(), '\\', '/');
+        if (currentLevel == "config/levels/level1.jsonc")
+            our::LevelCache::prefetch("config/levels/level2.jsonc");
+        else if (currentLevel == "config/levels/level2.jsonc")
+            our::LevelCache::prefetch("config/levels/level3.jsonc");
     }
 
     our::AladdinControllerComponent* findAladdin() {
@@ -250,41 +342,55 @@ class Playstate: public our::State {
                         {"time", elapsedTime}
                     };
 
-                    std::string currentLevel = appConfig.value("play-level-config", "config/levels/level1.jsonc");
+                    std::string currentLevel = appConfig.value("active-level-config", "config/levels/level1.jsonc");
                     
-                    if(currentLevel == "config/levels/level1.jsonc") {
+                    // Normalize slashes for comparison
+                    std::string normLevel = currentLevel;
+                    std::replace(normLevel.begin(), normLevel.end(), '\\', '/');
+
+                    if(normLevel == "config/levels/level1.jsonc") {
                         appConfig["next-level-config"] = "config/levels/level2.jsonc";
+                    } else if(normLevel == "config/levels/level2.jsonc") {
+                        appConfig["next-level-config"] = "config/levels/level3.jsonc";
                     } else {
                         // If no more levels, return to menu
                         appConfig["next-level-config"] = "menu";
                     }
 
+                    our::SaveSystem::unlockNextLevel(currentLevel);
                     getApp()->changeState("victory");
                     return;
                 }
             }
         }
 
-        // Check for level transition
         std::string nextScene = levelExitSystem.getNextScene();
         if(!nextScene.empty()){
             levelExitSystem.clearNextScene();
-            // Load the new scene config
-            std::ifstream file_in(nextScene);
-            if(file_in){
-                nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
-                file_in.close();
-                if(new_config.contains("scene")){
-                    getApp()->getConfig()["scene"] = new_config["scene"];
-                }
-                if(new_config.contains("game")){
-                    getApp()->getConfig()["game"] = new_config["game"];
-                }
-                getApp()->changeState("play");
-                return;
+            // Load the new scene config from cache or disk
+            const nlohmann::json* cached = our::LevelCache::get(nextScene);
+            nlohmann::json new_config;
+            if (cached) {
+                new_config = *cached;
             } else {
-                std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+                std::ifstream file_in(nextScene);
+                if(file_in){
+                    new_config = nlohmann::json::parse(file_in, nullptr, true, true);
+                    file_in.close();
+                } else {
+                    std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+                    return;
+                }
             }
+            
+            if(new_config.contains("scene")){
+                getApp()->getConfig()["scene"] = new_config["scene"];
+            }
+            if(new_config.contains("game")){
+                getApp()->getConfig()["game"] = new_config["game"];
+            }
+            getApp()->changeState("play");
+            return;
         }
 
         roomPortalSystem.update(&world, (float)deltaTime);
@@ -368,6 +474,9 @@ class Playstate: public our::State {
 
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
+
+        // Minimap toggle (Caps Lock)
+        showMinimap = keyboard.isPressed(GLFW_KEY_CAPS_LOCK);
 
 
         // if(!freezeGameplay && keyboard.justPressed(GLFW_KEY_ESCAPE)){
@@ -761,6 +870,131 @@ class Playstate: public our::State {
                 ImGui::PopStyleVar(3);
             }
         }
+
+        // ═══════════════════════════════════════════════════════
+        //  CRAFTED SCHEMATIC MINIMAP (CAPS HELD)
+        // ═══════════════════════════════════════════════════════
+        if (showMinimap) {
+            float levelWidth = levelMax.x - levelMin.x;
+            float levelHeight = levelMax.y - levelMin.y;
+            float levelAspect = levelWidth / levelHeight;
+
+            // Calculate optimal window size based on level aspect ratio
+            float maxCanvasSize = std::min(screenWidth, screenHeight) * 0.85f;
+            float canvasWidth, canvasHeight;
+            
+            if (levelAspect > 1.0f) { // Horizontal level (like Level 2)
+                canvasWidth = maxCanvasSize * 1.2f; // Allow it to be wider
+                canvasHeight = canvasWidth / levelAspect;
+                // Clamp to screen
+                if (canvasHeight > screenHeight * 0.7f) {
+                    canvasHeight = screenHeight * 0.7f;
+                    canvasWidth = canvasHeight * levelAspect;
+                }
+                if (canvasWidth > screenWidth * 0.9f) {
+                    canvasWidth = screenWidth * 0.9f;
+                    canvasHeight = canvasWidth / levelAspect;
+                }
+            } else { // Vertical level
+                canvasHeight = maxCanvasSize;
+                canvasWidth = canvasHeight * levelAspect;
+                if (canvasWidth > screenWidth * 0.7f) {
+                    canvasWidth = screenWidth * 0.7f;
+                    canvasHeight = canvasWidth / levelAspect;
+                }
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(screenWidth * 0.5f, screenHeight * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(canvasWidth + 60, canvasHeight + 100));
+            
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 25.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 5.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.05f, 0.95f)); // Deep Parchment
+            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.85f, 0.2f, 0.9f)); // Gold Frame
+            
+            ImGui::Begin("##MinimapProcedural", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+            
+            // Premium Title
+            ImGui::SetWindowFontScale(2.4f);
+            const char* mapTitle = "LEVEL SCHEMATIC";
+            float titleX = (ImGui::GetWindowSize().x - ImGui::CalcTextSize(mapTitle).x) * 0.5f;
+            ImGui::SetCursorPosY(15);
+            ImGui::SetCursorPosX(titleX);
+            ImGui::TextColored(ImVec4(1.0f, 0.9f, 0.3f, 1.0f), "%s", mapTitle);
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+            
+            // Draw Background (Parchment Texture Simulation)
+            drawList->AddRectFilled(canvasPos, ImVec2(canvasPos.x + canvasWidth, canvasPos.y + canvasHeight), IM_COL32(40, 30, 20, 255));
+            
+            // Calculate Scaling
+            float scale = canvasWidth / levelWidth;
+            
+            auto worldToMap = [&](glm::vec2 worldPos) -> ImVec2 {
+                float px = (worldPos.x - levelMin.x) * scale;
+                float py = (worldPos.y - levelMin.y) * scale;
+                return ImVec2(canvasPos.x + px, canvasPos.y + py);
+            };
+
+            // 1. Draw Floor Rects (Schematic)
+            for (auto& rect : floorRects) {
+                ImVec2 p1 = worldToMap(rect.first);
+                ImVec2 p2 = worldToMap(rect.first + rect.second);
+                drawList->AddRectFilled(p1, p2, IM_COL32(80, 60, 40, 180), 5.0f);
+                drawList->AddRect(p1, p2, IM_COL32(120, 100, 80, 255), 5.0f, 0, 2.0f);
+            }
+
+            // 1b. Draw Obstacles (Solid Walls/Buildings)
+            for (auto& rect : obstacleRects) {
+                ImVec2 p1 = worldToMap(rect.first);
+                ImVec2 p2 = worldToMap(rect.first + rect.second);
+                // Draw as solid dark ink blocks
+                drawList->AddRectFilled(p1, p2, IM_COL32(25, 15, 10, 255), 2.0f);
+                drawList->AddRect(p1, p2, IM_COL32(60, 45, 30, 255), 2.0f, 0, 1.0f);
+            }
+
+            // 2. Draw Landmarks
+            for (auto& lm : landmarks) {
+                ImVec2 p = worldToMap(glm::vec2(lm.position.x, lm.position.z));
+                if (lm.type == "exit") {
+                    drawList->AddCircleFilled(p, 12.0f, IM_COL32(50, 200, 50, 255)); // Green Exit
+                    drawList->AddCircle(p, 15.0f, IM_COL32(100, 255, 100, 200), 20, 3.0f);
+                } else if (lm.type == "enemy") {
+                    // Large Red Cross (X)
+                    float s = 10.0f;
+                    drawList->AddLine(ImVec2(p.x - s, p.y - s), ImVec2(p.x + s, p.y + s), IM_COL32(255, 50, 50, 255), 4.0f);
+                    drawList->AddLine(ImVec2(p.x + s, p.y - s), ImVec2(p.x - s, p.y + s), IM_COL32(255, 50, 50, 255), 4.0f);
+                } else if (lm.type == "portal") {
+                    drawList->AddCircleFilled(p, 10.0f, IM_COL32(100, 50, 200, 255));
+                    drawList->AddCircle(p, 13.0f, IM_COL32(150, 100, 255, 150), 10, 2.0f);
+                } else if (lm.type == "key") {
+                    drawList->AddNgonFilled(p, 10.0f, IM_COL32(255, 215, 0, 255), 4);
+                }
+            }
+
+            // 3. Draw Player
+            if (auto* playerEntity = findAladdinEntity()) {
+                glm::vec3 pos = playerEntity->localTransform.position;
+                ImVec2 p = worldToMap(glm::vec2(pos.x, pos.z));
+                
+                // Pulsing Player Arrow
+                float pulse = (float)sin(glfwGetTime() * 5.0) * 0.5f + 0.5f;
+                drawList->AddCircleFilled(p, 8.0f + pulse * 4.0f, IM_COL32(255, 255, 255, 100));
+                drawList->AddCircleFilled(p, 7.0f, IM_COL32(255, 215, 0, 255));
+                
+                // Direction Indicator
+                float yaw = -playerEntity->localTransform.rotation.y;
+                ImVec2 dir(p.x + cos(yaw) * 15.0f, p.y + sin(yaw) * 15.0f);
+                drawList->AddLine(p, dir, IM_COL32(255, 255, 255, 255), 3.0f);
+            }
+
+            ImGui::End();
+            ImGui::PopStyleColor(2);
+            ImGui::PopStyleVar(2);
+        }
     }
 
     void onDestroy() override {
@@ -783,7 +1017,13 @@ class Playstate: public our::State {
         if(heartIcon) delete heartIcon;
         if(enemyIcon) delete enemyIcon;
 
-        // and we delete all the loaded assets to free memory on the RAM and the VRAM
-        our::clearAllAssets();
+        // Smart asset cleanup: only evict assets not needed by the next level.
+        auto& cfg = getApp()->getConfig();
+        if (cfg.contains("scene") && cfg["scene"].contains("assets")) {
+            our::evictUnusedAssets(cfg["scene"]["assets"]);
+        } else {
+            // Fallback: if no next scene is configured (e.g. returning to menu), clear everything
+            our::clearAllAssets();
+        }
     }
 };
