@@ -295,13 +295,29 @@ namespace our {
 
             glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
             
-            // Center the shadow frustum on the camera position so shadows follow the player as they move
-            glm::vec3 lEye = cameraPos - lDir * 20.0f;
+            // Use a large range to cover the entire level area around the player.
+            // 150 range (300 wide) ensures distant walls and large buildings cast shadows.
+            float range = 150.0f;
+            float lightDistance = 250.0f; 
+            
+            // Initial light position and view matrix
+            glm::vec3 lEye = cameraPos - lDir * lightDistance;
             glm::mat4 lightView = glm::lookAt(lEye, lEye + lDir, up);
 
-            // Orthographic projection covers ±20 units around the camera.
-            float range = 20.0f;
-            glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 50.0f);
+            // Stabilize shadows by snapping the shadow camera to texel-sized increments.
+            float texelSize = (2.0f * range) / (float)SHADOW_MAP_SIZE;
+            glm::vec4 viewPos = lightView * glm::vec4(cameraPos, 1.0f);
+            viewPos.x = glm::round(viewPos.x / texelSize) * texelSize;
+            viewPos.y = glm::round(viewPos.y / texelSize) * texelSize;
+            
+            // Transform the snapped point back to world space and recompute lEye.
+            glm::vec3 snappedWorldPos = glm::vec3(glm::inverse(lightView) * viewPos);
+            lEye = snappedWorldPos - lDir * lightDistance;
+            lightView = glm::lookAt(lEye, lEye + lDir, up);
+
+            // Orthographic projection covers the expanded range and deeper volume.
+            // Near/Far are tight to maximize the 24-bit depth buffer precision.
+            glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 400.0f);
             lightSpaceMatrix = lightProj * lightView;
 
             // Render the scene depth from the light's point of view.
