@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
     // Level 3 — Three-area flow:
     //   Map 1: Desert Town
     //   Map 2: Desert fort (ancient_desert_fort)
@@ -23,316 +22,20 @@
         "time_2star": 420,
         "time_1star": 600,
         "game_over_fall_y": -55
-=======
-  // Level 3 — Two-map flow:
-  //   Map 1: Pembroke castle
-  //   Map 2: Raby castle
-  // Portal teleports from Map 1 -> Map 2, then a final LevelExit in Map 2.
-  //
-  // Mesh: assets/models/Maps/pembroke_castle/pembroke_castle.obj (large; first load parses once).
-  // "submeshMaterials" maps tinyobj MTL names (mat0, mat1, …) to scene materials.
-  // Collider shape "concaveMesh" + "mesh" (same asset name) builds a static triangle mesh
-  // in ReactPhysics3D — walk on real geometry (no flat floor box).
-  //
-  // Orientation: pitch 180° + scale — tune entity transform if your export differs.
-
-  "start-scene": "play",
-  "window": {
-    "title": "Aladdin — Level 3 (Pembroke -> Raby)",
-    "size": { "width": 1280, "height": 720 },
-    "fullscreen": false,
-  },
-  "game": {
-    "total_coins": 10,
-    "total_enemies": 6,
-    "time_3star": 300,
-    "time_2star": 420,
-    "time_1star": 600,
-  },
-
-  "scene": {
-    "renderer": {
-      "sky": "assets/textures/sky.jpg",
-      "postprocess": "assets/shaders/postprocess/vignette.frag",
-    },
-    "assets": {
-      "shaders": {
-        "tinted": {
-          "vs": "assets/shaders/tinted.vert",
-          "fs": "assets/shaders/tinted.frag",
-        },
-        "textured": {
-          "vs": "assets/shaders/textured.vert",
-          "fs": "assets/shaders/textured.frag",
-        },
-        "light": {
-          "vs": "assets/shaders/light.vert",
-          "fs": "assets/shaders/light.frag",
-        },
-        "skinned": {
-          "vs": "assets/shaders/skinned.vert",
-          "fs": "assets/shaders/light.frag",
-        },
-      },
-      "textures": {
-        "castle_mat0": "assets/models/Maps/pembroke_castle/material1_baseColor.jpg",
-        "castle_mat1": "assets/models/Maps/pembroke_castle/material0_baseColor.jpg",
-        "raby_mat0": "assets/models/Maps/raby_castle/material0_baseColor.jpg",
-        "raby_mat1": "assets/models/Maps/raby_castle/material1_baseColor.jpg",
-        "raby_mat2": "assets/models/Maps/raby_castle/material2_baseColor.jpg",
-        "portal_tex_0": "assets/models/Portal/0.png",
-        "portal_tex_1": "assets/models/Portal/1.png",
-        "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
-        "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
-        "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-        "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
-        "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
-        "genie_tex": "assets/models/Genie/genie_diff.png",
-      },
-      "meshes": {
-        "pembroke_castle": "assets/models/Maps/pembroke_castle/pembroke_castle.obj",
-        "raby_castle": "assets/models/Maps/raby_castle/raby_castle.obj",
-        "portal_highelf": "assets/models/Portal/highelfportal.obj",
-        "coin_mesh": "assets/models/Coin/Coin.obj",
-        "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
-        "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-        "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
-        "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
-        "genie_mesh": "assets/models/Genie/genie.obj",
-      },
-      "samplers": {
-        "default": {},
-        "repeat": { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" },
-      },
-      "materials": {
-        "lit-castle-mat0": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "castle_mat0",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-castle-mat1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "castle_mat1",
-          "sampler": "default",
-          "shininess": 22.0,
-          "ambient": 0.36,
-        },
-        "lit-raby-mat0": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "raby_mat0",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-raby-mat1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "raby_mat1",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-raby-mat2": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "raby_mat2",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.38,
-        },
-        "lit-portal-0": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "portal_tex_0",
-          "sampler": "default",
-          "shininess": 40.0,
-          "ambient": 0.35,
-        },
-        "lit-portal-1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "portal_tex_1",
-          "sampler": "default",
-          "shininess": 40.0,
-          "ambient": 0.35,
-        },
-        "coin-mat": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "coin_tex",
-          "sampler": "default",
-          "shininess": 16.0,
-          "ambient": 0.35,
-        },
-        "lit-enemy1": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy1_tex",
-          "sampler": "default",
-          "shininess": 20.0,
-          "ambient": 0.32,
-        },
-        "lit-enemy2": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy2_tex",
-          "sampler": "default",
-          "shininess": 36.0,
-          "ambient": 0.32,
-        },
-        "lit-enemy3": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "enemy3_tex",
-          "sampler": "default",
-          "shininess": 18.0,
-          "ambient": 0.32,
-        },
-        "lit-aladdin": {
-          "type": "lit",
-          "shader": "skinned",
-          "albedo_map": "aladdin_skin",
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.28,
-          "albedo_tint": [1, 1, 1],
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-        },
-        "lit-env-lamp": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 82.0,
-          "ambient": 0.42,
-          "albedo_tint": [1.0, 0.82, 0.32],
-        },
-        "lit-env-lamp-used": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "sampler": "default",
-          "shininess": 10.0,
-          "ambient": 0.22,
-          "albedo_tint": [0.45, 0.38, 0.22],
-        },
-        "lit-genie": {
-          "type": "lit",
-          "shader": "light",
-          "pipelineState": {
-            "faceCulling": { "enabled": false },
-            "depthTesting": { "enabled": true },
-          },
-          "albedo_map": "genie_tex",
-          "sampler": "default",
-          "shininess": 24.0,
-          "ambient": 0.36,
-          "albedo_tint": [0.72, 0.92, 1.0],
-        },
-      },
->>>>>>> 33e4aa6 (Standardize Golem (Enemy 3) animation loading and Level 3 configuration parity)
     },
 
-    "world": [
-      {
-        "name": "Camera",
-        "position": [0.9, 24, 52],
-        "rotation": [-22, 0, 0],
-        "components": [
-          {
-            "type": "Camera",
-            "cameraType": "perspective",
-            "near": 0.1,
-            "far": 1200,
-            "fovY": 58,
-          },
-        ],
-      },
-      {
-        "name": "sun",
-        "rotation": [-38, -125, 0],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "directional",
-            "color": [1.0, 0.96, 0.88],
-            "intensity": 1.45,
-          },
-        ],
-      },
-      {
-        "name": "fill-castle",
-        "position": [0.9, 18, -2.3],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "point",
-            "color": [0.95, 0.95, 1.0],
-            "intensity": 2.8,
-            "attenuation": {
-              "constant": 1.0,
-              "linear": 0.05,
-              "quadratic": 0.012,
+    "scene": {
+        "renderer": {
+            "sky": "assets/textures/sky.jpg",
+            "postprocess": "assets/shaders/postprocess/vignette.frag"
+        },
+        "assets": {
+            "shaders": {
+                "tinted": { "vs": "assets/shaders/tinted.vert", "fs": "assets/shaders/tinted.frag" },
+                "textured": { "vs": "assets/shaders/textured.vert", "fs": "assets/shaders/textured.frag" },
+                "light": { "vs": "assets/shaders/light.vert", "fs": "assets/shaders/light.frag" },
+                "skinned": { "vs": "assets/shaders/skinned.vert", "fs": "assets/shaders/light.frag" }
             },
-<<<<<<< HEAD
             "textures": {
                 "l3_dt_stairs_side": "assets/models/Maps/level 3/Desert_Town/images/stairs-side_albedo.jpg",
                 "l3_dt_stairs": "assets/models/Maps/level 3/Desert_Town/images/stairs_albedo.jpg",
@@ -381,7 +84,8 @@
                 "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
                 "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_BaseColor.png",
+                "enemy3_emissive": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_Emissive.png",
                 "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
                 "genie_tex": "assets/models/Genie/genie_diff.png",
                 "genie_jafar_tex0": "assets/models/Genie_Jafar/5_material000_1_0_0_baseColor.png",
@@ -412,7 +116,7 @@
                 "coin_mesh": "assets/models/Coin/Coin.obj",
                 "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/Golem.obj",
                 "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
                 "genie_mesh": "assets/models/Genie/genie.obj",
                 "genie_jafar_mesh": "assets/models/Genie_Jafar/genie_jafar.obj",
@@ -423,95 +127,11 @@
                 "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
                 "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
                 "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj"
-=======
-          },
-        ],
-      },
-      {
-        "name": "pembroke-castle",
-        "position": [0.864, 2.4, -2.305],
-        "rotation": [180, 0, 0],
-        "scale": [5.4, 5.4, 5.4],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "pembroke_castle",
-            "material": "lit-castle-mat0",
-            "submeshMaterials": {
-              "mat0": "lit-castle-mat0",
-              "mat1": "lit-castle-mat1",
             },
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "concaveMesh",
-            "mesh": "pembroke_castle",
-            "friction": 0.9,
-            "restitution": 0.0,
-          },
-        ],
-      },
-      // // Safety boundaries for Map 1 (Pembroke) to prevent falling out of bounds
-      // { "name": "map1-bound-n", "position": [0.0, 18.0, -50.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
-      //     ] },
-      // { "name": "map1-bound-s", "position": [0.0, 18.0, 50.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [190.0, 18.0, 2.0], "friction": 0.8 }
-      //     ] },
-      // { "name": "map1-bound-w", "position": [-50.0, 18.0, 0.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
-      //     ] },
-      // { "name": "map1-bound-e", "position": [50.0, 18.0, 0.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [2.0, 18.0, 190.0], "friction": 0.8 }
-      //     ] },
-      {
-        "name": "fill-raby",
-        "position": [600, 24, 0],
-        "components": [
-          {
-            "type": "Light",
-            "light_type": "point",
-            "color": [0.95, 0.98, 1.0],
-            "intensity": 3.2,
-            "attenuation": {
-              "constant": 1.0,
-              "linear": 0.04,
-              "quadratic": 0.01,
->>>>>>> 33e4aa6 (Standardize Golem (Enemy 3) animation loading and Level 3 configuration parity)
+            "samplers": {
+                "default": {},
+                "repeat": { "WRAP_S": "GL_REPEAT", "WRAP_T": "GL_REPEAT" }
             },
-          },
-        ],
-      },
-      {
-        "name": "raby-castle",
-        "position": [600, 4.2, 0],
-        "rotation": [0, 0, 0],
-        "scale": [9.5, 9.5, 9.5],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "raby_castle",
-            "material": "lit-raby-mat0",
-            "submeshMaterials": {
-              "mat0": "lit-raby-mat0",
-              "mat1": "lit-raby-mat1",
-              "mat2": "lit-raby-mat2",
-            },
-<<<<<<< HEAD
             "materials": {
                 "lit-l3-dt-stairs-side": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_stairs_side", "sampler": "default", "shininess": 24.0, "ambient": 0.38 },
                 "lit-l3-dt-stairs": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "l3_dt_stairs", "sampler": "default", "shininess": 24.0, "ambient": 0.38 },
@@ -650,21 +270,23 @@
                 },
                 "lit-enemy2": {
                     "type": "lit",
-                    "shader": "light",
+                    "shader": "skinned",
                     "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy2_tex",
                     "sampler": "default",
-                    "shininess": 36.0,
-                    "ambient": 0.32
+                    "shininess": 28.0,
+                    "ambient": 0.3
                 },
                 "lit-enemy3": {
                     "type": "lit",
-                    "shader": "light",
+                    "shader": "skinned",
                     "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy3_tex",
+                    "emission_map": "enemy3_emissive",
                     "sampler": "default",
                     "shininess": 18.0,
-                    "ambient": 0.32
+                    "ambient": 0.32,
+                    "uv_multiplier": [1, -1]
                 },
                 "lit-aladdin": {
                     "type": "lit",
@@ -1081,9 +703,20 @@
                 "name": "l3-map1-enemy-trash-1",
                 "position": [52, -27, -360],
                 "rotation": [0, 180, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
@@ -1093,9 +726,20 @@
                 "name": "l3-map1-enemy-trash-2",
                 "position": [-4, -30, -363],
                 "rotation": [0, 180, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
@@ -1121,9 +765,20 @@
                 "name": "l3-map2-enemy-trash-1",
                 "position": [582, -26, -162],
                 "rotation": [0, 180, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
@@ -1133,9 +788,20 @@
                 "name": "l3-map2-enemy-trash-2",
                 "position": [596, -26, -180],
                 "rotation": [0, 180, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
@@ -1551,681 +1217,4 @@
             }
         ]
     }
-=======
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "concaveMesh",
-            "mesh": "raby_castle",
-            "friction": 0.92,
-            "restitution": 0.0,
-          },
-        ],
-      },
-      // Safety boundaries for Map 2 (Raby) to prevent leaving ring-map play area
-      // { "name": "map2-bound-n", "position": [600.0, 22.0, -235.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
-      //     ] },
-      // { "name": "map2-bound-s", "position": [600.0, 22.0, 235.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [230.0, 22.0, 2.5], "friction": 0.8 }
-      //     ] },
-      // { "name": "map2-bound-w", "position": [365.0, 22.0, 0.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
-      //     ] },
-      // { "name": "map2-bound-e", "position": [835.0, 22.0, 0.0],
-      //     "components": [
-      //         { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-      //         { "type": "Collider", "shape": "box", "halfExtents": [2.5, 22.0, 230.0], "friction": 0.8 }
-      //     ] },
-      {
-        "name": "portal-map1-to-map2-visual",
-        "position": [4.6, 2.7, 70],
-        "rotation": [0, 0, 0],
-        "scale": [2.1, 2.1, 2.1],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "portal_highelf",
-            "material": "lit-portal-0",
-          },
-        ],
-      },
-      {
-        "name": "portal-map1-to-map2",
-        "position": [4.6, 3.85, 70],
-        "components": [
-          {
-            "type": "Room Portal",
-            "radius": 4.0,
-            "blackoutDuration": 1.2,
-            "cooldownDuration": 2.5,
-            "targetPosition": [548, 12.0, 0],
-            "setYaw": true,
-            "targetYaw": 90,
-          },
-        ],
-      },
-      {
-        "name": "portal-map2-victory-visual",
-        "position": [608.89, -10.77, -90.8],
-        "rotation": [0, -90, 0],
-        "scale": [2.2, 2.2, 2.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "portal_highelf",
-            "material": "lit-portal-1",
-          },
-        ],
-      },
-      {
-        "name": "portal-map2-victory",
-        "position": [608.89, -9.57, -90.8],
-        "components": [
-          {
-            "type": "LevelExit",
-            "radius": 4.2,
-            "requiresKey": false,
-            "nextState": "victory",
-          },
-        ],
-      },
-
-      // ------ Map 2 (Raby) — third Genie meeting
-      {
-        "name": "l3-map2-lamp-active",
-        "position": [681.1, 2.2, 15.2],
-        "rotation": [0, 20, 0],
-        "scale": [3.0, 3.0, 3.0],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "env_aladdin_lamp",
-            "material": "lit-env-lamp",
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [2.2, 2.5, 2.2],
-            "friction": 0.5,
-          },
-          {
-            "type": "Dialogue Trigger",
-            "script": "config/levels/dialogues/meeting-3.json",
-            "style": "config/levels/dialogues/style.json",
-            "radius": 5.5,
-            "oneShot": true,
-            "revealEntity": "l3-map2-genie",
-            "removeEntitiesOnFinish": ["l3-map2-lamp-active"],
-            "revealEntitiesOnFinish": ["l3-map2-lamp-used"],
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-lamp-used",
-        "position": [681.1, 2.2, 15.2],
-        "rotation": [0, 60, 0],
-        "scale": [3.0, 3.0, 3.0],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "env_aladdin_lamp",
-            "material": "lit-env-lamp-used",
-            "visible": false,
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "static",
-            "mass": 0,
-            "useGravity": false,
-          },
-          {
-            "type": "Collider",
-            "shape": "box",
-            "halfExtents": [2.2, 2.5, 2.2],
-            "friction": 0.5,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-genie",
-        "position": [688, 1.4, 0.9],
-        "rotation": [0, -40, 0],
-        "scale": [0.94, 0.94, 0.94],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "genie_mesh",
-            "material": "lit-genie",
-            "visible": false,
-          },
-        ],
-      },
-
-      // ================================================================
-      // Seed content (enemies + coins) for coordinate-based level editing
-      // You can copy/paste and tweak these while using M debug coordinates.
-      // ================================================================
-
-      // --- Map 1 (Pembroke) enemies ---
-      {
-        "name": "l3-map1-enemy-brute-1",
-        "position": [8.0, 0.2, 11.3],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy1_mesh",
-            "material": "lit-enemy1",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 2.8,
-            "chaseSpeed": 4.8,
-            "detectionRange": 24.0,
-            "attackRange": 2.5,
-            "health": 70,
-            "damage": 16,
-            "attackCooldown": 1.5,
-            "waypoints": [
-              [8.0, 0.2, 9.3],
-              [8.0, 0.2, 12.3],
-            ],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 60.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.65,
-            "height": 1.5,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-enemy-brute-2",
-        "position": [-14.6, 4.0, 50.0],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy1_mesh",
-            "material": "lit-enemy1",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 2.8,
-            "chaseSpeed": 4.8,
-            "detectionRange": 24.0,
-            "attackRange": 2.5,
-            "health": 70,
-            "damage": 16,
-            "attackCooldown": 1.5,
-            "waypoints": [
-              [-14.6, 4.0, 48.0],
-              [-14.6, 4.0, 52.0],
-            ],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 60.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.65,
-            "height": 1.5,
-            "friction": 0.65,
-          },
-        ],
-      },
-
-      // --- Map 2 (Raby) enemies ---
-      {
-        "name": "l3-map2-enemy-trash-1",
-        "position": [566.0, -8.3, 17.3],
-        "rotation": [0, 180, 0],
-        "scale": [0.035, 0.035, 0.035],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy3_mesh",
-            "material": "lit-enemy3",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.0,
-            "chaseSpeed": 5.2,
-            "detectionRange": 23.0,
-            "attackRange": 2.0,
-            "health": 50,
-            "damage": 13,
-            "attackCooldown": 1.45,
-            //   , "waypoints": [[548.0, 12.0, -30.0], [572.0, 12.0, -30.0], [572.0, 12.0, -16.0], [548.0, 12.0, -16.0]]
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 40.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.52,
-            "height": 1.2,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-slime-1",
-        "position": [616.3, -0.4, 60],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy2_mesh",
-            "material": "lit-enemy2",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.8,
-            "chaseSpeed": 5.8,
-            "detectionRange": 21.0,
-            "attackRange": 2.1,
-            "health": 48,
-            "damage": 12,
-            "attackCooldown": 1.4,
-            // , "waypoints": [[580.0, 12.0, 34.0], [602.0, 12.0, 34.0], [602.0, 12.0, 50.0], [580.0, 12.0, 50.0]]
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 42.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.55,
-            "height": 1.25,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-brute-1",
-        "position": [587.4, -3.3, 49.0],
-        "rotation": [0, 180, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy1_mesh",
-            "material": "lit-enemy1",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 2.8,
-            "chaseSpeed": 4.8,
-            "detectionRange": 24.0,
-            "attackRange": 2.5,
-            "health": 70,
-            "damage": 16,
-            "attackCooldown": 1.5,
-            // , "waypoints": [[-14.6, 4.0, 48.0], [-14.6, 4.0, 52.0]]
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 60.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.65,
-            "height": 1.5,
-            "friction": 0.65,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-enemy-slime-2",
-        "position": [624.6, -7.7, -73.8],
-        "rotation": [0, 80, 0],
-        "scale": [0.028, 0.028, 0.028],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "enemy2_mesh",
-            "material": "lit-enemy2",
-          },
-          {
-            "type": "Enemy",
-            "patrolSpeed": 3.8,
-            "chaseSpeed": 5.8,
-            "detectionRange": 21.0,
-            "attackRange": 2.1,
-            "health": 48,
-            "damage": 12,
-            "attackCooldown": 1.4,
-            // , "waypoints": [[580.0, 12.0, 34.0], [602.0, 12.0, 34.0], [602.0, 12.0, 50.0], [580.0, 12.0, 50.0]]
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 42.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.55,
-            "height": 1.25,
-            "friction": 0.65,
-          },
-        ],
-      },
-
-      // --- Map 1 coins ---
-      {
-        "name": "l3-map1-coin-1",
-        "position": [15.5, -1.0, -11.0],
-        "rotation": [0, 20, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-2",
-        "position": [-12.6, 4.0, 60.0],
-        "rotation": [0, -10, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-3",
-        "position": [-2.0, -0.5, -31.0],
-        "rotation": [0, 35, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-4",
-        "position": [15.5, -1.0, -11.0],
-        "rotation": [0, 20, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-5",
-        "position": [-10.0, 1.5, 6.0],
-        "rotation": [0, -10, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map1-coin-6",
-        "position": [16.0, -1.0, 14.0],
-        "rotation": [0, 35, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-
-      // --- Map 2 coins ---
-      {
-        "name": "l3-map2-coin-1",
-        "position": [550.0, -9.5, 4.1],
-        "rotation": [0, 0, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-2",
-        "position": [558.2, -5.3, 64.6],
-        "rotation": [0, -25, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-3",
-        "position": [650.0, 1.8, 45.0],
-        "rotation": [0, 15, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-      {
-        "name": "l3-map2-coin-4",
-        "position": [614.6, -10.4, 92.1],
-        "rotation": [0, 45, 0],
-        "scale": [5.2, 5.2, 5.2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "coin_mesh",
-            "material": "coin-mat",
-          },
-          {
-            "type": "Collectible",
-            "collectibleType": "coin",
-            "value": 1,
-            "rotationSpeed": 3.0,
-            "bobbingHeight": 0.15,
-          },
-        ],
-      },
-
-      {
-        "name": "aladdin",
-        "position": [0.86, 5.15, -2.31],
-        "rotation": [0, 200, 0],
-        "scale": [21.0, 21.0, 21.0],
-        "components": [
-          {
-            "type": "Skinned Mesh Renderer",
-            "model": "assets/models/Aladdin/aladdin/Idle.fbx",
-            "animations": [
-              "assets/models/Aladdin/aladdin/walk.fbx",
-              "assets/models/Aladdin/aladdin/jump.fbx",
-              "assets/models/Aladdin/aladdin/kick.fbx",
-              "assets/models/Aladdin/animations/running_jump.fbx",
-              "assets/models/Aladdin/animations/running.fbx",
-            ],
-            "material": "lit-aladdin",
-            "clip": "idle",
-          },
-          {
-            "type": "Aladdin Controller",
-            "speed": 5.0,
-            "runSpeed": 11.0,
-            "jumpForce": 8.0,
-            "runningJumpForce": 8.0,
-            "clipVisualOffsets": {
-              "running_jump": [0, 1.5, 0],
-              "jump": [0, 1.5, 0],
-            },
-            "rotationSpeed": 10.0,
-            "enableCameraFollow": true,
-            "cameraMode": "third",
-            "cameraOffset": [0.0, 4.45, 6.0],
-            "cameraSmoothing": 8.0,
-            "firstPersonCameraOffset": [0.0, 1.38, 0.22],
-            "firstPersonPitchDegrees": 0.0,
-            "thirdPersonPitchDegrees": -10.0,
-            "cameraOrbitYawDegrees": 200.0,
-            "health": 100,
-            "lives": 3,
-            "respawnPosition": [0.86, 5.15, -2.31],
-          },
-          {
-            "type": "RigidBody",
-            "bodyType": "dynamic",
-            "mass": 72.0,
-            "useGravity": true,
-            "lockRotation": true,
-          },
-          {
-            "type": "Collider",
-            "shape": "capsule",
-            "radius": 0.42,
-            "height": 1.65,
-            "friction": 0.55,
-          },
-        ],
-      },
-    ],
-  },
->>>>>>> 33e4aa6 (Standardize Golem (Enemy 3) animation loading and Level 3 configuration parity)
 }
