@@ -1,20 +1,20 @@
 {
-    "_comment": "Fourth Genie meeting (Level 3 finale, just before the boss fight with the Wish Eater). Placeholder hookup — not wired into any level config yet.",
+    "_comment": "Fourth Genie meeting (Level 3 Map 3 / Ancient Desert Arena). Lamp l3-map3-lamp-active at [1050,7,-270]; Genie l3-map3-genie at arena floor; wired in level3.jsonc.",
 
     "meeting": 4,
     "title": "Fourth Meeting",
     "level": 3,
 
     "trigger": {
-        "lampEntity":   "",
-        "radius":       4.5,
+        "lampEntity":   "l3-map3-lamp-active",
+        "radius":       6.5,
         "oneShot":      true,
-        "revealEntity": ""
+        "revealEntity": "l3-map3-genie"
     },
 
     "onFinish": {
-        "removeEntities": [],
-        "revealEntities": []
+        "removeEntities": ["l3-map3-lamp-active", "l3-map3-genie"],
+        "revealEntities": ["l3-map3-lamp-used"]
     },
 
     "lines": [
