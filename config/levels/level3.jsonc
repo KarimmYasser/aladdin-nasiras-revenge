@@ -1160,9 +1160,9 @@
 
             {
                 "name": "aladdin",
-                // "position": [64.0, -15.2, -405.0],
+                "position": [64.0, -15.2, -405.0],
                 // "position": [550, 0.5, -232],
-                "position": [1030, 10, -255],
+                // "position": [1030, 10, -255],
                 "rotation": [0, 200, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -1197,9 +1197,9 @@
                         "cameraOrbitYawDegrees": 200.0,
                         "health": 100,
                         "lives": 3,
-                        // "respawnPosition": [64.0, -15.2, -405.0]
+                        "respawnPosition": [64.0, -15.2, -405.0]
                         // "respawnPosition": [550, 0.5, -232]
-                        "respawnPosition": [1030, 10, -255]
+                        // "respawnPosition": [1030, 10, -255]
                         
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
