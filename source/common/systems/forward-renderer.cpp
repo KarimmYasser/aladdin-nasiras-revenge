@@ -551,8 +551,15 @@ namespace our {
                     }
 
                     // Bind material textures & set uniforms ON THE SKINNED SHADER for each submesh.
-                    for (int i = 0; i < (int)smr->materials.size(); i++) {
-                        Material* mat = smr->materials[i];
+                    int submeshCount = (int)smr->skinnedMesh->submeshes.size();
+                    if (submeshCount == 0) submeshCount = 1; // Fallback for meshes without explicit submeshes
+
+                    for (int i = 0; i < submeshCount; i++) {
+                        // Pick the material for this submesh: use the one at index i, or fall back to the first one
+                        Material* mat = nullptr;
+                        if (i < (int)smr->materials.size()) mat = smr->materials[i];
+                        else if (!smr->materials.empty())    mat = smr->materials[0];
+
                         if (!mat) continue;
 
                         if (auto* litMat = dynamic_cast<LitMaterial*>(mat)) {
@@ -600,8 +607,7 @@ namespace our {
 
                         if (i < (int)smr->skinnedMesh->submeshes.size()) {
                             smr->skinnedMesh->drawSubmesh(i);
-                        } else if (i == 0) {
-                            // Fallback if no submeshes defined (unlikely with my loader update)
+                        } else {
                             smr->skinnedMesh->draw();
                         }
                     }

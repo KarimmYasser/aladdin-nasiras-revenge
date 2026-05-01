@@ -86,9 +86,10 @@
                 "pot_aotubo_tex":  "assets/models/Pots/Pot 3/D_aotubo00.png",
 
                 // Enemies
-                "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
+                "enemy1_tex": "assets/models/Enemies/Enemy 1/diffuse.jpg",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_BaseColor.png",
+                "enemy3_emissive": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_Emissive.png",
 
                 // Portal / carpet
                 "portal_tex_0": "assets/models/Portal/0.png",
@@ -112,9 +113,9 @@
                 "pot_small_mesh":  "assets/models/Pots/Pot 2/pot_small.obj",
                 "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj",
 
-                "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
+                "enemy1_mesh": "assets/models/Enemies/Enemy 1/Golem_of_sand.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/Golem.obj",
 
                 "portal_highelf": "assets/models/Portal/highelfportal.obj",
 
@@ -270,15 +271,29 @@
                     "shininess": 20.0, "ambient": 0.32
                 },
                 "lit-enemy2": {
-                    "type": "lit", "shader": "light",
+                    "type": "lit",
+                    "shader": "skinned",
                     "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
-                    "albedo_map": "enemy2_tex", "sampler": "default",
-                    "shininess": 36.0, "ambient": 0.32
+                    "albedo_map": "enemy2_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.3
                 },
                 "lit-enemy3": {
-                    "type": "lit", "shader": "light",
+                    "type": "lit",
+                    "shader": "skinned",
                     "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
-                    "albedo_map": "enemy3_tex", "sampler": "default",
+                    "albedo_map": "enemy3_tex",
+                    "emission_map": "enemy3_emissive",
+                    "sampler": "default",
+                    "shininess": 18.0,
+                    "ambient": 0.32,
+                    "uv_multiplier": [1, -1]
+                },
+                "lit-enemy3-skinned": {
+                    "type": "lit", "shader": "skinned",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "enemy3_tex", "emission_map": "enemy3_emissive", "sampler": "default",
                     "shininess": 18.0, "ambient": 0.32
                 },
 
@@ -948,9 +963,20 @@
                 "name": "a2-enemy-trash1",
                 "position": [280, 0.95, -30],
                 "rotation": [0, 200, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [0.7, 0.7, 0.7],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 2.2,
@@ -963,16 +989,27 @@
                         "waypoints": [[270, 0.95, -10], [270, 0.95, -25]]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "centerOffset": [0, 1.12, 0], "friction": 0.65 }
                 ]
             },
             {
                 "name": "a2-enemy-trash2",
                 "position": [280, 0.95, 30],
                 "rotation": [0, 200, 0],
-                "scale": [0.035, 0.035, 0.035],
+                "scale": [0.7, 0.7, 0.7],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3-skinned",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 2.2,
@@ -984,17 +1021,28 @@
                         "attackCooldown": 1.5,
                         "waypoints": [[280, 0.95, 10], [280, 0.95, 25]]
                     },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 38.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.9, "height": 2.2, "centerOffset": [0, 2.0, 0], "friction": 0.65 }
                 ]
             },
             {
                 "name": "a2-enemy-slime",
                 "position": [220, 0.95, 0],
                 "rotation": [0, 0, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 2/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy2",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 4.4,
@@ -1432,9 +1480,20 @@
                 "name": "p3-slime-1",
                 "position": [990, 0.95, 245],
                 "rotation": [0, 200, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 2/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy2",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 3.8,
@@ -1454,9 +1513,20 @@
                 "name": "p3-slime-2",
                 "position": [998, 0.95, 270],
                 "rotation": [0, 170, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [25.0, 25.0, 25.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 2/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy2",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 3.8,
@@ -1476,9 +1546,20 @@
                 "name": "p3-slime-3",
                 "position": [985, 0.95, 282],
                 "rotation": [0, 120, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy2_mesh", "material": "lit-enemy2" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 2/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 2/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy2",
+                        "clip": "idle"
+                    },
                     {
                         "type": "Enemy",
                         "patrolSpeed": 3.6,

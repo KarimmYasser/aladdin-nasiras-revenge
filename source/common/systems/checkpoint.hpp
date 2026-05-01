@@ -1,9 +1,9 @@
-#include "ecs/world.hpp"
-#include "components/checkpoint.hpp"
-#include "components/aladdin-controller.hpp"
-#include "components/mesh-renderer.hpp"
-#include "physics/physics-system.hpp"
-#include "material/material.hpp"
+#include "../ecs/world.hpp"
+#include "../components/checkpoint.hpp"
+#include "../components/aladdin-controller.hpp"
+#include "../components/mesh-renderer.hpp"
+#include "../physics/physics-system.hpp"
+#include "../material/material.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 

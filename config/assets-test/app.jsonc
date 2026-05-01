@@ -35,9 +35,10 @@
                 "aladdin_prince_skin": "assets/models/Aladdin/aladdin_prince_diff.png",
                 "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
                 "apple_tex": "assets/models/Apple/Handle1Tex.png",
-                "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
+                "enemy1_tex": "assets/models/Enemies/Enemy 1/diffuse.jpg",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_BaseColor.png",
+                "enemy3_emissive": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_Emissive.png",
                 "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
                 "pot_gerudo_tex": "assets/models/Pots/Pot 2/CmnTex_Etc_GerudoArticles_Vase_I_Alb.png",
                 "pot_sheikah_tex": "assets/models/Pots/Pots (Sheikah)/Sheikah Pots/CmnTex_Etc_SheikerPot_A_Alb.png",
@@ -63,9 +64,9 @@
                 "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
                 "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj",
                 "key_mesh": "assets/models/Key/model.obj",
-                "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
+                "enemy1_mesh": "assets/models/Enemies/Enemy 1/Golem_of_sand.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/Golem.obj",
                 "sword_mesh": "assets/models/Swords/Aladdin Sword/Magician Sword.obj",
                 "genie_mesh": "assets/models/Genie/genie.obj",
                 "portal_mtl15": "assets/models/Portal/mtl15.obj",
@@ -277,9 +278,10 @@
                 },
                 "lit-enemy3": {
                     "type": "lit",
-                    "shader": "light",
+                    "shader": "skinned",
                     "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
                     "albedo_map": "enemy3_tex",
+                    "emission_map": "enemy3_emissive",
                     "sampler": "default",
                     "shininess": 18.0,
                     "ambient": 0.32
@@ -491,7 +493,7 @@
                 "name": "pot-3",
                 "position": [10, 0, 16],
                 "rotation": [0, -18, 0],
-                "scale": [0.012, 0.012, 0.012],
+                "scale": [0.015, 0.015, 0.015],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
@@ -548,11 +550,22 @@
                 "name": "enemy-trash",
                 "position": [22, 0.95, 8],
                 "rotation": [0, -200, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
                     { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
-                    { "type": "Collider", "shape": "box", "halfExtents": [1.35, 1.5, 1.35], "friction": 0.6 }
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.6, 0.7, 0.6], "friction": 0.6 }
                 ]
             },
 

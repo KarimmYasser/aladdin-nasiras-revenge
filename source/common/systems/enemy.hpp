@@ -11,10 +11,49 @@
 #include <iostream>
 #include <imgui.h>
 #include "../components/camera.hpp"
+#include "../components/skinned-mesh-renderer.hpp"
+#include "../components/animator-component.hpp"
 
 namespace our {
 
     class EnemySystem {
+    private:
+        /**
+         * @brief Computes if an enemy is grounded using physics raycast and contact normals.
+         * 
+         * Accounts for collider center offset to accurately determine ground contact.
+         */
+        static bool computeGroundedFromPhysics(Entity* entity, PhysicsWorld& physicsWorld) {
+            constexpr float kMinUpDotContact = 0.50f;
+            constexpr float kProbeStartAboveFeet = 0.12f;
+            constexpr float kRayLength = 0.42f;
+            constexpr float kMinUpDotRay = 0.50f;
+
+            const bool fromContacts = physicsWorld.isGrounded(entity, kMinUpDotContact);
+
+            float halfHeight = 0.0f;
+            float centerOffsetY = 0.0f;
+            if (auto* collider = entity->getComponent<ColliderComponent>()) {
+                centerOffsetY = collider->centerOffset.y;
+                switch (collider->shape) {
+                    case ColliderShape::Box:     halfHeight = collider->halfExtents.y; break;
+                    case ColliderShape::Sphere:  halfHeight = collider->radius; break;
+                    case ColliderShape::Capsule: halfHeight = (collider->height * 0.5f) + collider->radius; break;
+                    default: break;
+                }
+            }
+
+            // Probe from slightly above the collider's bottom (feet), accounting for collider center offset.
+            const float feetY = entity->localTransform.position.y + centerOffsetY - halfHeight;
+            const glm::vec3 origin(entity->localTransform.position.x, feetY + kProbeStartAboveFeet, entity->localTransform.position.z);
+            const RaycastHit groundHit = physicsWorld.raycast(origin, glm::vec3(0.0f, -1.0f, 0.0f), kRayLength);
+            const bool fromRay = groundHit.hasHit && groundHit.entity &&
+                groundHit.entity != entity &&
+                groundHit.normal.y >= kMinUpDotRay;
+
+            return fromContacts || fromRay;
+        }
+
     public:
         void update(World* world, PhysicsSystem* physicsSystem, float deltaTime) {
             // Find Aladdin (Player)
@@ -33,10 +72,61 @@ namespace our {
             for(auto entity : world->getEntities()) {
                 EnemyComponent* enemy = entity->getComponent<EnemyComponent>();
                 if(!enemy) continue;
-                
+
                 // Update Health Bar Timer
                 if (enemy->healthBarTimer > 0.0f) {
                     enemy->healthBarTimer -= deltaTime;
+                }
+
+                // ── Animation State Sync ──
+                // If the enemy has a SkinnedMeshRenderer (new pattern) or AnimatorComponent (legacy),
+                // we sync the animation clip to the AI state.
+                // This is done at the top so it runs even if the AI logic early-exits (e.g. for DEAD state).
+                Animator* animator = nullptr;
+                if (auto* smr = entity->getComponent<SkinnedMeshRendererComponent>()) animator = &smr->animator;
+                else if (auto* anim = entity->getComponent<AnimatorComponent>()) animator = &anim->animator;
+
+                if (animator) {
+                    std::string targetClip = "idle";
+                    float playbackSpeed = 1.0f;
+                    bool loop = true;
+
+                    if (enemy->currentState == EnemyComponent::State::DEAD) {
+                        targetClip = "death";
+                        playbackSpeed = 1.0f;
+                        loop = false;
+                    } else if (enemy->idleTimer > 0.0f) {
+                        targetClip = "idle";
+                        playbackSpeed = 1.0f;
+                    } else {
+                        switch (enemy->currentState) {
+                            case EnemyComponent::State::PATROL:
+                                if (enemy->waypoints.size() > 1) {
+                                    targetClip = "walk";
+                                    playbackSpeed = 1.0f;
+                                } else {
+                                    targetClip = "idle";
+                                    playbackSpeed = 1.0f;
+                                }
+                                break;
+                            case EnemyComponent::State::CHASE:
+                                targetClip = "walk";
+                                playbackSpeed = 1.5f;
+                                break;
+                            case EnemyComponent::State::ATTACK:
+                                targetClip = "attack";
+                                playbackSpeed = 1.0f;
+                                break;
+                            default:
+                                targetClip = "idle";
+                                break;
+                        }
+                    }
+
+                    // Only switch if the target clip exists and isn't already playing
+                    if (animator->hasClip(targetClip) && animator->currentClipName() != targetClip) {
+                        animator->play(targetClip, loop, playbackSpeed);
+                    }
                 }
 
                 if(enemy->currentState == EnemyComponent::State::DEAD) {
@@ -49,7 +139,9 @@ namespace our {
                     }
 
                     enemy->deathTimer += deltaTime;
-                    if(enemy->deathTimer > 2.0f) world->markForRemoval(entity);
+                    if(enemy->deathTimer > enemy->deathAnimationDuration) {
+                        world->markForRemoval(entity);
+                    }
                     continue;
                 }
 
@@ -81,7 +173,7 @@ namespace our {
 
                 // AI Logic based on current state
                 if(enemy->currentState == EnemyComponent::State::PATROL) {
-                    if(!enemy->waypoints.empty()) {
+                    if(enemy->waypoints.size() > 1) {
                         glm::vec3 target = enemy->waypoints[enemy->currentWaypointIndex];
                         if(glm::distance(enemyPos, target) < 0.5f) {
                             enemy->currentWaypointIndex = (enemy->currentWaypointIndex + 1) % enemy->waypoints.size();
