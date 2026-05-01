@@ -19,6 +19,7 @@
 #include <systems/dialogue.hpp>
 #include <systems/projectile.hpp>
 #include <audio/audio-system.hpp>
+#include <save-system.hpp>
 #include <systems/animation-system.hpp>
 
 #include <imgui.h>
@@ -250,15 +251,22 @@ class Playstate: public our::State {
                         {"time", elapsedTime}
                     };
 
-                    std::string currentLevel = appConfig.value("play-level-config", "config/levels/level1.jsonc");
+                    std::string currentLevel = appConfig.value("active-level-config", "config/levels/level1.jsonc");
                     
-                    if(currentLevel == "config/levels/level1.jsonc") {
+                    // Normalize slashes for comparison
+                    std::string normLevel = currentLevel;
+                    std::replace(normLevel.begin(), normLevel.end(), '\\', '/');
+
+                    if(normLevel == "config/levels/level1.jsonc") {
                         appConfig["next-level-config"] = "config/levels/level2.jsonc";
+                    } else if(normLevel == "config/levels/level2.jsonc") {
+                        appConfig["next-level-config"] = "config/levels/level3.jsonc";
                     } else {
                         // If no more levels, return to menu
                         appConfig["next-level-config"] = "menu";
                     }
 
+                    our::SaveSystem::unlockNextLevel(currentLevel);
                     getApp()->changeState("victory");
                     return;
                 }

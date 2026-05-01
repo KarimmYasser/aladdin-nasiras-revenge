@@ -207,7 +207,7 @@ class VictoryState : public our::State {
                         nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
                         if (level.contains("scene")) appConfig["scene"] = level["scene"];
                         if (level.contains("game")) appConfig["game"] = level["game"];
-                        appConfig["play-level-config"] = nextPath;
+                        appConfig["active-level-config"] = nextPath;
                         getApp()->changeState("loading");
                     } catch (const std::exception& e) {
                         std::cerr << "Failed to parse next level " << nextPath << ": " << e.what() << std::endl;
