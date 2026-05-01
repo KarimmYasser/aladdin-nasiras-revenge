@@ -244,6 +244,7 @@ namespace our {
                     }
 
                     physicsWorld.setLinearVelocity(entity, targetVelocity);
+                    rbComp->velocity = targetVelocity; // Sync for immediate extrapolation
                     // We will update aladdin->velocity in postPhysicsUpdate from the actual RB velocity
                 } else {
                     // Fallback for scenes that still do not have a rigid body setup yet
@@ -611,7 +612,7 @@ namespace our {
                         if (animPtr->currentClipName() != targetClip) {
                             animPtr->play(targetClip, loop, playbackSpeed, 0.1f);
                         }
-                    } else if (horizontalSpeed > 0.5f) { 
+                    } else if (horizontalSpeed > 0.1f) { 
                         targetClip = "walk";
                         // Balanced divisor for speed 11.0
                         playbackSpeed = horizontalSpeed / 8.5f; 

@@ -54,7 +54,7 @@ namespace our
         TexturedMaterial* postprocessMaterial;
 
         // Shadow mapping resources
-        static constexpr int SHADOW_MAP_SIZE = 2048; // shadow map resolution (square)
+        static constexpr int SHADOW_MAP_SIZE = 16000; // shadow map resolution (square)
         GLuint shadowFBO          = 0;               // depth-only framebuffer object
         GLuint shadowDepthTexture = 0;               // GL_DEPTH_COMPONENT texture
         ShaderProgram* shadowShader = nullptr;       // shadow.vert / shadow.frag

@@ -295,14 +295,33 @@ namespace our {
 
             glm::vec3 up = (lDir.y > 0.99f || lDir.y < -0.99f) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
             
-            // Center the shadow frustum on the camera position so shadows follow the player as they move
-            glm::vec3 lEye = cameraPos - lDir * 20.0f;
-            glm::mat4 lightView = glm::lookAt(lEye, lEye + lDir, up);
-
-            // Orthographic projection covers ±20 units around the camera.
-            float range = 20.0f;
-            glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 50.0f);
-            lightSpaceMatrix = lightProj * lightView;
+            // --- SHADOW SNAPPING & FRUSTUM FIX ---
+            // 1. Expand range to cover the whole level (150 units)
+            float range = 150.0f;
+            glm::mat4 lightProj = glm::ortho(-range, range, -range, range, 1.0f, 400.0f);
+            
+            // 2. Implement Texel Snapping:
+            // Calculate a temporary view matrix centered at origin
+            glm::mat4 tempView = glm::lookAt(-lDir, glm::vec3(0.0f), up);
+            glm::mat4 shadowMatrix = lightProj * tempView;
+            
+            // Transform world-space camera position into light-projection space
+            glm::vec4 shadowOrigin = shadowMatrix * glm::vec4(cameraPos, 1.0f);
+            shadowOrigin *= (SHADOW_MAP_SIZE / 2.0f);
+            
+            // Round to nearest texel unit
+            glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+            glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
+            roundOffset *= (2.0f / SHADOW_MAP_SIZE);
+            roundOffset.z = 0.0f;
+            roundOffset.w = 0.0f;
+            
+            // Apply snapping offset back to the projection matrix
+            lightProj[3] += roundOffset;
+            
+            // Final light-space matrix centered on camera
+            glm::vec3 lEye = cameraPos - lDir * 50.0f;
+            lightSpaceMatrix = lightProj * glm::lookAt(lEye, lEye + lDir, up);
 
             // Render the scene depth from the light's point of view.
             glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
