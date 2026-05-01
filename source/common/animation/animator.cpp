@@ -35,7 +35,7 @@ namespace our {
             mPrevious = mCurrent;
             mPreviousTime = mTime;
             mCrossFadeTime = 0.f;
-            mCrossFadeDuration = duration; // Temporarily update for this transition
+            mCurrentTransitionDuration = duration;
             mTime = 0.f;
         }
 
@@ -59,8 +59,10 @@ namespace our {
 
         // Advance previous time (for blending)
         if (mPrevious) {
+            // We use the new clip's speed for the blend phase to keep them roughly in sync
+            // but we use the previous clip's ticksPerSecond for correct sampling.
             mPreviousTime += deltaTime * mPrevious->ticksPerSecond * mPlaybackSpeed;
-            if (mLoop) { // Assuming same loop setting for simplicity during blend
+            if (mLoop) { 
                 mPreviousTime = std::fmod(mPreviousTime, mPrevious->duration);
                 if (mPreviousTime < 0.f) mPreviousTime += mPrevious->duration;
             } else {
@@ -68,7 +70,7 @@ namespace our {
             }
 
             mCrossFadeTime += deltaTime;
-            if (mCrossFadeTime >= mCrossFadeDuration) {
+            if (mCrossFadeTime >= mCurrentTransitionDuration) {
                 mPrevious = nullptr;
             }
         }
@@ -83,55 +85,30 @@ namespace our {
     void Animator::traverse(const NodeData& node, const glm::mat4& parentTransform) {
         glm::mat4 nodeTransform = node.defaultTransform;
 
-        // If the current clip has a channel for this node, use interpolated TRS.
-        const BoneChannel* chCur = findChannel(node.name);
-        const BoneChannel* chPre = mPrevious ? findChannel(node.name, mPrevious) : nullptr;
-
-        if (chCur || chPre) {
-            glm::vec3 posCur, scaleCur, posPre, scalePre;
-            glm::quat rotCur, rotPre;
-            glm::vec3 pos, scale;
-            glm::quat rot;
-
-            // Current pose
-            if (chCur) {
-                posCur   = interpPosition(*chCur, mTime);
-                rotCur   = interpRotation(*chCur, mTime);
-                scaleCur = interpScale(*chCur, mTime);
-            } else {
-                // Fallback: if bone is not in current clip, use its default pose (identity for bones usually)
-                posCur   = glm::vec3(0.0f);
-                rotCur   = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-                scaleCur = glm::vec3(1.0f);
-            }
-
-            // Previous pose (for blending)
-            if (chPre) {
-                posPre   = interpPosition(*chPre, mPreviousTime);
-                rotPre   = interpRotation(*chPre, mPreviousTime);
-                scalePre = interpScale(*chPre, mPreviousTime);
-            } else {
-                posPre   = glm::vec3(0.0f);
-                rotPre   = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-                scalePre = glm::vec3(1.0f);
-            }
+        // If either clip has data for this node, compute the animated TRS.
+        if (findChannel(node.name) || (mPrevious && findChannel(node.name, mPrevious))) {
+            BonePose poseCur = getPose(mCurrent, mTime, node);
+            
+            glm::vec3 pos   = poseCur.position;
+            glm::quat rot   = poseCur.rotation;
+            glm::vec3 scale = poseCur.scale;
 
             if (mPrevious) {
-                float alpha = glm::clamp(mCrossFadeTime / mCrossFadeDuration, 0.0f, 1.0f);
-                pos   = glm::mix(posPre, posCur, alpha);
-                rot   = glm::slerp(rotPre, rotCur, alpha);
-                scale = glm::mix(scalePre, scaleCur, alpha);
-            } else {
-                pos   = posCur;
-                rot   = rotCur;
-                scale = scaleCur;
+                BonePose posePre = getPose(mPrevious, mPreviousTime, node);
+                
+                // Use smoothstep for a more cinematic "ease-in-out" transition
+                float t = glm::clamp(mCrossFadeTime / mCurrentTransitionDuration, 0.0f, 1.0f);
+                float alpha = t * t * (3.0f - 2.0f * t); // Smoothstep
+
+                pos   = glm::mix(posePre.position, poseCur.position, alpha);
+                rot   = glm::slerp(posePre.rotation, poseCur.rotation, alpha);
+                scale = glm::mix(posePre.scale, poseCur.scale, alpha);
             }
 
             // Suppress root motion (vertical translation) if requested
-            // Targets Root, Armature, and common "Hips/Pelvis" nodes where baked movement often lives.
             if (mSuppressRootMotion) {
                 std::string lowerName = node.name;
-                for(auto &c : lowerName) c = std::tolower(c);
+                for(auto &c : lowerName) c = (char)std::tolower(c);
                 
                 if (node.name == mRoot.name || 
                     lowerName.find("root") != std::string::npos || 
@@ -161,6 +138,30 @@ namespace our {
 
         for (const auto& child : node.children)
             traverse(child, globalTransform);
+    }
+
+    // Returns the animated TRS for a node in a specific clip at a specific time.
+    // Correctly falls back to the node's defaultTransform (bind pose) if no channel exists.
+    Animator::BonePose Animator::getPose(const AnimationClip* clip, float time, const NodeData& node) const {
+        const BoneChannel* ch = findChannel(node.name, clip);
+        if (ch) {
+            return { interpPosition(*ch, time), interpRotation(*ch, time), interpScale(*ch, time) };
+        }
+        
+        // Fallback: extract TRS from the node's default transformation matrix (the bind pose)
+        BonePose pose;
+        glm::mat4 m = node.defaultTransform;
+        pose.position = glm::vec3(m[3]);
+        pose.scale    = glm::vec3(glm::length(glm::vec3(m[0])), glm::length(glm::vec3(m[1])), glm::length(glm::vec3(m[2])));
+        
+        // Remove scale from rotation columns to extract pure rotation
+        glm::mat3 rotM;
+        rotM[0] = glm::vec3(m[0]) / pose.scale.x;
+        rotM[1] = glm::vec3(m[1]) / pose.scale.y;
+        rotM[2] = glm::vec3(m[2]) / pose.scale.z;
+        pose.rotation = glm::quat_cast(rotM);
+        
+        return pose;
     }
 
     const BoneChannel* Animator::findChannel(const std::string& name, const AnimationClip* clip) const {

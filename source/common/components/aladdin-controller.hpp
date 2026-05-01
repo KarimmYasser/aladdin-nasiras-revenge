@@ -3,9 +3,15 @@
 #include "../ecs/component.hpp"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/trigonometric.hpp>
+#include <json/json.hpp>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace our {
+    class Entity;
 
     enum class AladdinCameraMode : int {
         ThirdPerson = 0,
@@ -21,8 +27,10 @@ namespace our {
     class AladdinControllerComponent : public Component {
     public:
         // Movement configuration
-        float speed = 5.0f;               // Horizontal movement speed
+        float speed = 3.0f;               // Horizontal movement (walk) speed
+        float runSpeed = 5.0f;           // Horizontal running speed
         float jumpForce = 8.0f;           // Initial upward force when jumping
+        float runningJumpForce = 7.0f;    // Decreased force when jumping while running
         float jumpPlaybackSpeed = 1.2f;   // Speed multiplier for jump animation
         float rotationSpeed = 10.0f;      // How fast the character turns towards movement direction
         float animationCrossFadeDuration = 0.35f; // Duration of blending between animations
@@ -75,6 +83,8 @@ namespace our {
 
         bool isJumpPreparing = false;
         float jumpDelayTimer = 0.0f;
+        bool wasRunningOnJump = false; // Tracks if we were running when the jump started
+        bool isRunning = false;        // NEW: True if currently in running mode
 
         bool isAttacking = false;
         float attackTimer = 0.0f;
@@ -96,6 +106,11 @@ namespace our {
         // Invincibility after taking damage
         float invincibilityTimer = 0.0f;  // Seconds of invincibility remaining
         float invincibilityDuration = 2.0f; // Default duration after being hit
+        
+        // Visual adjustment for specific animations that might be authored with different origins
+        // Key is the clip name, value is the (x,y,z) offset to apply to the entity transform visually.
+        std::unordered_map<std::string, glm::vec3> clipVisualOffsets;
+        glm::vec3 smoothedOffset = {0, 0, 0}; // Smoothed visual offset applied each frame
 
         static std::string getID() { return "Aladdin Controller"; }
 
@@ -107,7 +122,9 @@ namespace our {
         void deserialize(const nlohmann::json& data) override {
             if (!data.is_object()) return;
             speed = data.value("speed", speed);
+            runSpeed = data.value("runSpeed", runSpeed);
             jumpForce = data.value("jumpForce", jumpForce);
+            runningJumpForce = data.value("runningJumpForce", runningJumpForce);
             jumpPlaybackSpeed = data.value("jumpPlaybackSpeed", jumpPlaybackSpeed);
             rotationSpeed = data.value("rotationSpeed", rotationSpeed);
             animationCrossFadeDuration = data.value("animationCrossFadeDuration", animationCrossFadeDuration);
@@ -173,6 +190,13 @@ namespace our {
             // Allow explicit override from the level config (degrees).
             if (data.contains("cameraOrbitYawDegrees")) {
                 cameraOrbitYaw = glm::radians(data.value("cameraOrbitYawDegrees", glm::degrees(cameraOrbitYaw)));
+            }
+            if (data.contains("clipVisualOffsets") && data["clipVisualOffsets"].is_object()) {
+                for (auto& [key, value] : data["clipVisualOffsets"].items()) {
+                    if (value.is_array() && value.size() == 3) {
+                        clipVisualOffsets[key] = { value[0], value[1], value[2] };
+                    }
+                }
             }
         }
     };

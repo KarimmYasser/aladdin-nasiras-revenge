@@ -206,6 +206,11 @@ namespace our {
                     while (aladdin->facingYaw >  glm::pi<float>()) aladdin->facingYaw -= 2.0f * glm::pi<float>();
                     while (aladdin->facingYaw < -glm::pi<float>()) aladdin->facingYaw += 2.0f * glm::pi<float>();
                 }
+
+                // Handle Running
+                bool isShiftPressed = keyboard.isPressed(GLFW_KEY_LEFT_SHIFT) || keyboard.isPressed(GLFW_KEY_RIGHT_SHIFT);
+                aladdin->isRunning = hasMoveInput && isShiftPressed;
+                float currentMoveSpeed = aladdin->isRunning ? aladdin->runSpeed : aladdin->speed;
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
 
@@ -221,18 +226,22 @@ namespace our {
 
                     glm::vec3 currentVelocity = physicsWorld.getLinearVelocity(entity);
                     glm::vec3 targetVelocity = currentVelocity;
-                    targetVelocity.x = hasMoveInput ? moveDir.x * aladdin->speed : 0.0f;
-                    targetVelocity.z = hasMoveInput ? moveDir.z * aladdin->speed : 0.0f;
+                    targetVelocity.x = hasMoveInput ? moveDir.x * currentMoveSpeed : 0.0f;
+                    targetVelocity.z = hasMoveInput ? moveDir.z * currentMoveSpeed : 0.0f;
 
                     if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded && !aladdin->isJumpPreparing) {
                         aladdin->isJumpPreparing = true;
-                        aladdin->jumpDelayTimer = 0.32f; // Increased delay to match animation takeoff better
+                        aladdin->jumpDelayTimer = 0.22f; // Reduced delay to better sync with animation takeoff
+                        
+                        // Detect if we are running at the moment of jump
+                        float horizontalSpeed = glm::length(glm::vec2(currentVelocity.x, currentVelocity.z));
+                        aladdin->wasRunningOnJump = (horizontalSpeed > 1.0f) && aladdin->isRunning;
                     }
 
                     if(aladdin->isJumpPreparing) {
                         aladdin->jumpDelayTimer -= deltaTime;
                         if(aladdin->jumpDelayTimer <= 0.0f) {
-                            targetVelocity.y = aladdin->jumpForce;
+                            targetVelocity.y = aladdin->wasRunningOnJump ? aladdin->runningJumpForce : aladdin->jumpForce;
                             aladdin->isJumpPreparing = false;
                             aladdin->isGrounded = false;
                             aladdin->groundedCoyoteTimer = 0.0f;
@@ -567,7 +576,7 @@ namespace our {
                         loop = false;
                         playbackSpeed = 1.8f; 
                     } else if (aladdin->isJumpPreparing || airborneForAnim) {
-                        targetClip = "jump";
+                        targetClip = (aladdin->wasRunningOnJump) ? "running_jump" : "jump";
                         loop = false;
                         animPtr->setSuppressRootMotion(true); 
                         
@@ -612,19 +621,40 @@ namespace our {
                         if (animPtr->currentClipName() != targetClip) {
                             animPtr->play(targetClip, loop, playbackSpeed, 0.1f);
                         }
-                    } else if (horizontalSpeed > 0.1f) { 
-                        targetClip = "walk";
-                        // Balanced divisor for speed 11.0
-                        playbackSpeed = horizontalSpeed / 8.5f; 
+                    } else if (horizontalSpeed > 0.5f) { 
+                        if (aladdin->isRunning) {
+                            targetClip = "running";
+                            // Balanced divisor for run animation
+                            playbackSpeed = horizontalSpeed / 11.0f;
+                        } else {
+                            targetClip = "walk";
+                            // Significantly reduced divisor to speed up the walk cycle
+                            playbackSpeed = horizontalSpeed / 4.5f; 
+                        }
                     }
 
-                    if (groundedSmooth) {
-                        animPtr->setSuppressRootMotion(false); // Reset when on ground
+                    if (groundedSmooth && !aladdin->isJumpPreparing) {
+                        animPtr->setSuppressRootMotion(false); // Reset when on ground and not prepping jump
                     }
+
+                    // Calculate the target visual offset based on the current animation
+                    glm::vec3 targetOffset = {0, 0, 0};
+                    if (aladdin->clipVisualOffsets.count(targetClip)) {
+                        targetOffset = aladdin->clipVisualOffsets.at(targetClip);
+                    }
+
+                    // Smoothly interpolate the actual applied offset to eliminate snaps between clips
+                    // Using a high blend speed (20.0f) ensures we stay in sync with snappy jump transitions
+                    float blendSpeed = 20.0f; 
+                    aladdin->smoothedOffset = glm::mix(aladdin->smoothedOffset, targetOffset, glm::clamp(deltaTime * blendSpeed, 0.0f, 1.0f));
+
+                    entity->localTransform.position += aladdin->smoothedOffset;
 
                     float currentSpeed = animPtr->getPlaybackSpeed();
                     if (animPtr->currentClipName() != targetClip || std::abs(currentSpeed - playbackSpeed) > 0.05f) {
-                        animPtr->play(targetClip, loop, playbackSpeed);
+                        // Use a much faster crossfade for jumps (0.1s) to ensure we reach the target pose before takeoff
+                        float crossFade = (targetClip == "jump" || targetClip == "running_jump") ? 0.1f : aladdin->animationCrossFadeDuration;
+                        animPtr->play(targetClip, loop, playbackSpeed, crossFade);
                     }
                 }
 
@@ -852,6 +882,7 @@ namespace our {
             ImGui::Text("Movement Config:");
             ImGui::DragFloat("Speed", &aladdin->speed, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Jump Force", &aladdin->jumpForce, 0.1f, 0.0f, 50.0f);
+            ImGui::DragFloat("Running Jump Force", &aladdin->runningJumpForce, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Rotation Speed", &aladdin->rotationSpeed, 0.1f, 0.0f, 20.0f);
             ImGui::DragFloat("Airborne Anim Delay", &aladdin->airborneAnimDelay, 0.005f, 0.0f, 0.5f);
             ImGui::DragFloat("Fall Anim Min Down Speed", &aladdin->fallAnimMinDownSpeed, 0.05f, -20.0f, 0.0f);

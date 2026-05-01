@@ -54,7 +54,7 @@ class TransformTestState: public our::State {
                 float far = camera.value("far", 1000.0f);
 
                 glm::ivec2 size = getApp()->getFrameBufferSize();
-                float aspect = float(size.x)/size.y;
+                float aspect = size.y > 0 ? float(size.x)/size.y : 1.0f;
                 glm::mat4 P = glm::perspective(fov, aspect, near, far);
 
                 VP = P * V;

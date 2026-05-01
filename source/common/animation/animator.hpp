@@ -80,7 +80,8 @@ namespace our {
         const AnimationClip* mPrevious = nullptr;
         float                mPreviousTime = 0.f;
         float                mCrossFadeTime = 0.f;
-        float                mCrossFadeDuration = 0.2f;
+        float                mCurrentTransitionDuration = 0.2f; // Actual duration for active transition
+        float                mCrossFadeDuration = 0.2f;         // Default duration for new transitions
 
         // Output – MAX_BONES identity matrices initially
         std::vector<glm::mat4> mFinalMatrices;
@@ -92,6 +93,13 @@ namespace our {
         const BoneChannel* findChannel(const std::string& name, const AnimationClip* clip = nullptr) const;
 
         // Key-frame interpolation helpers
+        struct BonePose {
+            glm::vec3 position;
+            glm::quat rotation;
+            glm::vec3 scale;
+        };
+
+        BonePose getPose(const AnimationClip* clip, float time, const NodeData& node) const;
         glm::vec3 interpPosition(const BoneChannel& ch, float t) const;
         glm::quat interpRotation(const BoneChannel& ch, float t) const;
         glm::vec3 interpScale   (const BoneChannel& ch, float t) const;

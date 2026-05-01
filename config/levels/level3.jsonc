@@ -557,15 +557,20 @@
                         "animations": [
                             "assets/models/Aladdin/aladdin/walk.fbx",
                             "assets/models/Aladdin/aladdin/jump.fbx",
-                            "assets/models/Aladdin/aladdin/kick.fbx"
+                            "assets/models/Aladdin/aladdin/kick.fbx",
+                            "assets/models/Aladdin/animations/running_jump.fbx",
+                            "assets/models/Aladdin/animations/running.fbx"
                         ],
                         "material": "lit-aladdin",
                         "clip": "idle"
                     },
                     {
                         "type": "Aladdin Controller",
-                        "speed": 14.0,
-                        "jumpForce": 11.0,
+                        "speed": 5.0,
+                        "runSpeed": 11.0,
+                        "jumpForce": 8.0,
+                        "runningJumpForce": 8.0,
+                        "clipVisualOffsets": { "running_jump": [0, 1.5, 0], "jump": [0, 1.5, 0] },
                         "rotationSpeed": 10.0,
                         "enableCameraFollow": true,
                         "cameraMode": "third",

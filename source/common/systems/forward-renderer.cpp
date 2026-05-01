@@ -129,7 +129,7 @@ namespace our {
         // -----------------------------------------------------------------------
         glGenTextures(1, &shadowDepthTexture);
         glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
                      SHADOW_MAP_SIZE, SHADOW_MAP_SIZE,
                      0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -148,6 +148,10 @@ namespace our {
         // No colour attachment — depth only.
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
+
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cerr << "Warning: Shadow framebuffer is incomplete." << std::endl;
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         shadowShader = new ShaderProgram();
@@ -194,6 +198,7 @@ namespace our {
     }
 
     void ForwardRenderer::render(World* world, glm::ivec2 windowSize){
+        if(windowSize.x <= 0 || windowSize.y <= 0) return;
         // If the window size changed, we need to update our internal state and recreate postprocessing textures
         if(this->windowSize != windowSize){
             this->windowSize = windowSize;
@@ -207,6 +212,10 @@ namespace our {
                 glBindFramebuffer(GL_FRAMEBUFFER, postprocessFrameBuffer);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTarget->getOpenGLName(), 0);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTarget->getOpenGLName(), 0);
+                
+                if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                    std::cerr << "Warning: Postprocess framebuffer became incomplete after resize." << std::endl;
+
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
             }
         }
