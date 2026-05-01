@@ -1,80 +1,83 @@
 #pragma once
 
-#include "../ecs/world.hpp"
-#include "../components/camera.hpp"
-#include "../components/mesh-renderer.hpp"
+#include "../asset-loader.hpp"
 #include "../components/animator-component.hpp"
-#include "../components/skinned-mesh-renderer.hpp"
+#include "../components/camera.hpp"
 #include "../components/light.hpp"
+#include "../components/mesh-renderer.hpp"
+#include "../components/skinned-mesh-renderer.hpp"
+#include "../ecs/world.hpp"
 #include "../material/lit-material.hpp"
 #include "../shader/shader.hpp"
-#include "../asset-loader.hpp"
 
+#include <algorithm>
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <vector>
-#include <algorithm>
 
-namespace our
-{
-    
-    // The render command stores command that tells the renderer that it should draw
-    // the given mesh at the given localToWorld matrix using the given material
-    // The renderer will fill this struct using the mesh renderer components
-    struct RenderCommand {
-        glm::mat4 localToWorld;
-        glm::vec3 center;
-        Mesh* mesh;
-        Material* material;
-        std::vector<glm::mat4> bones; // empty for static meshes
-        /// If indexCount < 0, draw the full index buffer; otherwise drawRange(firstIndex, indexCount).
-        GLsizei drawFirstIndex = 0;
-        GLsizei drawIndexCount = -1;
-    };
+namespace our {
 
-    // A forward renderer is a renderer that draw the object final color directly to the framebuffer
-    // In other words, the fragment shader in the material should output the color that we should see on the screen
-    // This is different from more complex renderers that could draw intermediate data to a framebuffer before computing the final color
-    // In this project, we only need to implement a forward renderer
-    class ForwardRenderer {
-        // These window size will be used on multiple occasions (setting the viewport, computing the aspect ratio, etc.)
-        glm::ivec2 windowSize;
-        // These are two vectors in which we will store the opaque and the transparent commands.
-        // We define them here (instead of being local to the "render" function) as an optimization to prevent reallocating them every frame
-        std::vector<RenderCommand> opaqueCommands;
-        std::vector<RenderCommand> transparentCommands;
-        // All active LightComponents found in the current frame.
-        std::vector<LightComponent*> lights;
-        // Objects used for rendering a skybox
-        Mesh* skySphere;
-        TexturedMaterial* skyMaterial;
-        // Objects used for Postprocessing
-        GLuint postprocessFrameBuffer, postProcessVertexArray;
-        Texture2D *colorTarget, *depthTarget;
-        TexturedMaterial* postprocessMaterial;
+// The render command stores command that tells the renderer that it should draw
+// the given mesh at the given localToWorld matrix using the given material
+// The renderer will fill this struct using the mesh renderer components
+struct RenderCommand {
+  glm::mat4 localToWorld;
+  glm::vec3 center;
+  Mesh *mesh;
+  Material *material;
+  std::vector<glm::mat4> bones; // empty for static meshes
+  /// If indexCount < 0, draw the full index buffer; otherwise
+  /// drawRange(firstIndex, indexCount).
+  GLsizei drawFirstIndex = 0;
+  GLsizei drawIndexCount = -1;
+};
 
-        // Shadow mapping resources
-        static constexpr int SHADOW_MAP_SIZE = 2048; // shadow map resolution (square)
-        GLuint shadowFBO          = 0;               // depth-only framebuffer object
-        GLuint shadowDepthTexture = 0;               // GL_DEPTH_COMPONENT texture
-        ShaderProgram* shadowShader = nullptr;       // shadow.vert / shadow.frag
-        glm::mat4 lightSpaceMatrix{1.0f};            // current frame's light VP matrix
-        bool shadowEnabled = false;                  // true when a valid shadow map exists
+// A forward renderer is a renderer that draw the object final color directly to
+// the framebuffer In other words, the fragment shader in the material should
+// output the color that we should see on the screen This is different from more
+// complex renderers that could draw intermediate data to a framebuffer before
+// computing the final color In this project, we only need to implement a
+// forward renderer
+class ForwardRenderer {
+  // These window size will be used on multiple occasions (setting the viewport,
+  // computing the aspect ratio, etc.)
+  glm::ivec2 windowSize;
+  // These are two vectors in which we will store the opaque and the transparent
+  // commands. We define them here (instead of being local to the "render"
+  // function) as an optimization to prevent reallocating them every frame
+  std::vector<RenderCommand> opaqueCommands;
+  std::vector<RenderCommand> transparentCommands;
+  // All active LightComponents found in the current frame.
+  std::vector<LightComponent *> lights;
+  // Objects used for rendering a skybox
+  Mesh *skySphere;
+  TexturedMaterial *skyMaterial;
+  // Objects used for Postprocessing
+  GLuint postprocessFrameBuffer, postProcessVertexArray;
+  Texture2D *colorTarget, *depthTarget;
+  TexturedMaterial *postprocessMaterial;
 
-        // Skinned mesh shader (skinned.vert + light.frag)
-        ShaderProgram* skinnedShader = nullptr;
-        ShaderProgram* shadowSkinnedShader = nullptr;
+  // Shadow mapping resources
+  static constexpr int SHADOW_MAP_SIZE =
+      16000;                             // shadow map resolution (square)
+  GLuint shadowFBO = 0;                  // depth-only framebuffer object
+  GLuint shadowDepthTexture = 0;         // GL_DEPTH_COMPONENT texture
+  ShaderProgram *shadowShader = nullptr; // shadow.vert / shadow.frag
+  glm::mat4 lightSpaceMatrix{1.0f};      // current frame's light VP matrix
+  bool shadowEnabled = false;            // true when a valid shadow map exists
 
-    public:
-        // Initialize the renderer including the sky and the Postprocessing objects.
-        // windowSize is the width & height of the window (in pixels).
-        void initialize(glm::ivec2 windowSize, const nlohmann::json& config);
-        // Clean up the renderer
-        void destroy();
-        // This function should be called every frame to draw the given world
-        void render(World* world, glm::ivec2 windowSize);
+  // Skinned mesh shader (skinned.vert + light.frag)
+  ShaderProgram *skinnedShader = nullptr;
+  ShaderProgram *shadowSkinnedShader = nullptr;
 
+public:
+  // Initialize the renderer including the sky and the Postprocessing objects.
+  // windowSize is the width & height of the window (in pixels).
+  void initialize(glm::ivec2 windowSize, const nlohmann::json &config);
+  // Clean up the renderer
+  void destroy();
+  // This function should be called every frame to draw the given world
+  void render(World *world, glm::ivec2 windowSize);
+};
 
-    };
-
-}
+} // namespace our

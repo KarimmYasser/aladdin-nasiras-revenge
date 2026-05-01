@@ -193,6 +193,7 @@ int our::Application::run(int run_for_frames) {
         return -1;
     }
     glfwMakeContextCurrent(window);         // Tell GLFW to make the context of our window the main context on the current thread.
+    glfwSwapInterval(1);                    // Enable V-Sync
 
     gladLoadGL(glfwGetProcAddress);         // Load the OpenGL functions from the driver
 
@@ -294,6 +295,13 @@ int our::Application::run(int run_for_frames) {
 
         // Get the current time (the time at which we are starting the current frame).
         double current_frame_time = glfwGetTime();
+
+        // --- 60 FPS CAP ---
+        // Ensure we don't run faster than 60 FPS to keep physics and movement stable.
+        double target_dt = 1.0 / 60.0;
+        while (current_frame_time - last_frame_time < target_dt) {
+            current_frame_time = glfwGetTime();
+        }
 
         // Call onDraw, in which we will draw the current frame, and send to it the time difference between the last and current frame
         if(currentState) currentState->onDraw(current_frame_time - last_frame_time);
