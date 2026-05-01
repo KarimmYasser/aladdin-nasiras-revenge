@@ -86,6 +86,14 @@
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
                 "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
                 "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
+                "jasmine_tex_0": "assets/models/Jasmine/texture000.png",
+                "jasmine_tex_1": "assets/models/Jasmine/texture001.png",
+                "jasmine_tex_2": "assets/models/Jasmine/texture002.png",
+                "jasmine_tex_3": "assets/models/Jasmine/texture003.png",
+                "jasmine_tex_4": "assets/models/Jasmine/texture004.png",
+                "jasmine_tex_5": "assets/models/Jasmine/texture005.png",
+                "jasmine_tex_6": "assets/models/Jasmine/texture006.png",
+                "jasmine_tex_7": "assets/models/Jasmine/texture007.png",
                 "genie_tex": "assets/models/Genie/genie_diff.png",
                 "genie_jafar_tex0": "assets/models/Genie_Jafar/5_material000_1_0_0_baseColor.png",
                 "genie_jafar_tex1": "assets/models/Genie_Jafar/5_material001_1_0_0_baseColor.png",
@@ -120,6 +128,7 @@
                 "genie_mesh": "assets/models/Genie/genie.obj",
                 "genie_jafar_mesh": "assets/models/Genie_Jafar/genie_jafar.obj",
                 "jafar_mesh": "assets/models/Jafar/jafar.obj",
+                "jasmine_mesh": "assets/models/Jasmine/Jasmine.obj",
 
                 "apple_mesh": "assets/models/Apple/apple.obj",
                 "health_bottle_mesh": "assets/models/Health Bottle/Health Bottle.obj",
@@ -335,7 +344,15 @@
                 "lit-jafar-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex2", "sampler": "default", "shininess": 40.0, "ambient": 0.32 },
                 "lit-jafar-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex3", "sampler": "default", "shininess": 44.0, "ambient": 0.3 },
                 "lit-jafar-4": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "enemy3_tex", "sampler": "default", "shininess": 16.0, "ambient": 0.3 },
-                "lit-jafar-5": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_tex", "sampler": "default", "shininess": 36.0, "ambient": 0.34 }
+                "lit-jafar-5": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_tex", "sampler": "default", "shininess": 36.0, "ambient": 0.34 },
+                "lit-jasmine-0": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_0", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_1", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_2", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_3", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-4": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_4", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-5": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_5", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-6": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_6", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
+                "lit-jasmine-7": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_7", "sampler": "default", "shininess": 22.0, "ambient": 0.34 }
             }
         },
 
@@ -594,7 +611,7 @@
             },
             {
                 "name": "portal-map3-victory-visual",
-                "position": [1418, -3.0, -428],
+                "position": [1481, 5, -454],
                 "rotation": [0, -90, 0],
                 "scale": [2.2, 2.2, 2.2],
                 "components": [
@@ -603,7 +620,7 @@
             },
             {
                 "name": "portal-map3-victory",
-                "position": [1418, -1.8, -428],
+                "position": [1481, 5, -454],
                 "components": [
                     { "type": "LevelExit", "radius": 4.2, "requiresKey": false, "nextState": "victory" }
                 ]
@@ -649,6 +666,29 @@
                 "scale": [0.94, 0.94, 0.94],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
+                ]
+            },
+            {
+                "name": "l3-map3-jasmine",
+                "position": [1463.03, 4.87, -458.45],
+                "rotation": [0, 300, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "jasmine_mesh",
+                        "material": "lit-jasmine-0",
+                        "submeshMaterials": {
+                            "default_material_texture000.png": "lit-jasmine-0",
+                            "default_material_texture001.png": "lit-jasmine-1",
+                            "default_material_texture002.png": "lit-jasmine-2",
+                            "default_material_texture003.png": "lit-jasmine-3",
+                            "default_material_texture004.png": "lit-jasmine-4",
+                            "default_material_texture005.png": "lit-jasmine-5",
+                            "default_material_texture006.png": "lit-jasmine-6",
+                            "default_material_texture007.png": "lit-jasmine-7"
+                        }
+                    }
                 ]
             },
 
@@ -924,7 +964,7 @@
                             "mat5": "lit-jafar-5"
                         }
                     },
-                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 50.0, "attackRange": 3.2, "health": 250, "damage": 29, "attackCooldown": 1.55 },
+                    { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 11, "detectionRange": 50.0, "attackRange": 3.2, "health": 250, "damage": 29, "attackCooldown": 1.25 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 100.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.78, "height": 1.95, "friction": 0.65 }
                 ]
@@ -1120,9 +1160,9 @@
 
             {
                 "name": "aladdin",
-                "position": [64.0, -15.2, -405.0],
+                // "position": [64.0, -15.2, -405.0],
                 // "position": [550, 0.5, -232],
-                // "position": [1030, 10, -255],
+                "position": [1030, 10, -255],
                 "rotation": [0, 200, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -1157,9 +1197,9 @@
                         "cameraOrbitYawDegrees": 200.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [64.0, -15.2, -405.0]
+                        // "respawnPosition": [64.0, -15.2, -405.0]
                         // "respawnPosition": [550, 0.5, -232]
-                        // "respawnPosition": [1030, 10, -255]
+                        "respawnPosition": [1030, 10, -255]
                         
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
