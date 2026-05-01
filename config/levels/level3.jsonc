@@ -85,7 +85,13 @@
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
                 "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
                 "aladdin_skin": "assets/models/Aladdin/aladdin_diff.png",
-                "genie_tex": "assets/models/Genie/genie_diff.png"
+                "genie_tex": "assets/models/Genie/genie_diff.png",
+
+                "apple_tex": "assets/models/Apple/Handle1Tex.png",
+                "health_bottle_tex": "assets/models/Health Bottle/Texture/Bottle.png",
+                "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
+                "pot_small_tex": "assets/models/Pots/Pot 2/Txm_tsubo02.png",
+                "pot_aotubo_tex": "assets/models/Pots/Pot 3/D_aotubo00.png"
             },
             "meshes": {
                 "desert_town": "assets/models/Maps/level 3/Desert_Town/Desert_Town.obj",
@@ -96,7 +102,13 @@
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
                 "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
                 "env_aladdin_lamp": "assets/models/Environment objects/aladdin_lamp/aladdin_lamp.obj",
-                "genie_mesh": "assets/models/Genie/genie.obj"
+                "genie_mesh": "assets/models/Genie/genie.obj",
+
+                "apple_mesh": "assets/models/Apple/apple.obj",
+                "health_bottle_mesh": "assets/models/Health Bottle/Health Bottle.obj",
+                "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
+                "pot_small_mesh": "assets/models/Pots/Pot 2/pot_small.obj",
+                "pot_aotubo_mesh": "assets/models/Pots/Pot 3/aotubo.obj"
             },
             "samplers": {
                 "default": {},
@@ -174,6 +186,51 @@
                     "sampler": "default",
                     "shininess": 16.0,
                     "ambient": 0.35
+                },
+                "lit-apple": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "apple_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.32
+                },
+                "health-bottle-mat": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "health_bottle_tex",
+                    "sampler": "default",
+                    "shininess": 48.0,
+                    "ambient": 0.4
+                },
+                "lit-pot": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-small": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_small_tex",
+                    "sampler": "default",
+                    "shininess": 28.0,
+                    "ambient": 0.32
+                },
+                "lit-pot-aotubo": {
+                    "type": "lit",
+                    "shader": "light",
+                    "pipelineState": { "faceCulling": { "enabled": true }, "depthTesting": { "enabled": true } },
+                    "albedo_map": "pot_aotubo_tex",
+                    "sampler": "default",
+                    "shininess": 30.0,
+                    "ambient": 0.32
                 },
                 "lit-enemy1": {
                     "type": "lit",
@@ -467,27 +524,38 @@
 
             // --- Map 1 enemies ---
             {
+                "name": "l3-map1-enemy-trash-1",
+                "position": [52, -27, -360],
+                "rotation": [0, 180, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
+                "name": "l3-map1-enemy-trash-2",
+                "position": [-4, -30, -363],
+                "rotation": [0, 180, 0],
+                "scale": [0.035, 0.035, 0.035],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "enemy3_mesh", "material": "lit-enemy3" },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
+                ]
+            },
+            {
                 "name": "l3-map1-enemy-brute-1",
-                "position": [40.0, 5.8, 4.0],
+                "position": [18, -29, -271],
                 "rotation": [0, 180, 0],
                 "scale": [0.028, 0.028, 0.028],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
                     { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 24.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5,
                       "waypoints": [[40.0, 5.8, 1.5], [40.0, 5.8, 6.5]] },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
-                ]
-            },
-            {
-                "name": "l3-map1-enemy-brute-2",
-                "position": [30.0, 5.8, -6.0],
-                "rotation": [0, 180, 0],
-                "scale": [0.028, 0.028, 0.028],
-                "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
-                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 24.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5,
-                      "waypoints": [[30.0, 5.8, -8.5], [30.0, 5.8, -3.5]] },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
                 ]
@@ -544,18 +612,68 @@
             },
 
             // --- Map 1 coins ---
-            { "name": "l3-map1-coin-1", "position": [36.0, 6.8, 2.0], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-1", "position": [45, -29, -296], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
-            { "name": "l3-map1-coin-2", "position": [32.0, 6.8, 8.0], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-2", "position": [-15, -28, -333], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
-            { "name": "l3-map1-coin-3", "position": [42.0, 6.8, -4.0], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-3", "position": [-4, -29, -402], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
-            { "name": "l3-map1-coin-4", "position": [28.0, 6.8, 0.5], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-4", "position": [67, -29, -326], "rotation": [0, 20, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
-            { "name": "l3-map1-coin-5", "position": [38.0, 6.8, 10.0], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-5", "position": [43, -29, -233], "rotation": [0, -10, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
-            { "name": "l3-map1-coin-6", "position": [46.0, 6.8, 6.0], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
+            { "name": "l3-map1-coin-6", "position": [2.5, -29, -200], "rotation": [0, 35, 0], "scale": [5.2, 5.2, 5.2],
                 "components": [ { "type": "Mesh Renderer", "mesh": "coin_mesh", "material": "coin-mat" }, { "type": "Collectible", "collectibleType": "coin", "value": 1, "rotationSpeed": 3.0, "bobbingHeight": 0.15 } ] },
+
+            // --- Map 1 breakable pots (Desert Town — positions from debug overlay) ---
+            {
+                "name": "l3-map1-pot-1",
+                "position": [-55.79, -29.31, -347.52],
+                "rotation": [0, 22, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "health", "value": 25 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-2",
+                "position": [-35.74, -28.47, -375.64],
+                "rotation": [0, -15, 0],
+                "scale": [0.02, 0.02, 0.02],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_small_mesh", "material": "lit-pot-small" },
+                    { "type": "Breakable", "loot": [{ "type": "apple", "value": 2 }, { "type": "coin", "value": 1 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.596, 0], "halfExtents": [0.62, 0.596, 0.62], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-3",
+                "position": [-66.85, -28.85, -311.77],
+                "rotation": [0, 40, 0],
+                "scale": [0.012, 0.012, 0.012],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_aotubo_mesh", "material": "lit-pot-aotubo" },
+                    { "type": "Breakable", "loot": [] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "centerOffset": [0, 0.628, 0], "halfExtents": [0.611, 0.622, 0.611], "friction": 0.55 }
+                ]
+            },
+            {
+                "name": "l3-map1-pot-4",
+                "position": [-7.14, -29.11, -209.02],
+                "rotation": [0, -30, 0],
+                "scale": [1.35, 1.35, 1.35],
+                "components": [
+                    { "type": "Mesh Renderer", "mesh": "pot_mesh", "material": "lit-pot" },
+                    { "type": "Breakable", "loot": [{ "type": "coin", "value": 2 }] },
+                    { "type": "RigidBody", "bodyType": "static", "mass": 0, "useGravity": false },
+                    { "type": "Collider", "shape": "box", "halfExtents": [0.68, 0.74, 0.68], "friction": 0.55 }
+                ]
+            },
 
             // --- Map 2 coins ---
             { "name": "l3-map2-coin-1", "position": [618.0, -3.2, 6.0], "rotation": [0, 0, 0], "scale": [5.2, 5.2, 5.2],
@@ -569,8 +687,7 @@
 
             {
                 "name": "aladdin",
-                "position": [86.0, 0.2, -415.0],
-                // [86.0, -2.5, -415.0]
+                "position": [64.0, -15.2, -406.0],
                 "rotation": [0, 200, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -600,8 +717,8 @@
                         "cameraOrbitYawDegrees": 200.0,
                         "health": 100,
                         "lives": 3,
-                        // "respawnPosition": [57.0, 8.2, 10.0]
-                        "respawnPosition": [83.0, 0.2, -404.0]
+                        // "respawnPosition": [83.0, 0.2, -404.0]
+                        "respawnPosition": [64.0, -15.2, -406.0]
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.42, "height": 1.65, "friction": 0.55 }
