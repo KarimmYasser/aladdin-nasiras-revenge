@@ -15,6 +15,7 @@
 #include <systems/level-exit.hpp>
 #include <physics/physics-system.hpp>
 #include <asset-loader.hpp>
+#include <level-cache.hpp>
 #include <systems/room-portal.hpp>
 #include <systems/dialogue.hpp>
 #include <systems/projectile.hpp>
@@ -287,6 +288,15 @@ class Playstate: public our::State {
         
         // Capture the map for the current level layout
         captureLevelMap();
+
+        // Prefetch the next level config in advance
+        auto& appCfg = getApp()->getConfig();
+        std::string currentLevel = appCfg.value("active-level-config", "");
+        std::replace(currentLevel.begin(), currentLevel.end(), '\\', '/');
+        if (currentLevel == "config/levels/level1.jsonc")
+            our::LevelCache::prefetch("config/levels/level2.jsonc");
+        else if (currentLevel == "config/levels/level2.jsonc")
+            our::LevelCache::prefetch("config/levels/level3.jsonc");
     }
 
     our::AladdinControllerComponent* findAladdin() {
@@ -354,26 +364,33 @@ class Playstate: public our::State {
             }
         }
 
-        // Check for level transition
         std::string nextScene = levelExitSystem.getNextScene();
         if(!nextScene.empty()){
             levelExitSystem.clearNextScene();
-            // Load the new scene config
-            std::ifstream file_in(nextScene);
-            if(file_in){
-                nlohmann::json new_config = nlohmann::json::parse(file_in, nullptr, true, true);
-                file_in.close();
-                if(new_config.contains("scene")){
-                    getApp()->getConfig()["scene"] = new_config["scene"];
-                }
-                if(new_config.contains("game")){
-                    getApp()->getConfig()["game"] = new_config["game"];
-                }
-                getApp()->changeState("play");
-                return;
+            // Load the new scene config from cache or disk
+            const nlohmann::json* cached = our::LevelCache::get(nextScene);
+            nlohmann::json new_config;
+            if (cached) {
+                new_config = *cached;
             } else {
-                std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+                std::ifstream file_in(nextScene);
+                if(file_in){
+                    new_config = nlohmann::json::parse(file_in, nullptr, true, true);
+                    file_in.close();
+                } else {
+                    std::cerr << "Failed to load next scene: " << nextScene << std::endl;
+                    return;
+                }
             }
+            
+            if(new_config.contains("scene")){
+                getApp()->getConfig()["scene"] = new_config["scene"];
+            }
+            if(new_config.contains("game")){
+                getApp()->getConfig()["game"] = new_config["game"];
+            }
+            getApp()->changeState("play");
+            return;
         }
 
         roomPortalSystem.update(&world, (float)deltaTime);
@@ -1000,7 +1017,13 @@ class Playstate: public our::State {
         if(heartIcon) delete heartIcon;
         if(enemyIcon) delete enemyIcon;
 
-        // and we delete all the loaded assets to free memory on the RAM and the VRAM
-        our::clearAllAssets();
+        // Smart asset cleanup: only evict assets not needed by the next level.
+        auto& cfg = getApp()->getConfig();
+        if (cfg.contains("scene") && cfg["scene"].contains("assets")) {
+            our::evictUnusedAssets(cfg["scene"]["assets"]);
+        } else {
+            // Fallback: if no next scene is configured (e.g. returning to menu), clear everything
+            our::clearAllAssets();
+        }
     }
 };

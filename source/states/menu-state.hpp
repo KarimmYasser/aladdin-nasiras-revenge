@@ -14,6 +14,7 @@
 #include <vector>
 #include <json/json.hpp>
 #include <save-system.hpp>
+#include <level-cache.hpp>
 
 // This state shows how to use some of the abstractions we created to make a menu.
 class Menustate: public our::State {
@@ -92,28 +93,43 @@ class Menustate: public our::State {
             };
         }
         if (selectedLevelIndex >= (int)levelConfigs.size()) selectedLevelIndex = 0;
+
+        // Prefetch all level configs so they're instant when selected
+        for (const auto& configPath : levelConfigs) {
+            our::LevelCache::prefetch(configPath);
+        }
     }
 
     void loadAndEnterLevel(const std::string& levelPath, bool fromContinue) {
         auto& cfg = getApp()->getConfig();
-        std::ifstream f(levelPath);
-        if(f){
-            try {
-                nlohmann::json level = nlohmann::json::parse(f, nullptr, true, true);
-                if(level.contains("scene")) cfg["scene"] = level["scene"];
-                if(level.contains("game")) cfg["game"] = level["game"];
-                cfg["active-level-config"] = levelPath;
-                if (!fromContinue) {
-                    cfg["continue-session"]["active"] = false;
-                    cfg["continue-session"]["resume-requested"] = false;
-                } else {
-                    cfg["continue-session"]["resume-requested"] = true;
-                }
-            } catch(const std::exception& e) {
-                std::cerr << "Failed to parse level config " << levelPath << ": " << e.what() << std::endl;
-            }
+        const nlohmann::json* cached = our::LevelCache::get(levelPath);
+        nlohmann::json level;
+        
+        if (cached) {
+            level = *cached;
         } else {
-            std::cerr << "Could not open level config: " << levelPath << std::endl;
+            std::ifstream f(levelPath);
+            if(f){
+                try {
+                    level = nlohmann::json::parse(f, nullptr, true, true);
+                } catch(const std::exception& e) {
+                    std::cerr << "Failed to parse level config " << levelPath << ": " << e.what() << std::endl;
+                    return;
+                }
+            } else {
+                std::cerr << "Could not open level config: " << levelPath << std::endl;
+                return;
+            }
+        }
+
+        if(level.contains("scene")) cfg["scene"] = level["scene"];
+        if(level.contains("game")) cfg["game"] = level["game"];
+        cfg["active-level-config"] = levelPath;
+        if (!fromContinue) {
+            cfg["continue-session"]["active"] = false;
+            cfg["continue-session"]["resume-requested"] = false;
+        } else {
+            cfg["continue-session"]["resume-requested"] = true;
         }
         getApp()->changeState("loading");
     }
