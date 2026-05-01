@@ -616,17 +616,7 @@ namespace our {
                                 playbackSpeed = glm::mix(2.5f, 0.1f, glm::clamp(heightAboveGround / 3.0f, 0.0f, 1.0f));
                             }
                         }
-<<<<<<< HEAD
-
-                        // Use a very short crossfade for the jump start to make it snappy
-                        if (animPtr->currentClipName() != targetClip) {
-                            animPtr->play(targetClip, loop, playbackSpeed, 0.1f);
-                        }
                     } else if (horizontalSpeed > 0.5f) {
-=======
-                        
-                    } else if (horizontalSpeed > 0.5f) { 
->>>>>>> 33e4aa6 (Standardize Golem (Enemy 3) animation loading and Level 3 configuration parity)
                         if (aladdin->isRunning) {
                             targetClip = "running";
                             // Balanced divisor for run animation
