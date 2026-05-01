@@ -1,0 +1,66 @@
+newmtl wall
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wall.png
+Ks 0 0 0
+Ns 0
+
+newmtl wall3
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wall3.png
+Ks 0 0 0
+Ns 0
+
+newmtl floor3
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/floor3.png
+Ks 0 0 0
+Ns 0
+
+newmtl wood
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wood.png
+Ks 0 0 0
+Ns 0
+
+newmtl sand
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/sand.png.001.png
+Ks 0 0 0
+Ns 0
+
+newmtl plam
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/plam.png
+Ks 0 0 0
+Ns 0
+
+newmtl leaf G
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/leafG.png
+Ks 0 0 0
+Ns 0
+map_d images/leafG.png
+
+newmtl leaf Y
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/leafY.png
+Ks 0 0 0
+Ns 0
+map_d images/leafY.png
+
