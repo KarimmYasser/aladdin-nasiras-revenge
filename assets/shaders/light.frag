@@ -73,10 +73,12 @@ float computeShadow(vec4 light_space_pos, vec3 N, vec3 L) {
 
     float current_depth = proj.z;
 
-    // Fixed bias for the large 150-unit frustum to prevent acne across the level
-    float bias = 0.0015;
+    // To avoid "shadow acne" (self-shadowing noise due to limited depth precision).
+    // Reduced significantly to prevent "Peter Panning" (shadows disappearing/detaching).
+    float bias = max(0.0015 * (1.0 - dot(N, L)), 0.00015);
 
-    // HIGH QUALITY PCF: 9x9 sample kernel
+    // PCF: sample the shadow map in a 9x9 neighbourhood and average the results.
+    // This produces a very soft penumbra that hides the resolution blocks at large ranges.
     float shadow = 0.0;
     vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
     for (int x = -4; x <= 4; x++) {

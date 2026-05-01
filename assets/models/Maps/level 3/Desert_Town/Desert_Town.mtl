@@ -1,0 +1,280 @@
+newmtl stairs-side
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/stairs-side_albedo.jpg
+map_Bump images/stairs-side_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/stairs-side_metallic.jpg
+
+newmtl stairs
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/stairs_albedo.jpg
+map_Bump images/stairs_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/stairs_metallic.jpg
+
+newmtl ladder
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/ladder_albedo.jpg
+map_Bump images/ladder_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/ladder_metallic.jpg
+
+newmtl watering
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/watering_albedo.jpg
+map_Bump images/watering_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/watering_metallic.jpg
+
+newmtl well
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/well_albedo.jpg
+map_Bump images/well_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/well_metallic.jpg
+
+newmtl shelter
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/shelter_albedo.jpg
+map_Bump images/shelter_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/shelter_metallic.jpg
+
+newmtl vase
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/vase_albedo.jpg
+map_Bump images/vase_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/vase_metallic.jpg
+
+newmtl cover
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/cover_albedo.jpg
+map_Bump images/cover_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/cover_metallic.jpg
+
+newmtl trapgate
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/trapgate_albedo.jpg
+map_Bump images/trapgate_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/trapgate_metallic.jpg
+
+newmtl fence.001
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/fence.001_albedo.jpg
+map_Bump images/fence.001_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/fence.001_metallic.jpg
+
+newmtl haypile.001
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/haypile.001_albedo.jpg
+map_Bump images/haypile.001_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/haypile.001_metallic.jpg
+
+newmtl carpet1.001
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/carpet1.001_albedo.jpg
+map_Bump images/carpet1.001_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/carpet1.001_metallic.jpg
+
+newmtl house-square
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/house-square_albedo.jpg
+map_Bump images/house-square_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/house-square_metallic.jpg
+
+newmtl log
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/log_albedo.jpg
+map_Bump images/log_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/log_metallic.jpg
+
+newmtl trapdoor
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/trapdoor_albedo.jpg
+map_Bump images/trapdoor_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/trapdoor_metallic.jpg
+
+newmtl window1
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/window1_albedo.jpg
+map_Bump images/window1_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/window1_metallic.jpg
+
+newmtl support
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/support_albedo.jpg
+map_Bump images/support_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/support_metallic.jpg
+
+newmtl door
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/door_albedo.jpg
+map_Bump images/door_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/door_metallic.jpg
+
+newmtl window2
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/window2_albedo.jpg
+map_Bump images/window2_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/window2_metallic.jpg
+
+newmtl house-corner
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/house-corner_albedo.jpg
+map_Bump images/house-corner_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/house-corner_metallic.jpg
+
+newmtl house-high
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/house-high_albedo.jpg
+map_Bump images/house-high_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/house-high_metallic.jpg
+
+newmtl house-long
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/house-long_albedo.jpg
+map_Bump images/house-long_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/house-long_metallic.jpg
+
+newmtl wall-segment
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wall-segment_albedo.jpg
+map_Bump images/wall-segment_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/wall-segment_metallic.jpg
+
+newmtl wall-spike
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wall-spike_albedo.jpg
+map_Bump images/wall-spike_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/wall-spike_metallic.jpg
+
+newmtl wall-pillar
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/wall-pillar_albedo.jpg
+map_Bump images/wall-pillar_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/wall-pillar_metallic.jpg
+
+newmtl gate-border
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/gate-border_albedo.jpg
+map_Bump images/gate-border_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/gate-border_metallic.jpg
+
+newmtl gate-door
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/gate-door_albedo.jpg
+map_Bump images/gate-door_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/gate-door_metallic.jpg
+
+newmtl ground.001
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/ground.001_albedo.jpg
+map_Bump images/ground.001_normal.png
+Ks 0.8 0.8 0.8
+Ns 0
+map_Ns images/ground.001_metallic.jpg
+
