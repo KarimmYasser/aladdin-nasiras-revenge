@@ -13,6 +13,7 @@
 #include <reactphysics3d/reactphysics3d.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <iostream>
 
 namespace our {
@@ -29,9 +30,10 @@ namespace our {
             if(!player) return;
             player->localTransform.position = pos;
             if(setYaw){
-                player->localTransform.rotation.x = 0.0f;
-                player->localTransform.rotation.y = yawYRadians;
-                player->localTransform.rotation.z = 0.0f;
+                float y = yawYRadians;
+                while(y >  glm::pi<float>()) y -= 2.0f * glm::pi<float>();
+                while(y < -glm::pi<float>()) y += 2.0f * glm::pi<float>();
+                player->localTransform.rotation = glm::vec3(0.0f, y, 0.0f);
             }
             if(auto* mov = player->getComponent<MovementComponent>()){
                 mov->linearVelocity = {0.0f, 0.0f, 0.0f};

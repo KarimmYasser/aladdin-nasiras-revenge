@@ -573,7 +573,7 @@
                         "cooldownDuration": 2.5,
                         "targetPosition": [550, -15.5, -232],
                         "setYaw": true,
-                        "targetYaw": 90
+                        "targetYaw": 180
                     }
                 ]
             },
@@ -607,7 +607,7 @@
                         "cooldownDuration": 2.5,
                         "targetPosition": [1036, 2, -257],
                         "setYaw": true,
-                        "targetYaw": 90
+                        "targetYaw": 290
                     }
                 ]
             },
@@ -621,22 +621,22 @@
                     { "type": "Collider", "shape": "box", "halfExtents": [2.0, 2.5, 2.0], "isTrigger": true }
                 ]
             },
-            {
-                "name": "portal-map3-victory-visual",
-                "position": [1481, 5, -454],
-                "rotation": [0, -90, 0],
-                "scale": [2.2, 2.2, 2.2],
-                "components": [
-                    { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-1" }
-                ]
-            },
-            {
-                "name": "portal-map3-victory",
-                "position": [1481, 5, -454],
-                "components": [
-                    { "type": "LevelExit", "radius": 4.2, "requiresKey": false, "nextState": "victory" }
-                ]
-            },
+            // {
+            //     "name": "portal-map3-victory-visual",
+            //     "position": [1481, 5, -454],
+            //     "rotation": [0, -90, 0],
+            //     "scale": [2.2, 2.2, 2.2],
+            //     "components": [
+            //         { "type": "Mesh Renderer", "mesh": "portal_highelf", "material": "lit-portal-1" }
+            //     ]
+            // },
+            // {
+            //     "name": "portal-map3-victory",
+            //     "position": [1481, 5, -454],
+            //     "components": [
+            //         { "type": "LevelExit", "radius": 4.2, "requiresKey": false, "nextState": "victory" }
+            //     ]
+            // },
 
             // ------ Map 3 — fourth Genie meeting (Ancient Desert Arena)
             {
@@ -1330,10 +1330,10 @@
 
             {
                 "name": "aladdin",
-                // "position": [64.0, -15.2, -405.0],
+                "position": [64.0, -15.2, -405.0],
                 // "position": [550, 0.5, -232],
-                "position": [1030, 10, -255],
-                "rotation": [0, 200, 0],
+                // "position": [1030, 10, -255],
+                "rotation": [0, 150, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
                     {
@@ -1364,12 +1364,12 @@
                         "firstPersonCameraOffset": [0.0, 1.38, 0.22],
                         "firstPersonPitchDegrees": 0.0,
                         "thirdPersonPitchDegrees": -10.0,
-                        "cameraOrbitYawDegrees": 200.0,
+                        "cameraOrbitYawDegrees": 150.0,
                         "health": 100,
                         "lives": 3,
-                        // "respawnPosition": [64.0, -15.2, -405.0]
+                        "respawnPosition": [64.0, -15.2, -405.0]
                         // "respawnPosition": [550, 0.5, -232]
-                        "respawnPosition": [1030, 10, -255]
+                        // "respawnPosition": [1030, 10, -255]
                         
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },

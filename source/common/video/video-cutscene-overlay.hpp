@@ -44,6 +44,7 @@ private:
 
     Mp4Decoder decoder;
     std::vector<uint8_t> rgbaScratch;
+    bool pausedBgmForCutscene = false;
 };
 
 } // namespace our

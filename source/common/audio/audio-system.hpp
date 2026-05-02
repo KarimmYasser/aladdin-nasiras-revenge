@@ -1,8 +1,11 @@
 #pragma once
 
+#include <cstdint>
+#include <iostream>
 #include <string>
 #include <unordered_map>
-#include <iostream>
+#include <vector>
+
 #include <miniaudio.h>
 
 namespace our {
@@ -45,6 +48,7 @@ namespace our {
 
         /// Call once when the application is shutting down.
         void shutdown() {
+            stopCutscenePlayback();
             stopMusic();
             ma_engine_uninit(&engine);
             initialized = false;
@@ -99,6 +103,73 @@ namespace our {
         void pauseMusic()  { if (musicPlaying) ma_sound_stop(&musicSound);  }
         void resumeMusic() { if (musicPlaying) ma_sound_start(&musicSound); }
 
+        // ─────────────────────────────────── Cutscene (memory PCM) ──
+
+        ma_uint32 getEngineSampleRate() const {
+            if (!initialized) return 48000;
+            return ma_engine_get_sample_rate(&engine);
+        }
+
+        /// Stops cutscene PCM playback and releases miniaudio objects (safe if idle).
+        void stopCutscenePlayback() {
+            if (!cutscenePlaybackActive) return;
+            ma_sound_stop(&cutsceneSound);
+            ma_sound_uninit(&cutsceneSound);
+            ma_audio_buffer_uninit(&cutsceneAudioBuffer);
+            cutscenePcm.clear();
+            cutscenePlaybackActive = false;
+            cutsceneSound = {};
+            cutsceneAudioBuffer = {};
+        }
+
+        /**
+         * Play interleaved f32 PCM through the engine (e.g. FFmpeg-decoded MP4 audio).
+         * Stops any previous cutscene playback. @p channels is usually 2.
+         */
+        bool playCutsceneInterleavedF32(std::vector<float>&& pcm, ma_uint32 channels, ma_uint32 sampleRate) {
+            if (!initialized || pcm.empty() || channels == 0 || sampleRate == 0) return false;
+            stopCutscenePlayback();
+
+            const ma_uint64 frames = (ma_uint64)(pcm.size() / (size_t)channels);
+            if (frames == 0) return false;
+
+            cutscenePcm = std::move(pcm);
+
+            ma_audio_buffer_config bufCfg = ma_audio_buffer_config_init(
+                ma_format_f32, channels, frames, cutscenePcm.data(), nullptr);
+            bufCfg.sampleRate = sampleRate;
+
+            if (ma_audio_buffer_init(&bufCfg, &cutsceneAudioBuffer) != MA_SUCCESS) {
+                cutscenePcm.clear();
+                return false;
+            }
+
+            if (ma_sound_init_from_data_source(
+                    &engine,
+                    reinterpret_cast<ma_data_source*>(&cutsceneAudioBuffer.ref),
+                    MA_SOUND_FLAG_NO_SPATIALIZATION,
+                    nullptr,
+                    &cutsceneSound) != MA_SUCCESS) {
+                ma_audio_buffer_uninit(&cutsceneAudioBuffer);
+                cutscenePcm.clear();
+                cutsceneAudioBuffer = {};
+                return false;
+            }
+
+            const float v = musicVolume * getMasterVolume();
+            ma_sound_set_volume(&cutsceneSound, v);
+            if (ma_sound_start(&cutsceneSound) != MA_SUCCESS) {
+                ma_sound_uninit(&cutsceneSound);
+                ma_audio_buffer_uninit(&cutsceneAudioBuffer);
+                cutscenePcm.clear();
+                cutsceneSound = {};
+                cutsceneAudioBuffer = {};
+                return false;
+            }
+            cutscenePlaybackActive = true;
+            return true;
+        }
+
         // ─────────────────────────────────── Sound Effects (one-shot) ──
 
         /**
@@ -142,6 +213,12 @@ namespace our {
         bool      musicPlaying = false;
         float     musicVolume  = 0.5f;
         std::string currentMusicPath;
+
+        // Cutscene PCM (must outlive ma_audio_buffer while playing)
+        std::vector<float> cutscenePcm;
+        ma_audio_buffer cutsceneAudioBuffer{};
+        ma_sound cutsceneSound{};
+        bool cutscenePlaybackActive = false;
     };
 
 } // namespace our

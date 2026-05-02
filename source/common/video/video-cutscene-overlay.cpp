@@ -2,6 +2,7 @@
 
 #include "../shader/shader.hpp"
 #include "../input/keyboard.hpp"
+#include "../audio/audio-system.hpp"
 
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -58,7 +59,14 @@ void VideoCutsceneOverlay::destroyGpu() {
 
 bool VideoCutsceneOverlay::start(const std::string& path) {
     stop();
-    if (!decoder.open(path)) {
+    pausedBgmForCutscene = false;
+
+    unsigned audioRate = 48000;
+    if (our::AudioSystem::instance().isInitialized()) {
+        audioRate = our::AudioSystem::instance().getEngineSampleRate();
+    }
+
+    if (!decoder.open(path, audioRate)) {
         std::cerr << "[VideoCutsceneOverlay] open failed: " << path << "\n";
         return false;
     }
@@ -66,6 +74,19 @@ bool VideoCutsceneOverlay::start(const std::string& path) {
         decoder.close();
         return false;
     }
+
+    std::vector<float> pcm;
+    unsigned ch = 0;
+    unsigned rate = 0;
+    if (decoder.takeDecodedAudio(pcm, ch, rate) && !pcm.empty() && our::AudioSystem::instance().isInitialized()) {
+        our::AudioSystem::instance().pauseMusic();
+        pausedBgmForCutscene = true;
+        if (!our::AudioSystem::instance().playCutsceneInterleavedF32(std::move(pcm), (ma_uint32)ch, (ma_uint32)rate)) {
+            our::AudioSystem::instance().resumeMusic();
+            pausedBgmForCutscene = false;
+        }
+    }
+
     active = true;
     return true;
 }
@@ -76,6 +97,14 @@ void VideoCutsceneOverlay::stop() {
     rgbaScratch.clear();
     texW = 0;
     texH = 0;
+
+    if (our::AudioSystem::instance().isInitialized()) {
+        our::AudioSystem::instance().stopCutscenePlayback();
+        if (pausedBgmForCutscene) {
+            our::AudioSystem::instance().resumeMusic();
+            pausedBgmForCutscene = false;
+        }
+    }
 }
 
 void VideoCutsceneOverlay::update(float deltaSeconds, const Keyboard& keyboard, bool& skipRequested) {

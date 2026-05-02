@@ -1,5 +1,7 @@
 #include "mp4-decoder.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -8,6 +10,8 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/opt.h>
+#include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
 
@@ -31,6 +35,11 @@ struct Mp4Decoder::Impl {
     double lastShownPts = -1.0e30;
     bool eof = false;
 
+    std::vector<float> decodedAudio;
+    unsigned decodedAudioChannels = 0;
+    unsigned decodedAudioSampleRate = 0;
+    bool hasDecodedAudio = false;
+
     void freeRgb() {
         if (rgbBuf) {
             av_freep(&rgbBuf);
@@ -38,7 +47,15 @@ struct Mp4Decoder::Impl {
         }
     }
 
+    void clearDecodedAudio() {
+        decodedAudio.clear();
+        decodedAudioChannels = 0;
+        decodedAudioSampleRate = 0;
+        hasDecodedAudio = false;
+    }
+
     void destroy() {
+        clearDecodedAudio();
         freeRgb();
         if (sws) {
             sws_freeContext(sws);
@@ -130,8 +147,6 @@ struct Mp4Decoder::Impl {
         return true;
     }
 
-    /// Read muxed packets until one packet is sent to the video decoder (or EOF).
-    /// Returns false on fatal error; sets eof on stream end.
     bool sendNextVideoPacket() {
         for (;;) {
             int err = av_read_frame(fmt, pkt);
@@ -159,13 +174,142 @@ struct Mp4Decoder::Impl {
             return true;
         }
     }
+
+    void appendResampledFrame(SwrContext* swr, AVCodecContext* actx, AVFrame* afrm) {
+        const int outCh = 2;
+        const int delay = swr_get_delay(swr, actx->sample_rate);
+        int maxOut = av_rescale_rnd(delay + afrm->nb_samples, (int)decodedAudioSampleRate, actx->sample_rate, AV_ROUND_UP);
+        if (maxOut <= 0) maxOut = afrm->nb_samples * 4;
+        if (maxOut <= 0) return;
+
+        const size_t oldFloats = decodedAudio.size();
+        decodedAudio.resize(oldFloats + (size_t)maxOut * (size_t)outCh);
+
+        uint8_t* outPtr = reinterpret_cast<uint8_t*>(decodedAudio.data() + oldFloats);
+        const uint8_t** inData = const_cast<const uint8_t**>(afrm->extended_data ? afrm->extended_data : afrm->data);
+        int converted = swr_convert(swr, &outPtr, maxOut, inData, afrm->nb_samples);
+        if (converted < 0) {
+            decodedAudio.resize(oldFloats);
+            return;
+        }
+        decodedAudio.resize(oldFloats + (size_t)std::max(0, converted) * (size_t)outCh);
+    }
+
+    bool decodeEntireAudioTrack(unsigned outSampleRate) {
+        decodedAudioSampleRate = outSampleRate;
+        const AVCodec* adec = nullptr;
+        int astream = av_find_best_stream(fmt, AVMEDIA_TYPE_AUDIO, -1, -1, &adec, 0);
+        if (astream < 0 || !adec) {
+            return true;
+        }
+
+        AVCodecContext* actx = avcodec_alloc_context3(adec);
+        if (!actx) return false;
+        if (avcodec_parameters_to_context(actx, fmt->streams[astream]->codecpar) < 0) {
+            avcodec_free_context(&actx);
+            return false;
+        }
+        actx->pkt_timebase = fmt->streams[astream]->time_base;
+        if (avcodec_open2(actx, adec, nullptr) < 0) {
+            std::cerr << "[Mp4Decoder] avcodec_open2 (audio) failed\n";
+            avcodec_free_context(&actx);
+            return false;
+        }
+
+        SwrContext* swr = nullptr;
+        AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
+        int ret = swr_alloc_set_opts2(
+            &swr,
+            &outLayout,
+            AV_SAMPLE_FMT_FLT,
+            (int)outSampleRate,
+            &actx->ch_layout,
+            actx->sample_fmt,
+            actx->sample_rate,
+            0,
+            nullptr);
+        if (ret < 0 || !swr || swr_init(swr) < 0) {
+            std::cerr << "[Mp4Decoder] swresample init failed\n";
+            if (swr) swr_free(&swr);
+            avcodec_free_context(&actx);
+            return false;
+        }
+
+        AVPacket* apkt = av_packet_alloc();
+        AVFrame* afrm = av_frame_alloc();
+        if (!apkt || !afrm) {
+            av_frame_free(&afrm);
+            av_packet_free(&apkt);
+            swr_free(&swr);
+            avcodec_free_context(&actx);
+            return false;
+        }
+
+        decodedAudio.clear();
+
+        auto drainDecodedFrames = [&]() {
+            for (;;) {
+                int r = avcodec_receive_frame(actx, afrm);
+                if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) break;
+                if (r < 0) break;
+                appendResampledFrame(swr, actx, afrm);
+                av_frame_unref(afrm);
+            }
+        };
+
+        while (av_read_frame(fmt, apkt) >= 0) {
+            if (apkt->stream_index != astream) {
+                av_packet_unref(apkt);
+                continue;
+            }
+            ret = avcodec_send_packet(actx, apkt);
+            av_packet_unref(apkt);
+            if (ret < 0 && ret != AVERROR(EAGAIN)) {
+                break;
+            }
+            drainDecodedFrames();
+        }
+
+        avcodec_send_packet(actx, nullptr);
+        drainDecodedFrames();
+
+        int flushLeft = 0;
+        while (swr_get_delay(swr, (int)outSampleRate) > 0 && flushLeft++ < 4096) {
+            const int maxOut = 512;
+            const size_t oldFloats = decodedAudio.size();
+            decodedAudio.resize(oldFloats + (size_t)maxOut * 2u);
+            uint8_t* outPtr = reinterpret_cast<uint8_t*>(decodedAudio.data() + oldFloats);
+            int converted = swr_convert(swr, &outPtr, maxOut, nullptr, 0);
+            if (converted <= 0) break;
+            decodedAudio.resize(oldFloats + (size_t)converted * 2u);
+        }
+
+        av_frame_free(&afrm);
+        av_packet_free(&apkt);
+        swr_free(&swr);
+        avcodec_free_context(&actx);
+
+        if (!decodedAudio.empty()) {
+            hasDecodedAudio = true;
+            decodedAudioChannels = 2;
+            decodedAudioSampleRate = outSampleRate;
+        }
+
+        if (avformat_seek_file(fmt, -1, INT64_MIN, 0, INT64_MAX, 0) < 0) {
+            if (av_seek_frame(fmt, astream, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+                std::cerr << "[Mp4Decoder] avformat_seek_file to start failed\n";
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 Mp4Decoder::Mp4Decoder() : impl(std::make_unique<Impl>()) {}
 
 Mp4Decoder::~Mp4Decoder() { close(); }
 
-bool Mp4Decoder::open(const std::string& path) {
+bool Mp4Decoder::open(const std::string& path, unsigned audioOutputSampleRate) {
     close();
     impl->pkt = av_packet_alloc();
     impl->frame = av_frame_alloc();
@@ -178,6 +322,11 @@ bool Mp4Decoder::open(const std::string& path) {
     }
     if (avformat_find_stream_info(impl->fmt, nullptr) < 0) {
         std::cerr << "[Mp4Decoder] avformat_find_stream_info failed\n";
+        close();
+        return false;
+    }
+
+    if (!impl->decodeEntireAudioTrack(audioOutputSampleRate)) {
         close();
         return false;
     }
@@ -227,6 +376,20 @@ bool Mp4Decoder::isOpen() const { return impl->fmt != nullptr && impl->codec != 
 
 double Mp4Decoder::durationSeconds() const { return impl->durationSec; }
 
+bool Mp4Decoder::takeDecodedAudio(std::vector<float>& outInterleavedPcm, unsigned& outChannels, unsigned& outSampleRate) {
+    if (!impl->hasDecodedAudio || impl->decodedAudio.empty()) {
+        outInterleavedPcm.clear();
+        outChannels = 0;
+        outSampleRate = 0;
+        return false;
+    }
+    outInterleavedPcm = std::move(impl->decodedAudio);
+    outChannels = impl->decodedAudioChannels;
+    outSampleRate = impl->decodedAudioSampleRate;
+    impl->clearDecodedAudio();
+    return true;
+}
+
 bool Mp4Decoder::advance(float deltaSeconds, std::vector<uint8_t>& outRgba, int& outWidth, int& outHeight) {
     if (!isOpen()) return false;
 
@@ -260,7 +423,6 @@ bool Mp4Decoder::advance(float deltaSeconds, std::vector<uint8_t>& outRgba, int&
         if (err == AVERROR(EAGAIN)) {
             if (!impl->sendNextVideoPacket()) return false;
             if (impl->eof) {
-                // Drain remaining decoded frames after flush
                 continue;
             }
             continue;
