@@ -120,6 +120,11 @@ set(COMMON_SOURCES
 
         source/common/audio/audio-system.hpp
         source/common/audio/audio-system.cpp
+
+        source/common/video/mp4-decoder.hpp
+        source/common/video/mp4-decoder.cpp
+        source/common/video/video-cutscene-overlay.hpp
+        source/common/video/video-cutscene-overlay.cpp
 )
 
 # Define the directories in which to search for the included headers
@@ -133,7 +138,66 @@ include_directories(
         vendor/reactphysics3d/include
         vendor/miniaudio
         vendor/assimp/include
+        vendor/ffmpeg/include
 )
+
+# --- FFmpeg (prebuilt MSVC shared: vendor/ffmpeg/{include,lib,bin}) ---
+set(FFMPEG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/vendor/ffmpeg" CACHE PATH "FFmpeg dev root (include/, lib/*.def, bin/*.dll)")
+if(NOT EXISTS "${FFMPEG_ROOT}/include/libavformat/avformat.h")
+    message(FATAL_ERROR "FFmpeg headers not found under ${FFMPEG_ROOT}/include. Add a MSVC shared dev build (include+lib+bin) to vendor/ffmpeg.")
+endif()
+
+set(FFMPEG_IMP_DIR "${CMAKE_BINARY_DIR}/ffmpeg_import_libs")
+file(MAKE_DIRECTORY "${FFMPEG_IMP_DIR}")
+file(GLOB FFMPEG_DEF_FILES "${FFMPEG_ROOT}/lib/*.def")
+set(FFMPEG_IMPORT_LIBS "")
+if(MSVC)
+    get_filename_component(_VC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    set(LIB_EXE "${_VC_BIN_DIR}/lib.exe")
+    if(NOT EXISTS "${LIB_EXE}")
+        message(FATAL_ERROR "Could not find lib.exe next to ${CMAKE_CXX_COMPILER}. FFmpeg import libs require the MSVC toolchain.")
+    endif()
+    foreach(_def ${FFMPEG_DEF_FILES})
+        get_filename_component(_base "${_def}" NAME_WE)
+        set(_implib "${FFMPEG_IMP_DIR}/${_base}.lib")
+        execute_process(
+            COMMAND "${LIB_EXE}" /nologo "/DEF:${_def}" "/OUT:${_implib}" /MACHINE:X64
+            RESULT_VARIABLE _lib_rc
+            OUTPUT_QUIET
+            ERROR_VARIABLE _lib_err
+        )
+        if(_lib_rc)
+            message(FATAL_ERROR "lib.exe failed for ${_def}: ${_lib_err}")
+        endif()
+        list(APPEND FFMPEG_IMPORT_LIBS "${_implib}")
+    endforeach()
+elseif(MINGW)
+    get_filename_component(_MINGW_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    set(DLLTOOL_EXE "${_MINGW_BIN}/dlltool.exe")
+    if(NOT EXISTS "${DLLTOOL_EXE}")
+        message(FATAL_ERROR "Could not find dlltool.exe next to ${CMAKE_CXX_COMPILER} (MinGW).")
+    endif()
+    foreach(_def ${FFMPEG_DEF_FILES})
+        get_filename_component(_stem "${_def}" NAME_WE)
+        set(_dll "${FFMPEG_ROOT}/bin/${_stem}.dll")
+        if(NOT EXISTS "${_dll}")
+            message(FATAL_ERROR "Missing ${_dll} for ${_def}. Use a matching FFmpeg shared dev tree in vendor/ffmpeg.")
+        endif()
+        set(_implib "${FFMPEG_IMP_DIR}/lib${_stem}.dll.a")
+        execute_process(
+            COMMAND "${DLLTOOL_EXE}" --input-def "${_def}" --dllname "${_stem}.dll" --output-lib "${_implib}"
+            RESULT_VARIABLE _dt_rc
+            OUTPUT_QUIET
+            ERROR_VARIABLE _dt_err
+        )
+        if(_dt_rc)
+            message(FATAL_ERROR "dlltool failed for ${_def}: ${_dt_err}")
+        endif()
+        list(APPEND FFMPEG_IMPORT_LIBS "${_implib}")
+    endforeach()
+else()
+    message(FATAL_ERROR "FFmpeg import libs: use MSVC or MinGW with vendor/ffmpeg (include, lib/*.def, bin/*.dll).")
+endif()
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
@@ -169,4 +233,14 @@ set(STATES_SOURCES
 file(COPY ${PROJECT_SOURCE_DIR}/config DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw reactphysics3d assimp)
+target_link_libraries(GAME_APPLICATION PRIVATE glfw reactphysics3d assimp ${FFMPEG_IMPORT_LIBS})
+if(WIN32)
+    target_link_libraries(GAME_APPLICATION PRIVATE ws2_32 Secur32 bcrypt ole32 user32)
+endif()
+
+file(GLOB FFMPEG_DLLS "${FFMPEG_ROOT}/bin/*.dll")
+foreach(_dll ${FFMPEG_DLLS})
+    add_custom_command(TARGET GAME_APPLICATION POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_dll}" "$<TARGET_FILE_DIR:GAME_APPLICATION>"
+    )
+endforeach()
