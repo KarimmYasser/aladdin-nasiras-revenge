@@ -57,8 +57,13 @@ namespace our {
         // Root motion suppression (prevents double-jumping if animation has baked movement)
         void setSuppressRootMotion(bool suppress) { mSuppressRootMotion = suppress; }
 
+        // Strip horizontal translation on the root/hips for looped walk/run clips so baked
+        // forward motion in the FBX does not snap backward each cycle (physics moves the body).
+        void setInPlaceLocomotion(bool enable) { mInPlaceLocomotion = enable; }
+
     private:
         bool mSuppressRootMotion = false;
+        bool mInPlaceLocomotion  = false;
         // Scene hierarchy
         NodeData  mRoot;
         glm::mat4 mGlobalInverse{1.f};

@@ -105,18 +105,26 @@ namespace our {
                 scale = glm::mix(posePre.scale, poseCur.scale, alpha);
             }
 
+            std::string lowerName = node.name;
+            for (auto& c : lowerName) c = (char)std::tolower(c);
+
+            const bool rootLike =
+                node.name == mRoot.name ||
+                lowerName.find("root") != std::string::npos ||
+                lowerName.find("armature") != std::string::npos ||
+                lowerName.find("hips") != std::string::npos ||
+                lowerName.find("pelvis") != std::string::npos;
+
+            // In-place locomotion: drop baked XZ root translation so looping clips do not
+            // jump back to the cycle start while the entity is driven by physics.
+            if (mInPlaceLocomotion && rootLike) {
+                pos.x = 0.0f;
+                pos.z = 0.0f;
+            }
+
             // Suppress root motion (vertical translation) if requested
-            if (mSuppressRootMotion) {
-                std::string lowerName = node.name;
-                for(auto &c : lowerName) c = (char)std::tolower(c);
-                
-                if (node.name == mRoot.name || 
-                    lowerName.find("root") != std::string::npos || 
-                    lowerName.find("armature") != std::string::npos ||
-                    lowerName.find("hips") != std::string::npos ||
-                    lowerName.find("pelvis") != std::string::npos) {
-                    pos.y = 0.0f; // Lock vertical height
-                }
+            if (mSuppressRootMotion && rootLike) {
+                pos.y = 0.0f; // Lock vertical height
             }
 
             nodeTransform = glm::translate(glm::mat4(1.f), pos)

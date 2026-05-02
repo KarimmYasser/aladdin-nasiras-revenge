@@ -659,6 +659,8 @@ namespace our {
                         }
                     }
 
+                    animPtr->setInPlaceLocomotion(targetClip == "walk" || targetClip == "running" || targetClip == "jump_running");
+
                     if (groundedSmooth && !aladdin->isJumpPreparing) {
                         animPtr->setSuppressRootMotion(false); // Reset when on ground and not prepping jump
                     }
