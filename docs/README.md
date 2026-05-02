@@ -65,11 +65,11 @@ Welcome to the official documentation for the **Aladdin: Nasira's Revenge** game
 ### 9. Visual Gallery
 
 #### Gameplay Screenshots
-![Gallery](images/screenshot1.png)
-*Agrabah Marketplace and Enemy Encounters*
+![Screenshot 1](images/screenshot1.png)
+*Screenshot 1*
 
-![Gallery](images/screenshot2.png)
-*Golem AI and Combat*
+![Screenshot 2](images/screenshot2.png)
+*Screenshot 2*
 
 ### 10. Development Team (Team 15)
 
