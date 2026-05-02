@@ -124,7 +124,7 @@ This phase is individual, so each student should do and deliver this requirement
 So for example, if the `id` is 9202050, then the color should be `(0.125, 0.5, 0.5625, 1.0)`.
 
 <p align="center">
-      <img src="docs/phase-1.png" width="512"/>
+      <img src="../images/phase-1.png" width="512"/>
 </p>
 
 
@@ -427,7 +427,7 @@ This is a list of the requirements with their corresponding files:
 The following diagram shows the relationship between the classes (and structs) in the project:
 
 <p align="center">
-<img src="docs/relationships.png" alt="relationships"/>
+<img src="../images/relationships.png" alt="relationships"/>
 </p>
 
 ## Delivery
@@ -491,7 +491,7 @@ You should deliver all the project files except the `"bin"` and `"build"` folder
 Lamazone online shopping service has built the perfect delivery robot, a robot that can never stop moving. You play as a RoboLarry who is new to the job and has to finish his daily delivery quota. Your battery is limited and you can only hold one package at a time. Go to storage locations to take a package and deliver them to their corresponding customers. Steer left and right to avoid hitting buildings and moving cars and collect batteries on the road to recharge. Beware, the more energy you have, the faster you’ll move.
 
 <p align="center">
-<img src="docs/prop1.png" alt="circle" width="256"/>
+<img src="../images/prop1.png" alt="circle" width="256"/>
 </p>
 <p align="center">
 <code>Example Image (Drawn in Paint)</code>
@@ -504,7 +504,7 @@ Lamazone online shopping service has built the perfect delivery robot, a robot t
 The army of light is approaching the city of the demon lord so he hires you, the underworld engineer, to build him a defense system against them. Add turrets, traps, and other obstacles to stop them from reaching the demon lord’s castle. Collect coins from dead knights to buy more tools and materials.
 
 <p align="center">
-<img src="docs/prop2.jpg" alt="circle" width="256"/>
+<img src="../images/prop2.jpg" alt="circle" width="256"/>
 </p>
 <p align="center">
 <code>Example Image (Photo from Defenders of Ardania)</code>
@@ -517,7 +517,7 @@ The army of light is approaching the city of the demon lord so he hires you, the
 It was a nice day so you went shopping with your friends. Unfortunately, the zombies thought it was a nice day to go shopping too. Use your machine gun to make sure they are dead again. Get all the shopping items you want and get to the cashier without allowing any zombie to bite you. Shoot them if they get near you.
 
 <p align="center">
-<img src="docs/prop3.png" alt="circle" width="256"/>
+<img src="../images/prop3.png" alt="circle" width="256"/>
 </p>
 <p align="center">
 <code>Example Image: (Assembled together in GIMP)</code>
