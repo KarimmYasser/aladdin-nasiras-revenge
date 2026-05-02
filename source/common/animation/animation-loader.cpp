@@ -245,9 +245,6 @@ namespace our::AnimationLoader {
             result.clips.push_back(std::move(clip));
         }
 
-        std::cout << "[AnimationLoader] Loaded: " << path << "  bones=" << boneCounter << "  clips=" << result.clips.size() << "\n";
-        for (auto& c : result.clips) std::cout << "  clip: \"" << c.name << "\"  dur=" << c.duration << " ticks  tps=" << c.ticksPerSecond << "\n";
-
         return result;
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/component.hpp"
+#include "../ecs/component.hpp"
 #include <glm/glm.hpp>
 
 namespace our {

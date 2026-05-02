@@ -31,9 +31,10 @@
                 "door_tex": "assets/textures/Door.png",
                 "coin_tex": "assets/models/Coin/Item_Coin_Texture.png",
                 "apple_tex": "assets/models/Apple/Handle1Tex.png",
-                "enemy1_tex": "assets/models/Enemies/Enemy 1/000000002EF475B8.png",
+                "enemy1_tex": "assets/models/Enemies/Enemy 1/diffuse.jpg",
                 "enemy2_tex": "assets/models/Enemies/Enemy 2/000000002EE61638.png",
-                "enemy3_tex": "assets/models/Enemies/Enemy 3/000000002E4ECFB8.png",
+                "enemy3_tex": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_BaseColor.png",
+                "enemy3_emissive": "assets/models/Enemies/Enemy 3/Golem_DefaultMaterial_Emissive.png",
                 "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
                 "sword_tex": "assets/models/Swords/Aladdin Sword/Textures/Sword1.png",
                 "jasmine_tex": "assets/models/Jasmine/jasmine_diff.png",
@@ -45,9 +46,9 @@
                 "aladdin_mesh": "assets/models/Aladdin/aladdin_costume_basic.obj",
                 "coin_mesh": "assets/models/Coin/Coin.obj",
                 "apple_mesh": "assets/models/Apple/apple.obj",
-                "enemy1_mesh": "assets/models/Enemies/Enemy 1/BigTrashEnemy2.obj",
+                "enemy1_mesh": "assets/models/Enemies/Enemy 1/Golem_of_sand.obj",
                 "enemy2_mesh": "assets/models/Enemies/Enemy 2/SlimeEnemy1.obj",
-                "enemy3_mesh": "assets/models/Enemies/Enemy 3/TrashEnemy1.obj",
+                "enemy3_mesh": "assets/models/Enemies/Enemy 3/Golem.obj",
                 "pot_mesh": "assets/models/Pots/Pot1/PotLight.obj",
                 "sword_mesh": "assets/models/Swords/Aladdin Sword/Magician Sword.obj"
             },
@@ -184,12 +185,13 @@
                 },
                 "lit-enemy3": {
                     "type": "lit",
-                    "shader": "light",
+                    "shader": "skinned",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
                     "albedo_map": "enemy3_tex",
+                    "emission_map": "enemy3_emissive",
                     "sampler": "default",
                     "shininess": 18.0,
                     "ambient": 0.32
@@ -416,12 +418,19 @@
                 "name": "prop-enemy-trash",
                 "position": [5.0, 0, 5.8],
                 "rotation": [0, 195, 0],
-                "scale": [0.017, 0.017, 0.017],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
                     {
-                        "type": "Mesh Renderer",
-                        "mesh": "enemy3_mesh",
-                        "material": "lit-enemy3"
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
                     }
                 ]
             },

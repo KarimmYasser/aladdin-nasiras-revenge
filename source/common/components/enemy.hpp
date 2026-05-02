@@ -40,6 +40,7 @@ namespace our {
         float idleTimer = 0.0f; // Timer for the idle state after attack
         float deathTimer = 0.0f; // For "corpse" duration before deletion
         float healthBarTimer = 0.0f; // Shows health bar for a duration after being hit
+        float deathAnimationDuration = 3.0f; // Duration to wait for death animation to play before removal
 
         static std::string getID() { return "Enemy"; }
 

@@ -579,7 +579,7 @@ namespace our {
                     //       idle/walk in the few frames between `isJumpPreparing` ending
                     //       and `airborneTimer` exceeding the debounce, which looks like
                     //       a stuttery double jump.
-                    constexpr float kRisingFromJumpVy = 2.0f;
+                    constexpr float kRisingFromJumpVy = 1.0f;
                     airborneForAnim =
                         !groundedSmooth &&
                         (aladdin->airborneTimer > aladdin->airborneAnimDelay ||
@@ -647,11 +647,6 @@ namespace our {
                                 playbackSpeed = glm::mix(2.5f, 0.1f, glm::clamp(heightAboveGround / 3.0f, 0.0f, 1.0f));
                             }
                         }
-
-                        // Use a very short crossfade for the jump start to make it snappy
-                        if (animPtr->currentClipName() != targetClip) {
-                            animPtr->play(targetClip, loop, playbackSpeed, 0.1f);
-                        }
                     } else if (horizontalSpeed > 0.5f) {
                         if (aladdin->isRunning) {
                             targetClip = "running";
@@ -681,11 +676,12 @@ namespace our {
 
                     entity->localTransform.position += aladdin->smoothedOffset;
 
-                    float currentSpeed = animPtr->getPlaybackSpeed();
-                    if (animPtr->currentClipName() != targetClip || std::abs(currentSpeed - playbackSpeed) > 0.05f) {
+                    if (animPtr->currentClipName() != targetClip) {
                         // Use a much faster crossfade for jumps (0.1s) to ensure we reach the target pose before takeoff
                         float crossFade = (targetClip == "jump" || targetClip == "running_jump") ? 0.1f : aladdin->animationCrossFadeDuration;
                         animPtr->play(targetClip, loop, playbackSpeed, crossFade);
+                    } else if (std::abs(animPtr->getPlaybackSpeed() - playbackSpeed) > 0.01f) {
+                        animPtr->setPlaybackSpeed(playbackSpeed);
                     }
                 }
 
