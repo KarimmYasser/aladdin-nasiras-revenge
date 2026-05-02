@@ -52,12 +52,12 @@ The project's documentation is organized into several sections to help you get s
 
 ## 👥 The Team (Team 15)
 
-| Name | Role | GitHub |
-| :--- | :--- | :--- |
-| **Karim Yasser** | Lead Developer | [@KarimmYasser](https://github.com/KarimmYasser) |
-| **Kerolos Mohsen** | Engine Architect | [@kerolos-mohsen](https://github.com/kerolos-mohsen) |
-| **Ahmed Kamal** | Gameplay Systems | [@ahmedkamal14](https://github.com/ahmedkamal14) |
-| **Mario Raafat** | Rendering Specialist | [@MarioRaafat](https://github.com/MarioRaafat) |
+| Name | GitHub |
+| :--- | :--- |
+| **Karim Yasser** | [@KarimmYasser](https://github.com/KarimmYasser) |
+| **Kerolos Mohsen** | [@kerolos-mohsen](https://github.com/kerolos-mohsen) |
+| **Ahmed Kamal** | [@ahmedkamal14](https://github.com/ahmedkamal14) |
+| **Mario Raafat** | [@MarioRaafat](https://github.com/MarioRaafat) |
 
 ---
 *Created for the CMP3060 Computer Graphics Course.*
