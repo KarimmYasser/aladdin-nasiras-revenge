@@ -101,6 +101,13 @@
                 "genie_jafar_tex2": "assets/models/Genie_Jafar/5_material002_1_0_0_baseColor.png",
                 "genie_jafar_tex3": "assets/models/Genie_Jafar/5_material003_1_0_0_baseColor.png",
 
+                "jafar_skin": "assets/models/Jafar/skin_baseColor.png",
+                "jafar_material": "assets/models/Jafar/material_baseColor.png",
+                "jafar_accessories": "assets/models/Jafar/accessories_baseColor.png",
+                "jafar_material_3": "assets/models/Jafar/material_3_baseColor.png",
+                "jafar_black": "assets/models/Jafar/black_baseColor.png",
+                "jafar_eyes": "assets/models/Jafar/eyes_baseColor.png",
+
                 "apple_tex": "assets/models/Apple/Handle1Tex.png",
                 "health_bottle_tex": "assets/models/Health Bottle/Texture/Bottle.png",
                 "pot_tex": "assets/models/Pots/Pot1/PotLight.0.png",
@@ -342,12 +349,13 @@
                 "lit-genie-jafar-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex1", "sampler": "default", "shininess": 36.0, "ambient": 0.32 },
                 "lit-genie-jafar-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex2", "sampler": "default", "shininess": 48.0, "ambient": 0.3 },
                 "lit-genie-jafar-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex3", "sampler": "default", "shininess": 56.0, "ambient": 0.3 },
-                "lit-jafar-0": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex0", "sampler": "default", "shininess": 26.0, "ambient": 0.34 },
-                "lit-jafar-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex1", "sampler": "default", "shininess": 32.0, "ambient": 0.32 },
-                "lit-jafar-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex2", "sampler": "default", "shininess": 40.0, "ambient": 0.32 },
-                "lit-jafar-3": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_jafar_tex3", "sampler": "default", "shininess": 44.0, "ambient": 0.3 },
-                "lit-jafar-4": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "enemy3_tex", "sampler": "default", "shininess": 16.0, "ambient": 0.3 },
-                "lit-jafar-5": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "genie_tex", "sampler": "default", "shininess": 36.0, "ambient": 0.34 },
+                "lit-jafar-0": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_skin",        "sampler": "default", "shininess": 18.0, "ambient": 0.32 },
+                "lit-jafar-1": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_material",    "sampler": "default", "shininess": 24.0, "ambient": 0.32 },
+                "lit-jafar-2": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_accessories", "sampler": "default", "shininess": 38.0, "ambient": 0.30 },
+                "lit-jafar-3": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_material_3",  "sampler": "default", "shininess": 28.0, "ambient": 0.32 },
+                "lit-jafar-4": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_black",       "sampler": "default", "shininess": 16.0, "ambient": 0.28 },
+                "lit-jafar-5": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_eyes",        "sampler": "default", "shininess": 60.0, "ambient": 0.30 },
+                "lit-jafar-6": { "type": "lit", "shader": "skinned", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jafar_skin",        "sampler": "default", "shininess": 14.0, "ambient": 0.32 },
                 "lit-jasmine-0": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_0", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
                 "lit-jasmine-1": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_1", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
                 "lit-jasmine-2": { "type": "lit", "shader": "light", "pipelineState": { "faceCulling": { "enabled": false }, "depthTesting": { "enabled": true } }, "albedo_map": "jasmine_tex_2", "sampler": "default", "shininess": 22.0, "ambient": 0.34 },
@@ -1029,26 +1037,33 @@
             },
             {
                 "name": "l3-map3-jafar",
-                "position": [1400.04, -2.85, -421.0],
-                "rotation": [90, 0, 0],
-                "scale": [1.25, 1.25, 1.25],
+                "position": [1400.04, 2.85, -421.0],
+                "rotation": [0, 180, 0],
+                "scale": [81.0, 81.0, 81.0],
                 "components": [
                     {
-                        "type": "Mesh Renderer",
-                        "mesh": "jafar_mesh",
-                        "material": "lit-jafar-0",
-                        "submeshMaterials": {
-                            "mat0": "lit-jafar-0",
-                            "mat1": "lit-jafar-1",
-                            "mat2": "lit-jafar-2",
-                            "mat3": "lit-jafar-3",
-                            "mat4": "lit-jafar-4",
-                            "mat5": "lit-jafar-5"
-                        }
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Jafar/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Jafar/animations/attack.fbx",
+                            "assets/models/Jafar/animations/idle.fbx",
+                            "assets/models/Jafar/animations/walk.fbx",
+                            "assets/models/Jafar/animations/death.fbx"
+                        ],
+                        "materials": [
+                            "lit-jafar-0",
+                            "lit-jafar-1",
+                            "lit-jafar-2",
+                            "lit-jafar-3",
+                            "lit-jafar-4",
+                            "lit-jafar-5",
+                            "lit-jafar-6"
+                        ],
+                        "clip": "idle"
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 11, "detectionRange": 50.0, "attackRange": 3.2, "health": 250, "damage": 29, "attackCooldown": 1.25 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 100.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.78, "height": 1.95, "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 0.55, "height": 1.4, "centerOffset": [0, 1.2, 0], "friction": 0.65 }
                 ]
             },
 
@@ -1242,9 +1257,9 @@
 
             {
                 "name": "aladdin",
-                "position": [64.0, -15.2, -405.0],
+                // "position": [64.0, -15.2, -405.0],
                 // "position": [550, 0.5, -232],
-                // "position": [1030, 10, -255],
+                "position": [1030, 10, -255],
                 "rotation": [0, 200, 0],
                 "scale": [21.0, 21.0, 21.0],
                 "components": [
@@ -1279,9 +1294,9 @@
                         "cameraOrbitYawDegrees": 200.0,
                         "health": 100,
                         "lives": 3,
-                        "respawnPosition": [64.0, -15.2, -405.0]
+                        // "respawnPosition": [64.0, -15.2, -405.0]
                         // "respawnPosition": [550, 0.5, -232]
-                        // "respawnPosition": [1030, 10, -255]
+                        "respawnPosition": [1030, 10, -255]
                         
                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 72.0, "useGravity": true, "lockRotation": true },

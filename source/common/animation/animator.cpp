@@ -15,7 +15,10 @@ namespace our {
         mBoneMap       = boneMap;
 
         // Pre-fill with identity matrices so any un-animated bone is a no-op.
-        int count = std::min(boneCount, MAX_BONES);
+        // At least one matrix must exist: if boneCount is 0 (mesh without skin data),
+        // getFinalBoneMatrices() would be empty and the renderer skips uploading
+        // finalBoneMatrices[], leaving undefined GPU state and an invisible mesh.
+        int count = std::min(std::max(boneCount, 1), MAX_BONES);
         mFinalMatrices.assign(count, glm::mat4(1.f));
     }
 

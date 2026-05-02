@@ -123,6 +123,8 @@ namespace our {
                         }
                     }
 
+                    animator->setInPlaceLocomotion(targetClip == "walk");
+
                     // Only switch if the target clip exists and isn't already playing
                     if (animator->hasClip(targetClip) && animator->currentClipName() != targetClip) {
                         animator->play(targetClip, loop, playbackSpeed);
