@@ -15,7 +15,8 @@
     "scene": {
         "renderer": {
             "sky": "assets/textures/sky_desert.png",
-            "postprocess": "assets/shaders/postprocess/vignette.frag"
+            // "postprocess": "assets/shaders/postprocess/vignette.frag"
+            "postprocess": "assets/shaders/postprocess/desert-storybook.frag"
         },
         "assets": {
             "shaders": {
