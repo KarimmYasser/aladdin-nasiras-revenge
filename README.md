@@ -13,6 +13,17 @@ This project is a data-driven game engine designed with an **Entity-Component-Sy
 - 🕹️ **Custom Physics**: Integrated with ReactPhysics3D for realistic collisions and triggers.
 - 🛠️ **Developer Tools**: Integrated Dear ImGui for real-time debugging and world inspection.
 
+## 🖼️ Gallery
+
+Explore the world of Agrabah and the engine's capabilities:
+
+| | |
+| :---: | :---: |
+| ![Agrabah Marketplace](docs/images/screenshot1.png) | ![Encounter with Golem](docs/images/screenshot2.png) |
+| ![Engine Debugging](docs/images/screenshot3.png) | ![Level Design](docs/images/screenshot4.png) |
+| ![Shadow Mapping](docs/images/screenshot5.png) | ![Combat Mechanics](docs/images/screenshot6.png) |
+| ![Environmental Rendering](docs/images/screenshot7.png) | |
+
 ## 📂 Project Structure
 
 - `source/`: Core engine and game logic source code.

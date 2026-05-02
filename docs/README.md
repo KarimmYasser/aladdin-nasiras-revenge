@@ -62,7 +62,16 @@ Welcome to the official documentation for the **Aladdin: Nasira's Revenge** game
 - [33. Asset & Utility Libraries](reference/33-asset-utility-libraries.md)
 - [34. Glossary](reference/34-glossary.md)
 
-### 9. Development Team (Team 15)
+### 9. Visual Gallery
+
+#### Gameplay Screenshots
+![Gallery](images/screenshot1.png)
+*Agrabah Marketplace and Enemy Encounters*
+
+![Gallery](images/screenshot2.png)
+*Golem AI and Combat*
+
+### 10. Development Team (Team 15)
 
 | Name                        | GitHub Profile                                       |
 | :-------------------------- | :--------------------------------------------------- |
