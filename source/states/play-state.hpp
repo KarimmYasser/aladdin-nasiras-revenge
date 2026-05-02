@@ -22,6 +22,7 @@
 #include <audio/audio-system.hpp>
 #include <save-system.hpp>
 #include <systems/animation-system.hpp>
+#include <video/video-cutscene-overlay.hpp>
 #include <components/camera.hpp>
 #include <components/level-exit.hpp>
 #include <components/room-portal.hpp>
@@ -58,6 +59,11 @@ class Playstate: public our::State {
     our::DialogueSystem dialogueSystem;
     our::ProjectileSystem projectileSystem;
     our::AnimationSystem animationSystem;
+    our::VideoCutsceneOverlay l3CutsceneVideo;
+    bool l3MeetingCutsceneDone = false;
+    bool l3EndingCutsceneLaunched = false;
+    /// 0 = none, 1 = Jafar meeting, 2 = ending (victory after playback)
+    int l3ActiveVideoKind = 0;
 
     // -- Game Scoring State --
     int coinsCollected = 0;
@@ -229,6 +235,10 @@ class Playstate: public our::State {
         // Same Playstate instance can persist across menu <-> play; clear portal blackout / stale entity pointers.
         roomPortalSystem.reset();
         dialogueSystem.reset();
+        l3CutsceneVideo.stop();
+        l3MeetingCutsceneDone = false;
+        l3EndingCutsceneLaunched = false;
+        l3ActiveVideoKind = 0;
 
         // First of all, we get the scene configuration from the app config
         auto& config = getApp()->getConfig()["scene"];
@@ -313,6 +323,83 @@ class Playstate: public our::State {
         return nullptr;
     }
 
+    static bool isActiveLevel3(const nlohmann::json& appConfig) {
+        std::string p = appConfig.value("active-level-config", std::string(""));
+        std::replace(p.begin(), p.end(), '\\', '/');
+        return p == "config/levels/level3.jsonc";
+    }
+
+    our::Entity* findEntityByName(const std::string& name) {
+        for (auto* e : world.getEntities()) {
+            if (e->name == name) return e;
+        }
+        return nullptr;
+    }
+
+    void transitionToVictoryScreen() {
+        auto& appConfig = getApp()->getConfig();
+        appConfig["last-stats"] = {
+            {"coinsCollected", coinsCollected},
+            {"totalCoins", totalCoins},
+            {"enemiesKilled", enemiesKilled},
+            {"totalEnemies", totalEnemies},
+            {"stars", calculateStars()},
+            {"time", elapsedTime}
+        };
+
+        std::string currentLevel = appConfig.value("active-level-config", "config/levels/level1.jsonc");
+        std::string normLevel = currentLevel;
+        std::replace(normLevel.begin(), normLevel.end(), '\\', '/');
+
+        if (normLevel == "config/levels/level1.jsonc") {
+            appConfig["next-level-config"] = "config/levels/level2.jsonc";
+        } else if (normLevel == "config/levels/level2.jsonc") {
+            appConfig["next-level-config"] = "config/levels/level3.jsonc";
+        } else {
+            appConfig["next-level-config"] = "menu";
+        }
+
+        our::SaveSystem::unlockNextLevel(currentLevel);
+        getApp()->changeState("victory");
+    }
+
+    void tryStartLevel3MeetingCutscene(const glm::vec3& playerPos) {
+        auto& appConfig = getApp()->getConfig();
+        if (!isActiveLevel3(appConfig)) return;
+        if (l3MeetingCutsceneDone || l3CutsceneVideo.isActive()) return;
+        our::Entity* jafar = findEntityByName("l3-map3-jafar");
+        if (!jafar) return;
+        auto* en = jafar->getComponent<our::EnemyComponent>();
+        if (!en || en->currentState == our::EnemyComponent::State::DEAD) return;
+
+        glm::vec3 jp = glm::vec3(jafar->getLocalToWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        const glm::vec2 a(playerPos.x, playerPos.z);
+        const glm::vec2 b(jp.x, jp.z);
+        if (glm::distance(a, b) > 50.0f) return;
+
+        l3MeetingCutsceneDone = true;
+        if (l3CutsceneVideo.start("assets/Videos/Jafaar Meeting.mp4")) {
+            l3ActiveVideoKind = 1;
+        }
+    }
+
+    void tryStartLevel3EndingCutscene() {
+        auto& appConfig = getApp()->getConfig();
+        if (!isActiveLevel3(appConfig)) return;
+        if (l3EndingCutsceneLaunched || l3CutsceneVideo.isActive()) return;
+        our::Entity* jafar = findEntityByName("l3-map3-jafar");
+        if (!jafar) return;
+        auto* en = jafar->getComponent<our::EnemyComponent>();
+        if (!en || en->currentState != our::EnemyComponent::State::DEAD) return;
+
+        l3EndingCutsceneLaunched = true;
+        if (l3CutsceneVideo.start("assets/Videos/Ending.mp4")) {
+            l3ActiveVideoKind = 2;
+        } else {
+            transitionToVictoryScreen();
+        }
+    }
+
     void onDraw(double deltaTime) override {
         if (!isPaused) elapsedTime += (float)deltaTime;
         if(!physicsInitialized){
@@ -329,36 +416,7 @@ class Playstate: public our::State {
             if(!nextAppState.empty()){
                 levelExitSystem.clearNextApplicationState();
                 if(nextAppState == "victory"){
-                    // Determine the next level path for the "Continue" button
-                    auto& appConfig = getApp()->getConfig();
-                    
-                    // Save gameplay statistics for the victory screen
-                    appConfig["last-stats"] = {
-                        {"coinsCollected", coinsCollected},
-                        {"totalCoins", totalCoins},
-                        {"enemiesKilled", enemiesKilled},
-                        {"totalEnemies", totalEnemies},
-                        {"stars", calculateStars()},
-                        {"time", elapsedTime}
-                    };
-
-                    std::string currentLevel = appConfig.value("active-level-config", "config/levels/level1.jsonc");
-                    
-                    // Normalize slashes for comparison
-                    std::string normLevel = currentLevel;
-                    std::replace(normLevel.begin(), normLevel.end(), '\\', '/');
-
-                    if(normLevel == "config/levels/level1.jsonc") {
-                        appConfig["next-level-config"] = "config/levels/level2.jsonc";
-                    } else if(normLevel == "config/levels/level2.jsonc") {
-                        appConfig["next-level-config"] = "config/levels/level3.jsonc";
-                    } else {
-                        // If no more levels, return to menu
-                        appConfig["next-level-config"] = "menu";
-                    }
-
-                    our::SaveSystem::unlockNextLevel(currentLevel);
-                    getApp()->changeState("victory");
+                    transitionToVictoryScreen();
                     return;
                 }
             }
@@ -407,6 +465,8 @@ class Playstate: public our::State {
         if(auto* aladdinEntity = findAladdinEntity()){
             playerPos = glm::vec3(aladdinEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
         }
+        auto& keyboard = getApp()->getKeyboard();
+
         // Capture "was active" BEFORE updating. If the player hits ESC to
         // skip the conversation, DialogueSystem::update() ends it in-place
         // (isActive() becomes false), and we must NOT let that same ESC
@@ -416,11 +476,16 @@ class Playstate: public our::State {
                               playerPos, (float)deltaTime);
         const bool dialogueStillActive = dialogueSystem.isActive();
 
+        if (!dialogueStillActive && !isPaused && !l3CutsceneVideo.isActive()) {
+            tryStartLevel3MeetingCutscene(playerPos);
+        }
+
         // Freeze gameplay this frame if a dialogue is (or just was) active —
         // this covers: dialogue in progress, dialogue just started this
         // frame, and dialogue just ended this frame (so the skip-ESC doesn't
         // also trigger a jump etc.).
-        const bool freezeGameplay = dialogueFrozen || dialogueStillActive || isPaused;
+        const bool freezeGameplay =
+            dialogueFrozen || dialogueStillActive || isPaused || l3CutsceneVideo.isActive();
         
         // Handle cursor state based on pause/dialogue
         if (freezeGameplay) {
@@ -442,10 +507,27 @@ class Playstate: public our::State {
             levelExitSystem.update(&world);
             // Advance all skeletal animations so finalBoneMatrices[] are ready for the renderer
             animationSystem.update(&world, (float)deltaTime);
+
+            tryStartLevel3EndingCutscene();
         }
+
+        const bool cutsceneWasActive = l3CutsceneVideo.isActive();
+        bool cutsceneEscSkip = false;
+        l3CutsceneVideo.update((float)deltaTime, keyboard, cutsceneEscSkip);
+        if (cutsceneWasActive && !l3CutsceneVideo.isActive()) {
+            if (l3ActiveVideoKind == 2) {
+                transitionToVictoryScreen();
+                return;
+            }
+            l3ActiveVideoKind = 0;
+        }
+
         // Always render so the frozen scene stays on screen behind the
         // dialogue box.
         renderer.render(&world, getApp()->getFrameBufferSize());
+        if (l3CutsceneVideo.isActive()) {
+            l3CutsceneVideo.render(getApp()->getFrameBufferSize());
+        }
 
         // Remove entities marked for deletion at the end of the frame
         world.deleteMarkedEntities();
@@ -472,9 +554,6 @@ class Playstate: public our::State {
             }
         }
 
-        // Get a reference to the keyboard object
-        auto& keyboard = getApp()->getKeyboard();
-
         // Minimap toggle (Caps Lock)
         showMinimap = keyboard.isPressed(GLFW_KEY_CAPS_LOCK);
 
@@ -483,7 +562,7 @@ class Playstate: public our::State {
         //     // Save enough state to support a "Continue" path from the main menu.
         //     saveContinueSnapshot();
         //     getApp()->changeState("menu");
-        if(!dialogueFrozen && !dialogueStillActive && keyboard.justPressed(GLFW_KEY_ESCAPE)){
+        if(!dialogueFrozen && !dialogueStillActive && !l3CutsceneVideo.isActive() && !cutsceneEscSkip && keyboard.justPressed(GLFW_KEY_ESCAPE)){
             if (showSettings) {
                 showSettings = false;
             } else {
@@ -510,7 +589,8 @@ class Playstate: public our::State {
                 getApp()->changeState("gameover");
             }
             if(keyboard.justPressed(GLFW_KEY_F10)){
-                getApp()->changeState("victory");
+                transitionToVictoryScreen();
+                return;
             }
             if(keyboard.justPressed(GLFW_KEY_C)){
                 if(coinsCollected < totalCoins) coinsCollected++;
@@ -554,6 +634,10 @@ class Playstate: public our::State {
     }
 
     void onImmediateGui() override {
+        if (l3CutsceneVideo.isActive()) {
+            return;
+        }
+
         ImGuiIO& io = ImGui::GetIO();
         float screenWidth = io.DisplaySize.x;
         float screenHeight = io.DisplaySize.y;
