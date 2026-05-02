@@ -228,6 +228,7 @@ int our::Application::run(int run_for_frames) {
     setupCallbacks();
     keyboard.enable(window);
     mouse.enable(window);
+    gamepad.enable();
 
     // Start the ImGui context and set dark style (just my preference :D)
     IMGUI_CHECKVERSION();
@@ -344,9 +345,10 @@ int our::Application::run(int run_for_frames) {
         // Swap the frame buffers
         glfwSwapBuffers(window);
 
-        // Update the keyboard and mouse data
+        // Update the keyboard, mouse, and gamepad data
         keyboard.update();
         mouse.update();
+        gamepad.update();
 
         // If a scene change was requested, apply it
         while(nextState){

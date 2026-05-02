@@ -489,6 +489,29 @@ class Menustate: public our::State {
             ImGui::Separator();
             ImGui::Spacing();
 
+            // Controller section
+            ImGui::SetWindowFontScale(1.4f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+            ImGui::Text("Controller (Gamepad)");
+            ImGui::PopStyleColor();
+            ImGui::Spacing();
+
+            ImGui::SetWindowFontScale(1.2f);
+            bool isGamepadConnected = getApp()->getGamepad().isConnected();
+            if (isGamepadConnected) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
+                ImGui::Text("Status: Connected (PS4/Xbox)");
+                ImGui::PopStyleColor();
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                ImGui::Text("Status: Disconnected");
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
             // Display section
             ImGui::SetWindowFontScale(1.4f);
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));

@@ -150,23 +150,41 @@ namespace our {
 
                 auto& keyboard = app->getKeyboard();
                 auto& mouse = app->getMouse();
+                auto& gamepad = app->getGamepad();
 
                 // ─── 0. Mouse orbit or Crosshair Move ───
                 if (aladdin->isAiming) {
                     // Hide OS cursor but keep tracking active
                     glfwSetInputMode(app->getWindow(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-                    // Sync our aimOffset with the actual mouse position relative to center
-                    glm::vec2 mousePos = mouse.getMousePosition();
-                    glm::vec2 windowSize = app->getWindowSize();
-                    aladdin->aimOffset.x = mousePos.x - (windowSize.x * 0.5f);
-                    aladdin->aimOffset.y = mousePos.y - (windowSize.y * 0.5f);
-                } else if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+                    
+                    if (gamepad.isConnected()) {
+                        float aimX = gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_X);
+                        float aimY = gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_Y);
+                        aladdin->aimOffset.x += aimX * 25.0f;
+                        aladdin->aimOffset.y += aimY * 25.0f;
+                    } else {
+                        // Sync our aimOffset with the actual mouse position relative to center
+                        glm::vec2 mousePos = mouse.getMousePosition();
+                        glm::vec2 windowSize = app->getWindowSize();
+                        aladdin->aimOffset.x = mousePos.x - (windowSize.x * 0.5f);
+                        aladdin->aimOffset.y = mousePos.y - (windowSize.y * 0.5f);
+                    }
+                } else if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT) ||
+                           (gamepad.isConnected() && (std::abs(gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_X)) > 0.0f ||
+                                                      std::abs(gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_Y)) > 0.0f))) {
                     // Lock cursor for orbit
                     glfwSetInputMode(app->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+                    
                     // Normal camera rotation
-                    glm::vec2 delta = mouse.getMouseDelta();
+                    glm::vec2 delta(0.0f);
+                    if (mouse.isPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+                        delta = mouse.getMouseDelta();
+                    }
+                    if (gamepad.isConnected()) {
+                        delta.x += gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_X) * 30.0f;
+                        delta.y += gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_RIGHT_Y) * 30.0f;
+                    }
+
                     aladdin->cameraOrbitYaw   -= delta.x * aladdin->mouseSensitivity;
                     aladdin->cameraOrbitPitch -= delta.y * aladdin->mouseSensitivity;
                     aladdin->cameraOrbitPitch = glm::clamp(
@@ -186,6 +204,12 @@ namespace our {
                 if(keyboard.isPressed(GLFW_KEY_S)) inputFwd   -= 1.0f;
                 if(keyboard.isPressed(GLFW_KEY_A)) inputRight -= 1.0f;
                 if(keyboard.isPressed(GLFW_KEY_D)) inputRight += 1.0f;
+
+                if (gamepad.isConnected()) {
+                    // GLFW axes: Y is -1.0 up, 1.0 down. X is -1.0 left, 1.0 right.
+                    inputFwd -= gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_LEFT_Y);
+                    inputRight += gamepad.getAxisWithDeadzone(GLFW_GAMEPAD_AXIS_LEFT_X);
+                }
 
                 // Camera forward/right on XZ plane (from orbit yaw, NOT from character yaw)
                 const float orbYaw = aladdin->cameraOrbitYaw;
@@ -209,7 +233,8 @@ namespace our {
 
                 // Handle Running
                 bool isShiftPressed = keyboard.isPressed(GLFW_KEY_LEFT_SHIFT) || keyboard.isPressed(GLFW_KEY_RIGHT_SHIFT);
-                aladdin->isRunning = hasMoveInput && isShiftPressed;
+                bool isR1Pressed = gamepad.isPressed(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
+                aladdin->isRunning = hasMoveInput && (isShiftPressed || isR1Pressed);
                 float currentMoveSpeed = aladdin->isRunning ? aladdin->runSpeed : aladdin->speed;
                 auto* rbComp = entity->getComponent<RigidBodyComponent>();
                 const bool hasPhysicsBody = physicsSystem && rbComp && rbComp->bodyHandle;
@@ -229,7 +254,8 @@ namespace our {
                     targetVelocity.x = hasMoveInput ? moveDir.x * currentMoveSpeed : 0.0f;
                     targetVelocity.z = hasMoveInput ? moveDir.z * currentMoveSpeed : 0.0f;
 
-                    if(keyboard.justPressed(GLFW_KEY_SPACE) && aladdin->isGrounded && !aladdin->isJumpPreparing) {
+                    bool jumpInput = keyboard.justPressed(GLFW_KEY_SPACE) || gamepad.justPressed(GLFW_GAMEPAD_BUTTON_A);
+                    if(jumpInput && aladdin->isGrounded && !aladdin->isJumpPreparing) {
                         aladdin->isJumpPreparing = true;
                         aladdin->jumpDelayTimer = 0.22f; // Reduced delay to better sync with animation takeoff
 
@@ -268,7 +294,8 @@ namespace our {
                 }
 
                 // 4. Handle Melee Attack (Sword)
-                if(keyboard.justPressed(GLFW_KEY_F) && !aladdin->isAttacking) {
+                bool attackInput = keyboard.justPressed(GLFW_KEY_F) || gamepad.justPressed(GLFW_GAMEPAD_BUTTON_X);
+                if(attackInput && !aladdin->isAttacking) {
                     aladdin->isAttacking = true;
                     aladdin->attackTimer = 0.4f; // Attack for 0.4 seconds
                     aladdin->hitEntities.clear(); // Clear the list of entities hit in the previous attack
@@ -283,7 +310,11 @@ namespace our {
                 }
 
                 // 5. Handle Ranged Attack (Apple Throw)
-                if(keyboard.isPressed(GLFW_KEY_R) && aladdin->appleCount > 0) {
+                // L2 (left trigger) axis is typically -1.0 when released, 1.0 when fully pressed.
+                bool l2Pressed = gamepad.isConnected() && gamepad.getAxis(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > -0.5f;
+                bool aimInput = keyboard.isPressed(GLFW_KEY_R) || l2Pressed;
+
+                if(aimInput && aladdin->appleCount > 0) {
                     if (!aladdin->isAiming) {
                         aladdin->isAiming = true;
                         // Center the actual mouse cursor at start of aiming
@@ -292,7 +323,7 @@ namespace our {
                         aladdin->aimOffset = {0, 0};
                     }
                 } else if (aladdin->isAiming) {
-                    // KEY RELEASED: Throw the apple!
+                    // KEY/TRIGGER RELEASED: Throw the apple!
                     aladdin->isAiming = false;
                     aladdin->isThrowing = true;
                     aladdin->throwTimer = 0.3f;
@@ -339,19 +370,19 @@ namespace our {
                     const glm::vec3 playerFwd = glm::vec3(-glm::sin(pyaw), 0.0f, -glm::cos(pyaw));
                     apple->localTransform.position = entity->localTransform.position + glm::vec3(0, 1.3f, 0) + playerFwd * 0.8f;
                     apple->localTransform.scale = glm::vec3(1.2f);
-
+                    
                     auto* mr = apple->addComponent<MeshRendererComponent>();
                     mr->mesh = AssetLoader<Mesh>::get("apple_mesh");
                     mr->material = AssetLoader<Material>::get("lit-apple");
-
+                    
                     auto* projectile = apple->addComponent<ProjectileComponent>();
                     projectile->owner = entity;
                     projectile->damage = 34.0f;
-
+                    
                     auto* rb = apple->addComponent<RigidBodyComponent>();
                     rb->type = RigidBodyType::Dynamic;
                     rb->useGravity = true;
-
+                    
                     auto* col = apple->addComponent<ColliderComponent>();
                     col->shape = ColliderShape::Sphere;
                     col->radius = 0.25f;

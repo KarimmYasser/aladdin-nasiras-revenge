@@ -12,6 +12,7 @@
 
 #include "input/keyboard.hpp"
 #include "input/mouse.hpp"
+#include "input/gamepad.hpp"
 
 namespace our {
 
@@ -56,6 +57,7 @@ namespace our {
         
         Keyboard keyboard;                  // Instance of "our" keyboard class that handles keyboard functionalities.
         Mouse mouse;                        // Instance of "our" mouse class that handles mouse functionalities.
+        Gamepad gamepad;                    // Instance of "our" gamepad class that handles controller functionalities.
 
         nlohmann::json app_config;           // A Json file that contains all application configuration
 
@@ -116,6 +118,8 @@ namespace our {
         [[nodiscard]] const Keyboard& getKeyboard() const { return keyboard; }
         Mouse& getMouse() { return mouse; }
         [[nodiscard]] const Mouse& getMouse() const { return mouse; }
+        Gamepad& getGamepad() { return gamepad; }
+        [[nodiscard]] const Gamepad& getGamepad() const { return gamepad; }
 
         [[nodiscard]] const nlohmann::json& getConfig() const { return app_config; }
         [[nodiscard]] nlohmann::json& getConfig() { return app_config; }
