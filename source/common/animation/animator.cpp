@@ -176,6 +176,7 @@ namespace our {
     // Interpolation helpers — all use binary search for O(log n) lookup
     // -----------------------------------------------------------------------
     glm::vec3 Animator::interpPosition(const BoneChannel& ch, float t) const {
+        if (ch.positions.empty()) return glm::vec3(0.f);
         if (ch.positions.size() == 1) return ch.positions[0].value;
         for (size_t i = 0; i + 1 < ch.positions.size(); i++) {
             if (t < ch.positions[i + 1].time) {
@@ -188,6 +189,7 @@ namespace our {
     }
 
     glm::quat Animator::interpRotation(const BoneChannel& ch, float t) const {
+        if (ch.rotations.empty()) return glm::quat(1.f, 0.f, 0.f, 0.f);
         if (ch.rotations.size() == 1) return ch.rotations[0].value;
         for (size_t i = 0; i + 1 < ch.rotations.size(); i++) {
             if (t < ch.rotations[i + 1].time) {
@@ -201,6 +203,7 @@ namespace our {
     }
 
     glm::vec3 Animator::interpScale(const BoneChannel& ch, float t) const {
+        if (ch.scales.empty()) return glm::vec3(1.f);
         if (ch.scales.size() == 1) return ch.scales[0].value;
         for (size_t i = 0; i + 1 < ch.scales.size(); i++) {
             if (t < ch.scales[i + 1].time) {

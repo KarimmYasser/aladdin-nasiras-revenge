@@ -6,10 +6,13 @@
 #include "../mesh/skinned-mesh.hpp"
 #include "../material/material.hpp"
 #include "../asset-loader.hpp"
+#include <json/json.hpp>
 #include <iostream>
-#include <algorithm>
+#include <vector>
+#include <string>
 
 namespace our {
+    using nlohmann::json;
 
     // SkinnedMeshRendererComponent
     // ----------------------------
@@ -49,6 +52,12 @@ namespace our {
             // ── Load primary model (skinned mesh + embedded clips) ──────────────
             std::string modelPath = data.value("model", "");
             if (!modelPath.empty()) {
+                // Clean up old mesh if re-deserializing
+                if (skinnedMesh) {
+                    delete skinnedMesh;
+                    skinnedMesh = nullptr;
+                }
+
                 auto result = AnimationLoader::load(modelPath);
                 if (result.mesh) {
                     skinnedMesh = result.mesh;
@@ -65,11 +74,18 @@ namespace our {
 
             // ── Load additional animation-only files ────────────────────────────
             if (data.contains("animations") && data["animations"].is_array()) {
-                for (auto& path : data["animations"]) {
-                    if (path.is_string()) {
-                        auto extra = AnimationLoader::load(path.get<std::string>());
-                        for (auto& c : extra.clips)
-                            clips.push_back(std::move(c));
+                for (auto& pathJson : data["animations"]) {
+                    if (pathJson.is_string()) {
+                        std::string path = pathJson.get<std::string>();
+                        auto extra = AnimationLoader::load(path);
+                        if (!extra.clips.empty()) {
+                            // Take all clips from the file (usually 1, but be robust)
+                            for (auto& c : extra.clips) {
+                                clips.push_back(std::move(c));
+                            }
+                        } else {
+                            printf("[DIAG][SMR] Warning: No clips found in animation file: %s\n", path.c_str());
+                        }
                     }
                 }
             }
@@ -77,6 +93,7 @@ namespace our {
             animator.loadClips(clips);
 
             // ── Resolve materials by name from AssetLoader ───────────────────────
+            materials.clear();
             if (data.contains("materials") && data["materials"].is_array()) {
                 for (auto& matName : data["materials"]) {
                     if (matName.is_string())
@@ -94,8 +111,12 @@ namespace our {
 
             // ── Start the default clip ──────────────────────────────────────────
             std::string defaultClip = data.value("clip", "");
-            if (!defaultClip.empty())
+            if (!defaultClip.empty() && animator.hasClip(defaultClip)) {
                 animator.play(defaultClip);
+            } else if (!clips.empty()) {
+                // Default to first available clip if requested one is missing
+                animator.play(clips[0].name);
+            }
         }
 
         ~SkinnedMeshRendererComponent() override {
