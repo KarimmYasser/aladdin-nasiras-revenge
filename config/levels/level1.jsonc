@@ -474,7 +474,7 @@
                 "name": "enemy-place2-slime",
                 "position": [80, 0.9, 4],
                 "rotation": [0, 0, 0],
-                "scale": [1.5, 1.5, 1.5],
+                "scale": [2.2, 2.2, 2.2],
                 "components": [
                     {
                         "type": "Skinned Mesh Renderer",
@@ -529,7 +529,7 @@
                 "name": "enemy-place3-a",
                 "position": [92, 1.0, -98],
                 "rotation": [0, 0, 0],
-                "scale": [1.0, 1.0, 1.0],
+                "scale": [1.1, 1.1, 1.1],
                 "components": [
                     {
                         "type": "Skinned Mesh Renderer",
@@ -563,7 +563,7 @@
                 "name": "enemy-place3-b",
                 "position": [108, 1.0, -102],
                 "rotation": [0, 0, 0],
-                "scale": [1.0, 1.0, 1.0],
+                "scale": [1.1, 1.1, 1.1],
                 "components": [
                     {
                         "type": "Skinned Mesh Renderer",

@@ -562,7 +562,7 @@
                         "radius": 4.0,
                         "blackoutDuration": 1.2,
                         "cooldownDuration": 2.5,
-                        "targetPosition": [550, 0.5, -232],
+                        "targetPosition": [550, -15.5, -232],
                         "setYaw": true,
                         "targetYaw": 90
                     }
@@ -740,68 +740,33 @@
 
             // --- Map 1 enemies ---
             {
-                "name": "l3-map1-enemy-trash-1",
-                "position": [52, -27, -360],
-                "rotation": [0, 180, 0],
-                "scale": [1.0, 1.0, 1.0],
-                "components": [
-                    {
-                        "type": "Skinned Mesh Renderer",
-                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
-                        "animations": [
-                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
-                        ],
-                        "material": "lit-enemy3",
-                        "clip": "idle"
-                    },
-                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
-                ]
-            },
-            {
-                "name": "l3-map1-enemy-trash-2",
-                "position": [-4, -30, -363],
-                "rotation": [0, 180, 0],
-                "scale": [1.0, 1.0, 1.0],
-                "components": [
-                    {
-                        "type": "Skinned Mesh Renderer",
-                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
-                        "animations": [
-                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
-                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
-                        ],
-                        "material": "lit-enemy3",
-                        "clip": "idle"
-                    },
-                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
-                ]
-            },
-            {
-                "name": "l3-map1-enemy-brute-1",
+                "name": "l3-map1-enemy-golem-1",
                 "position": [15, -30, -240],
                 "rotation": [0, 180, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.1, 1.1, 1.1],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
-                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 24.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5 },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
                 ]
             },
             {
                 "name": "l3-map1-enemy-slime-1",
-                "position": [30, -28, -350],
+                "position": [52, -27, -360],
                 "rotation": [0, 180, 0],
-                "scale": [1.5, 1.5, 1.5],
+                "scale": [2.2, 2.2, 2.2],
                 "components": [
                     {
                         "type": "Skinned Mesh Renderer",
@@ -815,16 +780,18 @@
                         "material": "lit-enemy2",
                         "clip": "idle"
                     },
-                    { "type": "Enemy", "patrolSpeed": 2.2, "chaseSpeed": 4.0, "detectionRange": 15.0, "attackRange": 2.0, "health": 40, "damage": 10, "attackCooldown": 1.5, "waypoints": [[25, -28, -350], [35, -28, -350]] },
+                    { "type": "Enemy", "patrolSpeed": 2.2, "chaseSpeed": 4.0, "detectionRange": 15.0, "attackRange": 2.0, "health": 40, "damage": 10, "attackCooldown": 1.5
+                    // , "waypoints": [[-5, -29, -300], [5, -29, -300]]
+                     },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
                 ]
             },
             {
                 "name": "l3-map1-enemy-slime-2",
-                "position": [0, -29, -300],
+                "position": [-4, -30, -363],
                 "rotation": [0, 180, 0],
-                "scale": [1.5, 1.5, 1.5],
+                "scale": [2.2, 2.2, 2.2],
                 "components": [
                     {
                         "type": "Skinned Mesh Renderer",
@@ -838,7 +805,9 @@
                         "material": "lit-enemy2",
                         "clip": "idle"
                     },
-                    { "type": "Enemy", "patrolSpeed": 2.2, "chaseSpeed": 4.0, "detectionRange": 15.0, "attackRange": 2.0, "health": 40, "damage": 10, "attackCooldown": 1.5, "waypoints": [[-5, -29, -300], [5, -29, -300]] },
+                    { "type": "Enemy", "patrolSpeed": 2.2, "chaseSpeed": 4.0, "detectionRange": 15.0, "attackRange": 2.0, "health": 40, "damage": 10, "attackCooldown": 1.5
+                    // , "waypoints": [[-5, -29, -300], [5, -29, -300]] 
+                    },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
                     { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.2, "friction": 0.65 }
                 ]
@@ -846,7 +815,7 @@
 
             // --- Map 2 enemies ---
             {
-                "name": "l3-map2-enemy-trash-1",
+                "name": "l3-map2-enemy-golem-1",
                 "position": [582, -26, -162],
                 "rotation": [0, 180, 0],
                 "scale": [1.0, 1.0, 1.0],
@@ -869,7 +838,7 @@
                 ]
             },
             {
-                "name": "l3-map2-enemy-trash-2",
+                "name": "l3-map2-enemy-golem-2",
                 "position": [596, -26, -180],
                 "rotation": [0, 180, 0],
                 "scale": [1.0, 1.0, 1.0],
@@ -895,24 +864,46 @@
                 "name": "l3-map2-enemy-brute-1",
                 "position": [621, -30, -75],
                 "rotation": [0, 180, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
-                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 40.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5 },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
                 ]
             },
             {
                 "name": "l3-map2-enemy-brute-2",
                 "position": [628.0, -30, -114],
                 "rotation": [0, 180, 0],
-                "scale": [0.028, 0.028, 0.028],
+                "scale": [1.0, 1.0, 1.0],
                 "components": [
-                    { "type": "Mesh Renderer", "mesh": "enemy1_mesh", "material": "lit-enemy1" },
-                    { "type": "Enemy", "patrolSpeed": 2.8, "chaseSpeed": 4.8, "detectionRange": 40.0, "attackRange": 2.5, "health": 70, "damage": 16, "attackCooldown": 1.5 },
-                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 60.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.65, "height": 1.5, "friction": 0.65 }
+                    {
+                        "type": "Skinned Mesh Renderer",
+                        "model": "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                        "animations": [
+                            "assets/models/Enemies/Enemy 3/animations/attack.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/idle.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/walk.fbx",
+                            "assets/models/Enemies/Enemy 3/animations/death.fbx"
+                        ],
+                        "material": "lit-enemy3",
+                        "clip": "idle"
+                    },
+                    { "type": "Enemy", "patrolSpeed": 3.0, "chaseSpeed": 5.2, "detectionRange": 23.0, "attackRange": 2.0, "health": 50, "damage": 13, "attackCooldown": 1.45 },
+                    { "type": "RigidBody", "bodyType": "dynamic", "mass": 40.0, "useGravity": true, "lockRotation": true },
+                    { "type": "Collider", "shape": "capsule", "radius": 0.52, "height": 1.2, "friction": 0.65 }
                 ]
             },
 
