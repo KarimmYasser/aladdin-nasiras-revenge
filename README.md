@@ -14,8 +14,9 @@ This project is a data-driven game engine designed with an **Entity-Component-Sy
 - 🛠️ **Developer Tools**: Integrated Dear ImGui for real-time debugging and world inspection.
 
 ## 🎬 Demo video
+[![Game Demo](https://img.youtube.com/vi/GRaPJMItlfs/maxresdefault.jpg)](https://youtu.be/GRaPJMItlfs)
 
-A gameplay and engine overview is available in the repository: [docs/videos/overview.mp4](docs/videos/demo.mp4).
+
 
 ## 🖼️ Gallery
 
