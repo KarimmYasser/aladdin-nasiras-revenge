@@ -674,7 +674,7 @@
             {
                 "name": "l3-map3-genie",
                 "position": [1090.28, -2.35, -282.22],
-                "rotation": [0, -40, 0],
+                "rotation": [0, -80, 0],
                 "scale": [0.94, 0.94, 0.94],
                 "components": [
                     { "type": "Mesh Renderer", "mesh": "genie_mesh", "material": "lit-genie", "visible": false }
@@ -960,7 +960,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {
@@ -989,7 +989,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {
@@ -1018,7 +1018,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {
@@ -1047,7 +1047,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {
@@ -1076,7 +1076,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {
@@ -1105,7 +1105,7 @@
                     },
                     { "type": "Enemy", "patrolSpeed": 3.2, "chaseSpeed": 6.9, "detectionRange": 80.0, "attackRange": 3.2, "health": 120, "damage": 24, "attackCooldown": 1.05 },
                     { "type": "RigidBody", "bodyType": "dynamic", "mass": 95.0, "useGravity": true, "lockRotation": true },
-                    { "type": "Collider", "shape": "capsule", "radius": 0.5, "height": 1.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
+                    { "type": "Collider", "shape": "capsule", "radius": 1.5, "height": 2.3, "centerOffset": [0, 1.15, 0], "friction": 0.65 }
                 ]
             },
             {

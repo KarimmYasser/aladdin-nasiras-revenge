@@ -13,6 +13,10 @@ This project is a data-driven game engine designed with an **Entity-Component-Sy
 - 🕹️ **Custom Physics**: Integrated with ReactPhysics3D for realistic collisions and triggers.
 - 🛠️ **Developer Tools**: Integrated Dear ImGui for real-time debugging and world inspection.
 
+## 🎬 Demo video
+
+A gameplay and engine overview is available in the repository: [docs/videos/overview.mp4](docs/videos/demo.mp4).
+
 ## 🖼️ Gallery
 
 Explore the world of Agrabah and the engine's capabilities:
