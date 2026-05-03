@@ -64,6 +64,10 @@ Welcome to the official documentation for the **Aladdin: Nasira's Revenge** game
 
 ### 9. Visual Gallery
 
+#### Demo video
+
+- [Gameplay & engine overview (MP4)](videos/demo.mp4)
+
 #### Gameplay Screenshots
 ![Screenshot 1](images/screenshot1.png)
 *Screenshot 1*
